@@ -10056,3 +10056,1120 @@ Object.assign(window.CHEON_HERO_ATLAS.directionalAnimations.sweep, {
   atlas.animations.sweep = atlas.directionalAnimations.sweep.e;
 })();
 // END APPROVED FULL-BODY ATTACK V4
+
+// BEGIN APPROVED FULL-BODY SWEEP V5
+(() => {
+  const atlas = window.CHEON_HERO_ATLAS;
+  atlas.directionalAnimations.sweep = {
+  "e": {
+    "src": "assets/hero-sweep-e-fullbody-v5.png",
+    "frameWidth": 128,
+    "frameHeight": 128,
+    "frames": 5,
+    "fps": 16,
+    "loop": false,
+    "bakedWeapon": true,
+    "fullBodyGait": true,
+    "displayHeight": 80,
+    "foot": {
+      "x": 64,
+      "y": 120
+    },
+    "phaseFrames": {
+      "anticipation": [
+        0,
+        0
+      ],
+      "active": [
+        0,
+        4
+      ],
+      "recovery": [
+        0,
+        4
+      ]
+    },
+    "phaseRangeConvention": "inclusive",
+    "contactSmearFrames": [],
+    "frameLayout": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 128,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 256,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 384,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 0,
+        "y": 128,
+        "w": 128,
+        "h": 128
+      }
+    ],
+    "frameScales": [
+      2.0,
+      1.96923,
+      1.96923,
+      1.96923,
+      2.06452
+    ],
+    "footAnchors": [
+      {
+        "x": 65.75,
+        "y": 120
+      },
+      {
+        "x": 65.23,
+        "y": 120
+      },
+      {
+        "x": 65.23,
+        "y": 120
+      },
+      {
+        "x": 67.22,
+        "y": 120
+      },
+      {
+        "x": 65.02,
+        "y": 119
+      }
+    ],
+    "handAnchors": [
+      {
+        "x": 77,
+        "y": 77
+      },
+      {
+        "x": 83,
+        "y": 76
+      },
+      {
+        "x": 84,
+        "y": 80
+      },
+      {
+        "x": 85,
+        "y": 86
+      },
+      {
+        "x": 78,
+        "y": 88
+      }
+    ],
+    "bladeOrigins": [
+      {
+        "x": 81,
+        "y": 74
+      },
+      {
+        "x": 87,
+        "y": 75
+      },
+      {
+        "x": 89,
+        "y": 80
+      },
+      {
+        "x": 90,
+        "y": 88
+      },
+      {
+        "x": 83,
+        "y": 90
+      }
+    ],
+    "tipAnchors": [
+      {
+        "x": 104,
+        "y": 70
+      },
+      {
+        "x": 117,
+        "y": 76
+      },
+      {
+        "x": 117,
+        "y": 86
+      },
+      {
+        "x": 116,
+        "y": 99
+      },
+      {
+        "x": 104,
+        "y": 105
+      }
+    ],
+    "bladeAngles": [
+      -0.17219,
+      0.03332,
+      0.21109,
+      0.40024,
+      0.62025
+    ],
+    "bladeLengths": [
+      29.182,
+      36.944,
+      35.244,
+      34.746,
+      33.299
+    ],
+    "contactPoints": [
+      [
+        {
+          "x": 41.5,
+          "y": 120
+        },
+        {
+          "x": 89.0,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 40.0,
+          "y": 120
+        },
+        {
+          "x": 91.0,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 40.0,
+          "y": 120
+        },
+        {
+          "x": 89.0,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 42.0,
+          "y": 120
+        },
+        {
+          "x": 90.0,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 40.5,
+          "y": 119
+        },
+        {
+          "x": 89.0,
+          "y": 119
+        }
+      ]
+    ],
+    "provenance": "Selected complete immutable authored key poses; canonical sprite-gen component extraction and nearest fit. Preparation holds the first complete pose; recovery reverses complete approved poses. No synthetic body parts, source painting, invented sockets or active frame reversal.",
+    "activeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "phaseIndices": {
+      "anticipation": [
+        0
+      ],
+      "active": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "recovery": [
+        4,
+        3,
+        2,
+        1,
+        0
+      ]
+    }
+  },
+  "se": {
+    "src": "assets/hero-sweep-se-fullbody-v5.png",
+    "frameWidth": 128,
+    "frameHeight": 128,
+    "frames": 4,
+    "fps": 16,
+    "loop": false,
+    "bakedWeapon": true,
+    "fullBodyGait": true,
+    "displayHeight": 80,
+    "foot": {
+      "x": 64,
+      "y": 120
+    },
+    "phaseFrames": {
+      "anticipation": [
+        0,
+        0
+      ],
+      "active": [
+        0,
+        3
+      ],
+      "recovery": [
+        0,
+        3
+      ]
+    },
+    "phaseRangeConvention": "inclusive",
+    "contactSmearFrames": [],
+    "frameLayout": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 128,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 256,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 384,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      }
+    ],
+    "frameScales": [
+      1.24272,
+      1.24272,
+      1.13274,
+      1.13274
+    ],
+    "footAnchors": [
+      {
+        "x": 65.89,
+        "y": 120
+      },
+      {
+        "x": 64.26,
+        "y": 120
+      },
+      {
+        "x": 61.39,
+        "y": 120
+      },
+      {
+        "x": 63.62,
+        "y": 120
+      }
+    ],
+    "handAnchors": [
+      {
+        "x": 62,
+        "y": 68
+      },
+      {
+        "x": 63,
+        "y": 70
+      },
+      {
+        "x": 59,
+        "y": 59
+      },
+      {
+        "x": 63,
+        "y": 69
+      }
+    ],
+    "bladeOrigins": [
+      {
+        "x": 66,
+        "y": 70
+      },
+      {
+        "x": 64,
+        "y": 74
+      },
+      {
+        "x": 61,
+        "y": 62
+      },
+      {
+        "x": 63,
+        "y": 72
+      }
+    ],
+    "tipAnchors": [
+      {
+        "x": 117,
+        "y": 84
+      },
+      {
+        "x": 103,
+        "y": 100
+      },
+      {
+        "x": 98,
+        "y": 117
+      },
+      {
+        "x": 77,
+        "y": 115
+      }
+    ],
+    "bladeAngles": [
+      0.26791,
+      0.588,
+      0.97861,
+      1.25604
+    ],
+    "bladeLengths": [
+      41.077,
+      36.406,
+      46.929,
+      32.015
+    ],
+    "contactPoints": [
+      [
+        {
+          "x": 37.5,
+          "y": 120
+        },
+        {
+          "x": 92.0,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 36.0,
+          "y": 120
+        },
+        {
+          "x": 90.5,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 35.5,
+          "y": 120
+        },
+        {
+          "x": 85.82,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 34.0,
+          "y": 120
+        },
+        {
+          "x": 95.0,
+          "y": 120
+        }
+      ]
+    ],
+    "provenance": "Selected complete immutable authored key poses; canonical sprite-gen component extraction and nearest fit. Preparation holds the first complete pose; recovery reverses complete approved poses. No synthetic body parts, source painting, invented sockets or active frame reversal.",
+    "activeIndices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "phaseIndices": {
+      "anticipation": [
+        0
+      ],
+      "active": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "recovery": [
+        3,
+        2,
+        1,
+        0
+      ]
+    }
+  },
+  "s": {
+    "src": "assets/hero-sweep-s-fullbody-v5.png",
+    "frameWidth": 128,
+    "frameHeight": 128,
+    "frames": 4,
+    "fps": 16,
+    "loop": false,
+    "bakedWeapon": true,
+    "fullBodyGait": true,
+    "displayHeight": 80,
+    "foot": {
+      "x": 64,
+      "y": 120
+    },
+    "phaseFrames": {
+      "anticipation": [
+        0,
+        0
+      ],
+      "active": [
+        0,
+        3
+      ],
+      "recovery": [
+        0,
+        3
+      ]
+    },
+    "phaseRangeConvention": "inclusive",
+    "contactSmearFrames": [],
+    "frameLayout": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 128,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 256,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 384,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      }
+    ],
+    "frameScales": [
+      1.13274,
+      1.13274,
+      1.13274,
+      1.14286
+    ],
+    "footAnchors": [
+      {
+        "x": 63.48,
+        "y": 120
+      },
+      {
+        "x": 66.16,
+        "y": 120
+      },
+      {
+        "x": 64.24,
+        "y": 120
+      },
+      {
+        "x": 63.48,
+        "y": 119
+      }
+    ],
+    "handAnchors": [
+      {
+        "x": 63,
+        "y": 64
+      },
+      {
+        "x": 60,
+        "y": 57
+      },
+      {
+        "x": 59,
+        "y": 65
+      },
+      {
+        "x": 59,
+        "y": 65
+      }
+    ],
+    "bladeOrigins": [
+      {
+        "x": 65,
+        "y": 69
+      },
+      {
+        "x": 63,
+        "y": 59
+      },
+      {
+        "x": 60,
+        "y": 70
+      },
+      {
+        "x": 56,
+        "y": 70
+      }
+    ],
+    "tipAnchors": [
+      {
+        "x": 90,
+        "y": 108
+      },
+      {
+        "x": 79,
+        "y": 105
+      },
+      {
+        "x": 61,
+        "y": 112
+      },
+      {
+        "x": 28,
+        "y": 108
+      }
+    ],
+    "bladeAngles": [
+      1.00076,
+      1.23606,
+      1.54699,
+      2.20582
+    ],
+    "bladeLengths": [
+      32.796,
+      34.48,
+      29.743,
+      33.715
+    ],
+    "contactPoints": [
+      [
+        {
+          "x": 35.5,
+          "y": 120
+        },
+        {
+          "x": 92.5,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 42.5,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 35.5,
+          "y": 120
+        },
+        {
+          "x": 94.5,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 33.0,
+          "y": 119
+        },
+        {
+          "x": 93.5,
+          "y": 119
+        }
+      ]
+    ],
+    "provenance": "Selected complete immutable authored key poses; canonical sprite-gen component extraction and nearest fit. Preparation holds the first complete pose; recovery reverses complete approved poses. No synthetic body parts, source painting, invented sockets or active frame reversal.",
+    "activeIndices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "phaseIndices": {
+      "anticipation": [
+        0
+      ],
+      "active": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "recovery": [
+        3,
+        2,
+        1,
+        0
+      ]
+    }
+  },
+  "n": {
+    "src": "assets/hero-sweep-n-fullbody-v5.png",
+    "frameWidth": 128,
+    "frameHeight": 128,
+    "frames": 4,
+    "fps": 16,
+    "loop": false,
+    "bakedWeapon": true,
+    "fullBodyGait": true,
+    "displayHeight": 80,
+    "foot": {
+      "x": 64,
+      "y": 120
+    },
+    "phaseFrames": {
+      "anticipation": [
+        0,
+        0
+      ],
+      "active": [
+        0,
+        3
+      ],
+      "recovery": [
+        0,
+        3
+      ]
+    },
+    "phaseRangeConvention": "inclusive",
+    "contactSmearFrames": [],
+    "frameLayout": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 128,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 256,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 384,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      }
+    ],
+    "frameScales": [
+      1.42222,
+      1.37634,
+      1.3913,
+      1.37634
+    ],
+    "footAnchors": [
+      {
+        "x": 63.81,
+        "y": 119
+      },
+      {
+        "x": 65.13,
+        "y": 120
+      },
+      {
+        "x": 65.35,
+        "y": 120
+      },
+      {
+        "x": 65.39,
+        "y": 120
+      }
+    ],
+    "handAnchors": [
+      {
+        "x": 57,
+        "y": 66
+      },
+      {
+        "x": 58,
+        "y": 67
+      },
+      {
+        "x": 58,
+        "y": 67
+      },
+      {
+        "x": 62,
+        "y": 66
+      }
+    ],
+    "bladeOrigins": [
+      {
+        "x": 59,
+        "y": 64
+      },
+      {
+        "x": 60,
+        "y": 65
+      },
+      {
+        "x": 60,
+        "y": 65
+      },
+      {
+        "x": 62,
+        "y": 66
+      }
+    ],
+    "tipAnchors": [
+      {
+        "x": 28,
+        "y": 31
+      },
+      {
+        "x": 62,
+        "y": 11
+      },
+      {
+        "x": 70,
+        "y": 11
+      },
+      {
+        "x": 102,
+        "y": 24
+      }
+    ],
+    "bladeAngles": [
+      -2.32495,
+      -1.53378,
+      -1.38769,
+      -0.80978
+    ],
+    "bladeLengths": [
+      40.246,
+      46.483,
+      47.755,
+      49.892
+    ],
+    "contactPoints": [
+      [
+        {
+          "x": 43.5,
+          "y": 119
+        },
+        {
+          "x": 85.5,
+          "y": 119
+        }
+      ],
+      [
+        {
+          "x": 44.5,
+          "y": 120
+        },
+        {
+          "x": 87.5,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 43.5,
+          "y": 120
+        },
+        {
+          "x": 87.5,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 44.0,
+          "y": 120
+        },
+        {
+          "x": 87.5,
+          "y": 120
+        }
+      ]
+    ],
+    "provenance": "Selected complete immutable authored key poses; canonical sprite-gen component extraction and nearest fit. Preparation holds the first complete pose; recovery reverses complete approved poses. No synthetic body parts, source painting, invented sockets or active frame reversal.",
+    "activeIndices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "phaseIndices": {
+      "anticipation": [
+        0
+      ],
+      "active": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "recovery": [
+        3,
+        2,
+        1,
+        0
+      ]
+    }
+  },
+  "ne": {
+    "src": "assets/hero-sweep-ne-fullbody-v5.png",
+    "frameWidth": 128,
+    "frameHeight": 128,
+    "frames": 4,
+    "fps": 16,
+    "loop": false,
+    "bakedWeapon": true,
+    "fullBodyGait": true,
+    "displayHeight": 80,
+    "foot": {
+      "x": 64,
+      "y": 120
+    },
+    "phaseFrames": {
+      "anticipation": [
+        0,
+        0
+      ],
+      "active": [
+        0,
+        3
+      ],
+      "recovery": [
+        0,
+        3
+      ]
+    },
+    "phaseRangeConvention": "inclusive",
+    "contactSmearFrames": [],
+    "frameLayout": [
+      {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 128,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 256,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      {
+        "x": 384,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      }
+    ],
+    "frameScales": [
+      1.31959,
+      1.54217,
+      1.72973,
+      1.82857
+    ],
+    "footAnchors": [
+      {
+        "x": 65.64,
+        "y": 120
+      },
+      {
+        "x": 63.57,
+        "y": 120
+      },
+      {
+        "x": 64.52,
+        "y": 120
+      },
+      {
+        "x": 65.33,
+        "y": 120
+      }
+    ],
+    "handAnchors": [
+      {
+        "x": 81,
+        "y": 61
+      },
+      {
+        "x": 84,
+        "y": 78
+      },
+      {
+        "x": 83,
+        "y": 78
+      },
+      {
+        "x": 83,
+        "y": 79
+      }
+    ],
+    "bladeOrigins": [
+      {
+        "x": 83,
+        "y": 57
+      },
+      {
+        "x": 89,
+        "y": 73
+      },
+      {
+        "x": 89,
+        "y": 72
+      },
+      {
+        "x": 91,
+        "y": 76
+      }
+    ],
+    "tipAnchors": [
+      {
+        "x": 88,
+        "y": 10
+      },
+      {
+        "x": 98,
+        "y": 39
+      },
+      {
+        "x": 107,
+        "y": 51
+      },
+      {
+        "x": 115,
+        "y": 68
+      }
+    ],
+    "bladeAngles": [
+      -1.46481,
+      -1.31203,
+      -0.86217,
+      -0.32175
+    ],
+    "bladeLengths": [
+      38.982,
+      33.9,
+      29.901,
+      28.912
+    ],
+    "contactPoints": [
+      [
+        {
+          "x": 35.5,
+          "y": 120
+        },
+        {
+          "x": 93.65,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 35.5,
+          "y": 120
+        },
+        {
+          "x": 93.0,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 38.5,
+          "y": 120
+        },
+        {
+          "x": 91.0,
+          "y": 120
+        }
+      ],
+      [
+        {
+          "x": 36.5,
+          "y": 120
+        },
+        {
+          "x": 93.5,
+          "y": 120
+        }
+      ]
+    ],
+    "provenance": "Selected complete immutable authored key poses; canonical sprite-gen component extraction and nearest fit. Preparation holds the first complete pose; recovery reverses complete approved poses. No synthetic body parts, source painting, invented sockets or active frame reversal.",
+    "activeIndices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "phaseIndices": {
+      "anticipation": [
+        0
+      ],
+      "active": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "recovery": [
+        3,
+        2,
+        1,
+        0
+      ]
+    }
+  },
+  "w": {
+    "mirrorOf": "e"
+  },
+  "sw": {
+    "mirrorOf": "se"
+  },
+  "nw": {
+    "mirrorOf": "ne"
+  }
+};
+  atlas.animations.sweep = atlas.directionalAnimations.sweep.e;
+})();
+// END APPROVED FULL-BODY SWEEP V5

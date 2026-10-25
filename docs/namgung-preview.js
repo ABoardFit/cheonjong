@@ -19,7 +19,7 @@
       }
     } catch { /* A foreign parent cannot supply this rehearsal's appearance. */ }
   }
-  const renderer = new window.CheonGameRenderer(document.createElement('canvas'), { width: W, height: H, appearanceProvider });
+  const renderer = new window.CheonGameRenderer(document.createElement('canvas'), { width: W, height: H, motionPreview: true, appearanceProvider });
   const directions = ['e', 'se', 's', 'sw', 'w', 'nw', 'n', 'ne'], names = ['오른쪽', '오른쪽 아래', '아래', '왼쪽 아래', '왼쪽', '왼쪽 위', '위', '오른쪽 위'];
   const arrows = [['nw', '↖'], ['n', '↑'], ['ne', '↗'], ['w', '←'], ['e', '→'], ['sw', '↙'], ['s', '↓'], ['se', '↘']];
   const ranks = { sword: 1, formation: 1, dash: 1 }, minds = { sword: 0, formation: 0, dash: 0 }, keys = new Set(), cache = new Map();

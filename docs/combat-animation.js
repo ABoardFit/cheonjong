@@ -37,6 +37,10 @@
   }
   function actionFrame(animation, timeline) {
     const n = Math.max(1, animation.frames || 4);
+    const indices = animation.phaseIndices?.[timeline.phase] || (timeline.phase === 'active' ? animation.activeIndices : null);
+    if (indices?.length) {
+      return indices[Math.min(indices.length - 1, Math.floor(timeline.phaseProgress * indices.length))];
+    }
     const phaseFrames = animation.phaseFrames || (n >= 8 ? { anticipation: [0, 2], active: [3, 4], recovery: [5, n - 1] } : { anticipation: [0, 1], active: [1, 2], recovery: [3, 3] });
     const range = phaseFrames[timeline.phase] || [0, 0];
     const first = clamp(range[0], 0, n - 1), last = clamp(range[1], first, n - 1);
@@ -157,7 +161,9 @@
     const hasCalibratedTip = Boolean(tipLocal && Number.isFinite(tipLocal.x) && Number.isFinite(tipLocal.y));
     const tip = tipLocal ? { x: p.x + (tipLocal.x - foot.x) * scale * face, y: p.y + (tipLocal.y - foot.y) * scale } : { x: bladeOrigin.x + Math.cos(bladeAngle) * bladeLength, y: bladeOrigin.y + Math.sin(bladeAngle) * bladeLength };
     const frameRect = animation.frameLayout?.[frame] || atlas.frameLayout?.[action]?.[frame] || { x: frame * fw, y: (animation.row || 0) * fh, w: fw, h: fh };
-    const pose = { action, frame, row: animation.row || 0, face, hand, bladeOrigin, tip, sourceBladeAngle, bladeAngle, bladeLength,
+    const activeRange = animation.phaseFrames?.active || (frames >= 8 ? [3, 4] : [1, 2]);
+    const activeFrameCount = animation.turnCycle ? frames : animation.phaseIndices?.active?.length || animation.activeIndices?.length || activeRange[1] - activeRange[0] + 1;
+    const pose = { action, frame, row: animation.row || 0, face, hand, bladeOrigin, tip, sourceBladeAngle, bladeAngle, bladeLength, activeFrameCount,
       imageSrc: animation.src || atlas.src, direction, sourceDirection: animation.frameDirections?.[frame] || directional?.sourceDirection || 'e',
       bakedWeapon: Boolean(animation.bakedWeapon), fullBodyGait: Boolean(animation.fullBodyGait), contactSmear: Boolean(animation.contactSmearFrames?.includes(frame)), cycleStartFrame, cycleFrameOffset,
       socketOccluded, hasCalibratedTip, tipVisible: animation.bakedWeapon ? hasCalibratedTip : !socketOccluded,

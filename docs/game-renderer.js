@@ -125,7 +125,7 @@
       this.width = 960;
       this.height = 600;
       this.dpr = Math.min(2, finite(window.devicePixelRatio, 1));
-      this.appearanceProvider = options.appearanceProvider;
+      this.appearanceProvider = options.motionPreview ? null : options.appearanceProvider;
       this.hero = new Image();
       this.heroAtlas = new Image();
       this.heroImages = new Map();
@@ -918,8 +918,8 @@
       const animation = window.CheonCombatAnimation;
       if (!animation?.poseFor) return null;
       const strike = finite(pose.timeline?.strike, .18), elapsed = progress * strike;
-      const windup = finite(pose.timeline?.windup, .20), lookback = strike * (pose.action === 'spin' ? .38 : .72);
-      const startAt = Math.max(pose.action === 'spin' ? 0 : -windup * .8, elapsed - lookback);
+      const lookback = strike * 2 / Math.max(2, finite(pose.activeFrameCount, 5));
+      const startAt = Math.max(0, elapsed - lookback);
       const angle = finite(pose.attack?.angle, Math.atan2(tip.y - origin.y, tip.x - origin.x));
       const samples = [];
       // Resampling the same public action timer makes paused frames, backward
@@ -927,14 +927,13 @@
       for (let i = 0; i <= 16; i++) {
         const age = startAt + (elapsed - startAt) * i / 16;
         const state = { player: { x: body.x, y: body.y, faceX: Math.cos(angle), faceY: Math.sin(angle) },
-          skills: { plum_sword: pose.rank }, effects: [], attackTimer: age < 0 ? -age : Infinity };
-        const attack = age < 0 ? null : { ...pose.attack, angle, rank: pose.rank, age, duration: strike + .5 };
+          skills: { plum_sword: pose.rank }, effects: [], attackTimer: Infinity };
+        const attack = { ...pose.attack, angle, rank: pose.rank, age, duration: strike + .5 };
         const sampled = i === 16 ? pose : animation.poseFor(state, age, { action: pose.action, attack });
         if (!sampled.tipVisible || sampled.socketOccluded || sampled.bakedWeapon && !sampled.hasCalibratedTip) continue;
-        const point = { x: sampled.tip.x - body.x, y: sampled.tip.y - body.y,
-          ox: sampled.bladeOrigin.x - body.x, oy: sampled.bladeOrigin.y - body.y };
-        point.length = Math.hypot(point.x - point.ox, point.y - point.oy);
-        point.angle = Math.atan2(point.y - point.oy, point.x - point.ox);
+        const point = { x: sampled.tip.x - body.x, y: sampled.tip.y - body.y, age };
+        point.radius = Math.hypot(point.x, point.y + 38);
+        point.angle = Math.atan2(point.y + 38, point.x);
         if (samples.length) {
           const previous = samples.at(-1).angle;
           point.angle = previous + Math.atan2(Math.sin(point.angle - previous), Math.cos(point.angle - previous));
@@ -943,22 +942,19 @@
       }
       if (samples.length < 2) return null;
       const spine = [];
-      // Interpolate the measured trajectory, not a shape extruded along the
-      // current straight sword. Both ends remain their real source positions.
+      // Interpolate only the previous two active drawings. Linear angular/radial
+      // interpolation cannot overshoot a source arc into hearts or backward loops.
       for (let i = 0; i < samples.length - 1; i++) {
-        const a = samples[Math.max(0, i - 1)], b = samples[i], c = samples[i + 1], d = samples[Math.min(samples.length - 1, i + 2)];
-        for (let j = 0; j < 6; j++) {
-          const t = j / 6, t2 = t * t, t3 = t2 * t;
-          const value = key => .5 * (2 * b[key] + (-a[key] + c[key]) * t +
-            (2 * a[key] - 5 * b[key] + 4 * c[key] - d[key]) * t2 + (-a[key] + 3 * b[key] - 3 * c[key] + d[key]) * t3);
-          // A rotating blade follows an arc around its measured moving grip;
-          // Cartesian tip interpolation would cut straight across this arc.
-          const angle = value('angle'), length = Math.max(1, value('length'));
-          spine.push({ x: value('ox') + Math.cos(angle) * length, y: value('oy') + Math.sin(angle) * length });
+        const from = samples[i], to = samples[i + 1];
+        for (let j = 0; j < 8; j++) {
+          const t = j / 8, angle = from.angle + (to.angle - from.angle) * t;
+          const radius = from.radius + (to.radius - from.radius) * t;
+          spine.push({ x: Math.cos(angle) * radius, y: -38 + Math.sin(angle) * radius });
         }
       }
       spine.push(samples.at(-1));
-      const breadth = Math.min(18, length * .34) * strength;
+      const pathLength = spine.slice(1).reduce((sum, point, i) => sum + Math.hypot(point.x - spine[i].x, point.y - spine[i].y), 0);
+      const breadth = Math.min(16, length * .34, pathLength * .32) * strength;
       const strip = (left, right) => {
         const front = [], back = [];
         for (let i = 0; i < spine.length; i++) {
@@ -973,7 +969,7 @@
         return front.concat(back.reverse());
       };
       return { origin: { x: origin.x - body.x, y: origin.y - body.y },
-        tip: { x: tip.x - body.x, y: tip.y - body.y }, length, breadth, strength, samples, spine,
+        tip: { x: tip.x - body.x, y: tip.y - body.y }, length, breadth, pathLength, strength, samples, spine,
         layers: [{ color: '#899faf', points: strip(.38, .62) },
           { color: '#d0d9de', points: strip(.30, .45) },
           { color: '#fff2d9', points: strip(.22, .19) }] };

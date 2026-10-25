@@ -123,7 +123,11 @@
         nextDash = run.time + core.getStats(run).dashCooldown + .15;
       }
       const previousX = run.player.x, previousY = run.player.y;
+      // Inert targets can overlap the grounded hitbox in the south view.
+      // Ignore that rehearsal-only contact without enabling the dash's glow.
+      run.player.hurtUntil = Infinity;
       core.step(run, dt, input);
+      run.player.hurtUntil = 0;
       if (category === 'sword' && walking) {
         // Keep the selected rehearsal direction while the whole-body gait moves.
         const dx = run.player.x - previousX, dy = run.player.y - previousY;
@@ -195,7 +199,7 @@
       namgungFrame = child;
       host.append(child);
     } else {
-      renderer = new window.CheonGameRenderer(canvas, { appearanceProvider: () => window.CheonHub?.getCurrentAppearance?.() || window.CheonHub?.appearance || window.CheonAppearance?.resolve({}) });
+      renderer = new window.CheonGameRenderer(canvas, { motionPreview: true, appearanceProvider: () => window.CheonHub?.getCurrentAppearance?.() || window.CheonHub?.appearance || window.CheonAppearance?.resolve({}) });
       resize();
       if (!run) reset();
       else updateControls();
