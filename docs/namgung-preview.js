@@ -4,18 +4,19 @@
   const embedded = typeof URLSearchParams !== 'undefined' && new URLSearchParams(window.location?.search || '').get('embedded') === '1';
   if (embedded) document.documentElement.classList.add('embedded-dojo');
   const $ = id => document.getElementById(id), data = window.CHEON_NAMGUNG, FX = window.CheonNamgungEffects;
-  const canvas = $('namgung-canvas'), world = document.createElement('canvas'), W = 1100, H = 680;
+  const canvas = $('namgung-canvas'), world = document.createElement('canvas');
+  let W = 1100, H = 680;
   world.width = W / 2; world.height = H / 2;
   const ctx = world.getContext('2d'), display = canvas.getContext('2d');
   const renderer = new window.CheonGameRenderer(document.createElement('canvas'), { width: W, height: H });
   const directions = ['e', 'se', 's', 'sw', 'w', 'nw', 'n', 'ne'], names = ['오른쪽', '오른쪽 아래', '아래', '왼쪽 아래', '왼쪽', '왼쪽 위', '위', '오른쪽 위'];
-  const arrows = [['nw', '↖'], ['n', '↑'], ['ne', '↗'], ['w', '←'], [null, '劍'], ['e', '→'], ['sw', '↙'], ['s', '↓'], ['se', '↘']];
+  const arrows = [['nw', '↖'], ['n', '↑'], ['ne', '↗'], ['w', '←'], ['e', '→'], ['sw', '↙'], ['s', '↓'], ['se', '↘']];
   const ranks = { sword: 1, formation: 1, dash: 1 }, minds = { sword: 0, formation: 0, dash: 0 }, keys = new Set(), cache = new Map();
   let sampleHeld = 0, resourceEvent = null;
   let path = 'sword', direction = 'e', walking = false, paused = false, detail = 'active', time = 0, last = 0, manual = { x: 0, y: 0 }, giant = null, giantMetrics = null, raf;
   const level = (list, rank) => Array.isArray(list) ? list.find(item => Number(item.rank) === rank) : list[rank];
-  for (let rank = 1; rank <= 7; rank++) { const b = document.createElement('button'); b.textContent = rank === 7 ? '絶' : rank; b.dataset.rank = rank; b.setAttribute('aria-label', rank === 7 ? '절세무공 7단계' : `${rank}단계`); b.onclick = () => { ranks[path] = rank; detail = 'active'; reset(); }; $('rank-buttons').append(b); }
-  for (let rank = 0; rank <= 6; rank++) { const b = document.createElement('button'); b.textContent = rank; b.dataset.mind = rank; b.setAttribute('aria-label', rank === 0 ? '심법 없음' : `심법 ${rank}성`); b.onclick = () => { minds[path] = rank; detail = 'mind'; reset(); }; $('mind-buttons').append(b); }
+  for (let rank = 1; rank <= 7; rank++) { const b = document.createElement('button'); b.textContent = rank; if (rank === 7) { const label = document.createElement('small'); label.textContent = '절세'; b.append(label); } b.dataset.rank = rank; b.setAttribute('aria-label', rank === 7 ? '절세무공 7단계' : `${rank}단계`); b.onclick = () => { ranks[path] = rank; detail = 'active'; reset(); }; $('rank-buttons').append(b); }
+  for (let rank = 0; rank <= 6; rank++) { const b = document.createElement('button'); b.textContent = rank; if (rank === 0) { const label = document.createElement('small'); label.textContent = '없음'; b.append(label); } b.dataset.mind = rank; b.setAttribute('aria-label', rank === 0 ? '심법 없음' : `심법 ${rank}성`); b.onclick = () => { minds[path] = rank; detail = 'mind'; reset(); }; $('mind-buttons').append(b); }
   for (const [dir, arrow] of arrows) { const b = document.createElement(dir ? 'button' : 'span'); b.textContent = arrow; if (dir) { b.dataset.direction = dir; b.setAttribute('aria-label', names[directions.indexOf(dir)]); b.onclick = () => { direction = dir; reset(); }; } else b.className = 'pad-center'; $('direction-pad').append(b); }
   document.querySelectorAll('[data-path]').forEach(b => b.onclick = () => { path = b.dataset.path; detail = 'active'; reset(); });
   function capacity() { const m = minds[path]; return 1 + (path === 'formation' ? Number(m >= 1) + Number(m >= 3) : path === 'sword' ? Number(m >= 2) : 0); }
@@ -25,6 +26,7 @@
   $('mind-focus').onclick = () => { detail = detail === 'mind' ? 'active' : 'mind'; update(); };
   $('pause').onclick = () => { paused = !paused; update(); };
   $('replay').onclick = () => reset();
+  $('step').onclick = () => { paused = true; time = Math.min(7, time + 1 / 60); update(); render(); };
   $('timeline').oninput = e => { time = Number(e.target.value); paused = true; cache.clear(); update(); render(); };
   const mechanics = { sword: ['짧은 검로 · 국소 찌르기', '몸 중심 · 75° 부채꼴', '확장된 75° 검격', '부채꼴 + 직선 천뢰 한 줄기', '한 줄기에서 세 갈래로', '부채꼴 없이 · 가장 먼 적을 가르는 일검', '검격 → 같은 검로에 지연 낙뢰'], formation: ['가까운 한 적에게 검 부착', '서로 다른 적 · 최대 세 자루', '세 자루의 강화된 위력', '서로 다른 적 · 최대 여덟 자루', '부착 검 + 주변 피해', '부착 대신 반경 끝까지 왕복', '원거리 적 우선 · 거대한 하나의 낙검'], dash: ['도주기 이동 · 무적 없음', '늘어난 경공 거리', '경공 경로에 감전 지대 3초', '감전 지대 + 가까운 적 단일 일격', '더 넓은 감전 지대', '강화된 단일 일격', '경공과 천뢰의 일격 · 무적 없음'] };
   function update() {
@@ -33,7 +35,7 @@
     $('stage-mind').textContent = m ? `${mind.name} ${m}성` : '심법 없음 · 순수 초식';
     $('rank-caption').textContent = rank === 7 ? '절세무공' : `${rank}단계`;
     $('mind-name').textContent = mind.name; $('direction-caption').textContent = names[directions.indexOf(direction)];
-    $('detail-type').textContent = detail === 'mind' ? `內功 · ${m}성` : rank === 7 ? '絶世 · 절세무공' : rank === 6 ? '化境 · 화경' : '初式 · 창작 초식';
+    $('detail-type').textContent = detail === 'mind' ? `內功 · ${m}성` : rank === 7 ? '絶世 · 절세무공' : rank === 6 ? '化境 · 6단계' : `初式 · ${rank}단계`;
     $('form-name').textContent = detail === 'mind' ? `${mind.name} ${m === 0 ? '미습득' : m + '성'}` : stage.title;
     $('form-description').textContent = detail === 'mind' ? ml.description : stage.description;
     $('mind-focus').setAttribute('aria-pressed', String(detail === 'mind'));
@@ -45,8 +47,8 @@
     document.querySelectorAll('[data-rank]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.rank) === rank)));
     document.querySelectorAll('[data-mind]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.mind) === m)));
     document.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.direction === direction)));
-    $('walking').textContent = walking ? '걷기 켜짐' : '걷기 꺼짐'; $('walking').setAttribute('aria-pressed', String(walking));
-    $('pause').innerHTML = paused ? '▶ <span>계속 재생</span>' : 'Ⅱ <span>일시정지</span>'; $('pause').setAttribute('aria-label', paused ? '계속 재생' : '일시정지');
+    $('walking').textContent = walking ? '걷기 끄기' : '걷기 켜기'; $('walking').setAttribute('aria-pressed', String(walking));
+    $('pause').textContent = paused ? '계속 재생' : '일시정지'; $('pause').setAttribute('aria-pressed', String(paused)); $('pause').setAttribute('aria-label', paused ? '계속 재생' : '일시정지');
   }
   function reset() { time = 0; cache.clear(); resourceEvent = null; sampleHeld = path === 'sword' && minds[path] >= 1 ? 1 : 0; manual = { x: 0, y: 0 }; update(); render(); }
   function heroAt(t) {
@@ -54,11 +56,11 @@
     const dx = walking ? Math.sin(t * 1.55) * 37 : 0, dy = walking ? Math.cos(t * 1.55) * 17 - 17 : 0;
     let dash = 0;
     if (path === 'dash') { const age = t - .75; dash = age < 0 ? 0 : age < .24 ? age / .24 * 180 : 180; }
-    return { x: 405 + dx + manual.x + Math.cos(a) * dash, y: 390 + dy + manual.y + Math.sin(a) * dash, faceX: Math.cos(a), faceY: Math.sin(a), dashRemaining: path === 'dash' && t > .75 && t < .99 ? .99 - t : 0 };
+    return { x: W / 2 + dx + manual.x + Math.cos(a) * dash, y: H / 2 + dy + manual.y + Math.sin(a) * dash, faceX: Math.cos(a), faceY: Math.sin(a), dashRemaining: path === 'dash' && t > .75 && t < .99 ? .99 - t : 0 };
   }
   function targets() {
     const a = directions.indexOf(direction) * Math.PI / 4;
-    return Array.from({ length: 10 }, (_, i) => { const theta = a + (i === 0 ? 0 : i / 9 * Math.PI * 2), radius = i === 0 ? 92 : 144 + i % 3 * 50; return { id: i + 1, x: 405 + Math.cos(theta) * radius, y: 352 + Math.sin(theta) * radius * .84, ranged: i === 3 || i === 7 }; });
+    return Array.from({ length: 10 }, (_, i) => { const theta = a + (i === 0 ? 0 : i / 9 * Math.PI * 2), radius = i === 0 ? 92 : 144 + i % 3 * 50; return { id: i + 1, x: W / 2 + Math.cos(theta) * radius, y: H / 2 - 38 + Math.sin(theta) * radius * .84, ranged: i === 3 || i === 7 }; });
   }
   function casts(t, enemies) {
     const interval = path === 'sword' ? 1 : 5, result = [], a = directions.indexOf(direction) * Math.PI / 4;
@@ -76,15 +78,20 @@
     return result;
   }
   function background(t) {
-    ctx.fillStyle = '#192f33'; ctx.fillRect(0, 0, W, H);
-    const cols = ['#20383b', '#1e3539', '#243c3e', '#172d32'];
-    for (let i = 0; i < 850; i++) { const x = Math.floor(FX.hash(i, 1) * W / 4) * 4, y = Math.floor(FX.hash(i, 2) * H / 4) * 4; ctx.fillStyle = cols[i % 4]; ctx.fillRect(x, y, i % 7 === 0 ? 12 : 4, 2); }
-    ctx.strokeStyle = '#30484a'; ctx.lineWidth = 2;
-    for (let y = 100; y < H; y += 94) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-    for (let row = 0; row < 7; row++) for (let col = 0; col < 10; col++) { const x = col * 160 + row % 2 * 80; ctx.beginPath(); ctx.moveTo(x, row * 94 + 6); ctx.lineTo(x, row * 94 + 94); ctx.stroke(); }
-    // Sparse dry grass is fixed to the ground; it never follows the actor or camera.
-    for (let i = 0; i < 26; i++) { const x = FX.hash(i, 5) * W, y = FX.hash(i, 8) * H; ctx.fillStyle = '#395353'; ctx.fillRect(Math.round(x / 2) * 2, Math.round(y / 2) * 2, 2, 7); ctx.fillRect(Math.round(x / 2) * 2 - 3, Math.round(y / 2) * 2 - 3, 2, 6); }
+    // Share Hwasan's actual ground art at the same two-screen-pixel native density.
+    renderer.ctx = ctx; renderer.width = W; renderer.height = H;
+    renderer.ox = W / 2; renderer.oy = H / 2; renderer.time = t;
+    renderer.drawGround();
+    ctx.save(); ctx.translate(renderer.ox, renderer.oy); renderer.drawLandmarks(false); ctx.restore();
     ctx.globalAlpha = 1;
+  }
+  function resize() {
+    W = Math.max(1, Math.round(window.innerWidth || 1100));
+    H = Math.max(1, Math.round(window.innerHeight || 680));
+    const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    world.width = Math.ceil(W / 2); world.height = Math.ceil(H / 2);
+    cache.clear(); render();
   }
   function drawGiant(c, x, y, angle, height, alpha) {
     if (!giant || !giantMetrics) return;
@@ -160,15 +167,17 @@
     for (const a of actors) a.hero ? drawHero(hero, time, instances) : drawTarget(a.target, time, instances);
     for (const cast of instances) FX.draw(ctx, cast, time, { targets: visible ? enemies : [], layer: 'front', giant: giant ? drawGiant : null });
     if (path === 'dash' && ranks[path] >= 4 && minds[path] >= 6 && time > .96 && time < 3.9 && sampleHeld === 0 && visible) {
-      const end = { x: 405 + Math.cos(directions.indexOf(direction) * Math.PI / 4) * 180, y: 352 + Math.sin(directions.indexOf(direction) * Math.PI / 4) * 180 };
+      const end = { x: W / 2 + Math.cos(directions.indexOf(direction) * Math.PI / 4) * 180, y: H / 2 - 38 + Math.sin(directions.indexOf(direction) * Math.PI / 4) * 180 };
       const target = enemies.slice().sort((a, b) => Math.hypot(a.x - end.x, a.y - end.y) - Math.hypot(b.x - end.x, b.y - end.y))[0];
       FX.jian(ctx, target.x, target.y + 45 + Math.sin(time * 4) * 3, -.8, 45, .95);
     }
+    ctx.save(); ctx.translate(renderer.ox, renderer.oy); renderer.drawLandmarks(true); ctx.restore();
+    renderer.time = time; renderer.drawAtmosphere();
     ctx.globalAlpha = 1; display.imageSmoothingEnabled = false; display.clearRect(0, 0, canvas.width, canvas.height); display.drawImage(world, 0, 0, canvas.width, canvas.height);
-    $('timeline').value = time; $('time-readout').textContent = `${time.toFixed(2)} / 7.00`;
+    $('timeline').value = time; $('time-readout').textContent = `${time.toFixed(2)}초`;
   }
   function tick(stamp) { const dt = Math.min(.05, (stamp - (last || stamp)) / 1000); last = stamp; if (!paused && !document.hidden) { time += dt; if (time > 7) { time %= 7; cache.clear(); manual = { x: 0, y: 0 }; } const x = Number(keys.has('d')) - Number(keys.has('a')), y = Number(keys.has('s')) - Number(keys.has('w')); if (x || y) { const l = Math.hypot(x, y); manual.x = Math.max(-220, Math.min(330, manual.x + x / l * dt * 100)); manual.y = Math.max(-210, Math.min(170, manual.y + y / l * dt * 100)); direction = directions[(Math.round(Math.atan2(y, x) / (Math.PI / 4)) + 8) % 8]; } } render(); raf = requestAnimationFrame(tick); }
-  window.addEventListener('keydown', e => { if (e.code === 'Escape' && embedded) { e.preventDefault(); e.stopImmediatePropagation(); window.parent.postMessage({ type: 'cheon-namgung-close' }, window.location.origin); return; } if (e.target.matches('input,button,a,select,textarea')) return; const key = e.key.toLowerCase(); if ('wasd'.includes(key) && key.length === 1) { keys.add(key); e.preventDefault(); } if (e.code === 'Space') { e.preventDefault(); reset(); } if (key === 'p') { paused = !paused; update(); } });
+  window.addEventListener('keydown', e => { if (e.code === 'Escape' && embedded) { e.preventDefault(); e.stopImmediatePropagation(); window.parent.postMessage({ type: 'cheon-namgung-close' }, window.location.origin); return; } if (e.target.matches('input,a,select,textarea,summary')) return; const key = e.key.toLowerCase(); if ('wasd'.includes(key) && key.length === 1) { keys.add(key); e.preventDefault(); } if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) { paused = !paused; update(); } } if (/^[1-7]$/.test(key)) { e.preventDefault(); ranks[path] = Number(key); detail = 'active'; reset(); } if (key === 'p' && !e.repeat) { paused = !paused; update(); } });
   window.addEventListener('keyup', e => keys.delete(e.key.toLowerCase())); window.addEventListener('blur', () => keys.clear());
   window.CHEON_NAMGUNG_PREVIEW = Object.freeze({
     set(options = {}) { if (options.path && data.paths[options.path]) path = options.path; if (options.rank != null) ranks[path] = Math.max(1, Math.min(7, options.rank)); if (options.mind != null) minds[path] = Math.max(0, Math.min(6, options.mind)); if (directions.includes(options.direction)) direction = options.direction; if (options.walking != null) walking = Boolean(options.walking); if (options.paused != null) paused = Boolean(options.paused); if (options.targets != null) $('targets').checked = Boolean(options.targets); if (options.detail) detail = options.detail; sampleHeld = path === 'sword' && minds[path] >= 1 ? 1 : 0; resourceEvent = null; time = options.time != null ? Math.max(0, Math.min(7, options.time)) : 0; cache.clear(); update(); render(); },
@@ -176,7 +185,8 @@
     getState() { return { path, rank: ranks[path], mind: minds[path], direction, walking, paused, time, giantLoaded: Boolean(giant), giantMetrics, sampleHeld, width: W, height: H, hero: heroAt(time), casts: casts(time, targets()) }; },
     render, drawGiant, canvas
   });
-  update(); raf = requestAnimationFrame(tick); window.addEventListener('pagehide', () => { cancelAnimationFrame(raf); renderer.destroy(); });
+  window.addEventListener('resize', resize);
+  update(); resize(); raf = requestAnimationFrame(tick); window.addEventListener('pagehide', () => { cancelAnimationFrame(raf); renderer.destroy(); });
 })();
 
 

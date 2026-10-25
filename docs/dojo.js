@@ -158,7 +158,10 @@
   function setSchool(next) {
     if (!['hwasan', 'namgung'].includes(next)) return;
     if (!active) { open(); if (next === 'hwasan') return; }
-    if (next === school && (school === 'namgung' ? namgungFrame : renderer)) return;
+    if (next === school && (school === 'namgung' ? namgungFrame : renderer)) {
+      if (school === 'namgung') namgungFrame.contentWindow?.focus?.();
+      return;
+    }
     stopHwasan();
     removeNamgung();
     school = next;
@@ -175,7 +178,10 @@
       child.setAttribute('allow', 'fullscreen');
       child.onload = () => {
         if (child !== namgungFrame) return;
-        try { $('dojo-namgung-error').hidden = Boolean(child.contentWindow?.CHEON_NAMGUNG_PREVIEW); }
+        try {
+          $('dojo-namgung-error').hidden = Boolean(child.contentWindow?.CHEON_NAMGUNG_PREVIEW);
+          if ($('dojo-namgung-error').hidden) child.contentWindow?.focus?.();
+        }
         catch { $('dojo-namgung-error').hidden = false; }
       };
       child.onerror = () => { if (child === namgungFrame) $('dojo-namgung-error').hidden = false; };
