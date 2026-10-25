@@ -27,7 +27,8 @@
     path: ['이동 속도 +2%'], bridge: ['공력 +2%'], minor: ['체력 +3%'], entry: ['공력 +3%'],
     gate: ['치명타 확률 +2%'], heart: ['피해 +8%'],
   };
-  const RADIUS = { origin: 0, minor: 9, entry: 15, skill: 19, fusion: 17, notable: 27, locked: 15 };
+  // 해금(skill)은 크게, 기본 패시브(minor)는 작아도 한자 한 글자는 읽히게.
+  const RADIUS = { origin: 0, minor: 12, entry: 15, skill: 23, fusion: 18, notable: 27, locked: 15 };
   const radiusOf = n => (n.kind === 'origin' ? PORTRAIT_W / 2 : RADIUS[n.kind] || 12);
   const pointsFor = realmIndex => 3 + realmIndex * 3;
   const rad = degrees => degrees * Math.PI / 180;
@@ -82,7 +83,8 @@
       desc: hwasan ? '화산 무학의 정점. 세 절세신공을 잇는 자리입니다.' : '임시 뼈대 · 오의 설계 예정' });
     ring.filter(id => nodes.get(id).kind === 'fusion').forEach(id => link(id, heart));
     const far = polar(ringRadius + 78, facing);
-    model.labels.push({ x: center.x + far.x, y: center.y + far.y + 10, text: faction.name, size: 34, kind: 'faction' });
+    model.labels.push({ x: center.x + far.x, y: center.y + far.y + 10, text: faction.name, size: 34, kind: 'faction',
+      anchor: heart, faction: faction.id, ox: far.x, oy: far.y + 10 });
     return entry;
   }
   function shift(id, by) { const n = nodes.get(id); n.x += by.x; n.y += by.y; }
@@ -344,6 +346,7 @@
 
   const nodeViews = new Map();
   let edgeViews = [];
+  let labelViews = [];
   // 모양을 처음부터 다시 그린다(노드·연결이 늘거나 줄었을 때).
   function rebuild() {
     relink();
@@ -356,9 +359,11 @@
       edgeLayer.append(path);
       return { a, b, path };
     });
-    for (const label of model.labels) {
-      labelLayer.append(el('text', { x: label.x, y: label.y + (label.dy || 0), class: `tree-label is-${label.kind}`, 'font-size': label.size, 'text-anchor': 'middle' }, label.text));
-    }
+    labelViews = model.labels.map(label => {
+      const text = el('text', { x: label.x, y: label.y + (label.dy || 0), class: `tree-label is-${label.kind}`, 'font-size': label.size, 'text-anchor': 'middle' }, label.text);
+      labelLayer.append(text);
+      return { label, text };
+    });
     for (const n of nodes.values()) {
       if (n.kind === 'origin') continue;
       const r = radiusOf(n);
@@ -392,6 +397,18 @@
         name.setAttribute('y', ly);
         name.setAttribute('text-anchor', anchor);
       }
+    }
+    // 세력 이름은 그 세력의 중심(오의)을 따라간다. 중심이 지워졌으면 남은 세력 노드들 위쪽에, 하나도 없으면 숨긴다.
+    for (const { label, text } of labelViews) {
+      if (!label.anchor) continue;
+      const heart = nodes.get(label.anchor);
+      const members = heart ? [heart] : [...nodes.values()].filter(n => n.faction === label.faction);
+      text.style.display = members.length ? '' : 'none';
+      if (!members.length) continue;
+      const x = heart ? heart.x + label.ox : members.reduce((sum, n) => sum + n.x, 0) / members.length;
+      const y = heart ? heart.y + label.oy : Math.min(...members.map(n => n.y)) - 60;
+      text.setAttribute('x', Math.round(x));
+      text.setAttribute('y', Math.round(y));
     }
     // 짧은 줄부터 그려 두고, 긴 줄이 그 사이를 피해 휘게 한다.
     const placed = [];
