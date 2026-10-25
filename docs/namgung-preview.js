@@ -15,7 +15,7 @@
   let sampleHeld = 0, resourceEvent = null;
   let motionPose = null, motionTime = -1, walkFrameOffset = 0;
   let path = 'sword', direction = 'e', walking = false, paused = false, detail = 'active', time = 0, last = 0, manual = { x: 0, y: 0 }, giant = null, giantMetrics = null, raf;
-  let giantPixels = null, giantThresholds = null, giantEroded = null, giantErodedPixels = null, giantErodedProgress = -1, giantFragments = [];
+  let giantPixels = null, giantThresholds = null, giantEroded = null, giantErodedPixels = null, giantErodedProgress = -1, giantFragments = [], giantVisibleFragments = [], giantMaterialKey = '';
   const level = (list, rank) => Array.isArray(list) ? list.find(item => Number(item.rank) === rank) : list[rank];
   for (let rank = 1; rank <= 7; rank++) { const b = document.createElement('button'); b.textContent = rank; if (rank === 7) { const label = document.createElement('small'); label.textContent = '절세'; b.append(label); } b.dataset.rank = rank; b.setAttribute('aria-label', rank === 7 ? '절세무공 7단계' : `${rank}단계`); b.onclick = () => { ranks[path] = rank; detail = 'active'; reset(); }; $('rank-buttons').append(b); }
   for (let rank = 0; rank <= 6; rank++) { const b = document.createElement('button'); b.textContent = rank; if (rank === 0) { const label = document.createElement('small'); label.textContent = '없음'; b.append(label); } b.dataset.mind = rank; b.setAttribute('aria-label', rank === 0 ? '심법 없음' : `심법 ${rank}성`); b.onclick = () => { minds[path] = rank; detail = 'mind'; reset(); }; $('mind-buttons').append(b); }
@@ -30,7 +30,7 @@
   $('replay').onclick = () => reset();
   $('step').onclick = () => { paused = true; time = Math.min(7, time + 1 / 60); update(); render(); };
   $('timeline').oninput = e => { time = Number(e.target.value); paused = true; cache.clear(); update(); render(); };
-  const mechanics = { sword: ['검 자체의 근접 찌르기 · 붓 검기 없음', '몸 중심 · 75° 부채꼴', '확장된 75° 검격', '부채꼴 + 직선 천뢰 한 줄기', '한 줄기에서 세 갈래로', '부채꼴 없이 · 가장 먼 적을 가르는 일검', '거대한 검격 → 검로를 따라 순차 낙뢰'], formation: ['작은 검 한 자루가 적 몸을 반복해서 찌르기', '서로 다른 적 · 최대 세 자루', '세 자루의 강화된 위력', '서로 다른 적 · 최대 여덟 자루', '적 뒤에서 앞으로 통과하는 베기 · 주변 피해', '적 수와 무관하게 고정 여덟 방향으로 왕복', '원거리 적 우선 · 손잡이를 남기고 정지 · 파란 구슬로 소멸'], dash: ['도주기 이동 · 무적 없음', '늘어난 경공 거리', '경공 경로에 감전 지대 3초', '감전 지대 + 가까운 적에게 큰 낙뢰', '더 넓은 감전 지대', '강화된 단일 일격', '경공과 하늘에서 떨어지는 큰 천뢰 · 무적 없음'] };
+  const mechanics = { sword: ['검 자체의 근접 찌르기 · 붓 검기 없음', '몸 중심 · 75° 부채꼴', '확장된 75° 검격', '부채꼴 + 직선 천뢰 한 줄기', '한 줄기에서 세 갈래로', '부채꼴 없이 · 가장 먼 적을 가르는 일검', '적 밀집 무리의 중심을 가르는 검격 → 불꽃 낙뢰'], formation: ['작은 검 한 자루가 적 몸을 반복해서 찌르기', '서로 다른 적 · 최대 세 자루', '세 자루의 강화된 위력', '서로 다른 적 · 최대 여덟 자루', '적 뒤에서 앞으로 통과하는 베기 · 주변 피해', '적 수와 무관하게 고정 여덟 방향으로 왕복', '원거리 적 우선 · 코등이는 지면 위 · 보이는 검날부터 구슬로 소멸'], dash: ['도주기 이동 · 무적 없음', '늘어난 경공 거리', '경공 경로에 감전 지대 3초', '감전 지대 + 가까운 적에게 큰 낙뢰', '더 넓은 감전 지대', '강화된 단일 일격', '경공과 하늘에서 떨어지는 큰 천뢰 · 무적 없음'] };
   function update() {
     const p = data.paths[path], rank = ranks[path], mind = data.minds[p.partnerId], m = minds[path], stage = level(p.levels, rank), ml = level(mind.levels, m);
     $('stage-title').textContent = p.name; $('stage-rank').textContent = `${rank === 7 ? '絶世' : rank === 6 ? '化境' : ['一', '二', '三', '四', '五'][rank - 1]} · ${stage.title}`;
@@ -73,7 +73,9 @@
         const h = heroAt(at - .01), x = h.x, y = h.y - 38;
         const far = enemies.filter(e => Math.hypot(e.x - x, e.y - y) <= 335).sort((a, b) => Math.hypot(b.x - x, b.y - y) - Math.hypot(a.x - x, a.y - y))[0];
         const aim = path === 'sword' && ranks[path] >= 6 && far ? Math.atan2(far.y - y, far.x - x) : a;
-        const cast = { path, rank: ranks[path], x, y, angle: aim, at, seed: n + 41, length: far ? Math.hypot(far.x - x, far.y - y) + 38 : 330 }; cast.targetIds = FX.allocateTargets(cast, enemies); cache.set(key, cast);
+        const cast = { path, rank: ranks[path], x, y, angle: aim, at, seed: n + 41, length: far ? Math.hypot(far.x - x, far.y - y) + 38 : 330, giantStopDepth: giantMetrics?.stopDepth };
+        if (path === 'sword' && ranks[path] === 7) cast.cluster = FX.swordCluster(cast, enemies);
+        cast.targetIds = FX.allocateTargets(cast, enemies); cache.set(key, cast);
       }
       result.push(cache.get(key));
     }
@@ -100,6 +102,20 @@
     const dissolve = FX.clamp(options.dissolve || 0), scale = height / FX.giantSwordGeometry.height;
     let material = giant;
     if (dissolve > 0) {
+      const materialKey = `${x}:${y}:${angle}:${scale}:${options.groundY}`;
+      if (giantMaterialKey !== materialKey) {
+        const ca = Math.cos(angle), sa = Math.sin(angle);
+        const worldYAt = (xx, yy) => y + sa * (xx + .5 - giantMetrics.tip.x) * 2 * scale + ca * (yy + .5 - giantMetrics.tip.y) * 2 * scale;
+        let topY = Infinity, bottomY = -Infinity;
+        for (let yy = 0; yy < giant.height; yy++) for (let xx = 0; xx < giant.width; xx++)
+          if (giantPixels.data[(yy * giant.width + xx) * 4 + 3]) { const wy = worldYAt(xx, yy); topY = Math.min(topY, wy); bottomY = Math.max(bottomY, wy); }
+        const groundY = Number.isFinite(options.groundY) ? options.groundY : bottomY + 1;
+        for (let yy = 0; yy < giant.height; yy++) for (let xx = 0; xx < giant.width; xx++)
+          giantThresholds[yy * giant.width + xx] = FX.giantVisibleErosionThreshold(worldYAt(xx, yy), groundY, topY, FX.hash(Math.floor(xx / 3), Math.floor(yy / 3), 73) - .5);
+        giantVisibleFragments = giantFragments.filter(f => Number.isFinite(giantThresholds[Math.floor(f.y) * giant.width + Math.floor(f.x)]))
+          .map(f => ({ ...f, threshold: giantThresholds[Math.floor(f.y) * giant.width + Math.floor(f.x)] }));
+        giantMaterialKey = materialKey; giantErodedProgress = -1;
+      }
       if (giantErodedProgress !== dissolve) {
         const rgba = giantErodedPixels.data;
         rgba.set(giantPixels.data);
@@ -107,7 +123,7 @@
           const i = (yy * giant.width + xx) * 4;
           if (!rgba[i + 3]) continue;
           const threshold = giantThresholds[yy * giant.width + xx];
-          if (dissolve >= threshold) rgba[i + 3] = 0;
+          if (!Number.isFinite(threshold) || dissolve >= threshold) rgba[i + 3] = 0;
           else if (threshold - dissolve < .012) { rgba[i] = 167; rgba[i + 1] = 207; rgba[i + 2] = 223; }
         }
         giantEroded.getContext('2d').putImageData(giantErodedPixels, 0, 0); giantErodedProgress = dissolve;
@@ -115,15 +131,15 @@
       material = giantEroded;
     }
     c.save();
-    // One fixed ground plane hides buried steel. The descent stops at the guard;
-    // only the advancing tip-to-hilt erosion removes the remaining material.
+    // The angled guard stays above one fixed ground plane. Only material that
+    // the player can actually see supplies the upward erosion and blue orbs.
     if (Number.isFinite(options.groundY)) { c.beginPath(); c.rect(-100000, -100000, 200000, 100000 + options.groundY); c.clip(); }
     c.translate(Math.round(x / 2) * 2, Math.round(y / 2) * 2); c.rotate(angle); c.globalAlpha = alpha; c.imageSmoothingEnabled = false;
     c.scale(scale, scale);
     c.drawImage(material, -giantMetrics.tip.x * 2, -giantMetrics.tip.y * 2, giant.width * 2, giant.height * 2); c.restore();
     if (dissolve <= 0) return;
     const ca = Math.cos(angle), sa = Math.sin(angle), duration = options.dissolveDuration || 1.35;
-    for (const fragment of giantFragments) {
+    for (const fragment of giantVisibleFragments) {
       const age = (dissolve - fragment.threshold) * duration;
       // At dissolve=1 the final fragment still needs its own lifetime; the
       // unbounded clock is passed separately by the cast after erosion finishes.
@@ -131,9 +147,8 @@
       if (tailAge < 0 || tailAge > .62) continue;
       const localX = (fragment.x - giantMetrics.tip.x) * 2 * scale, localY = (fragment.y - giantMetrics.tip.y) * 2 * scale;
       const materialX = x + ca * localX - sa * localY, materialY = y + sa * localX + ca * localY;
-      const originY = Number.isFinite(options.groundY) ? Math.min(options.groundY - fragment.radius - 2, materialY) : materialY;
       const px = Math.round((materialX + fragment.vx * tailAge) / 2) * 2;
-      const py = Math.round((originY - fragment.rise * tailAge - 25 * tailAge * tailAge) / 2) * 2;
+      const py = Math.round((materialY - fragment.rise * tailAge - 25 * tailAge * tailAge) / 2) * 2;
       const radius = fragment.radius, fade = (1 - tailAge / .62) * alpha;
       c.globalAlpha = fade;
       for (let yy = -radius; yy < radius; yy += 2) for (let xx = -radius; xx < radius; xx += 2) {
@@ -179,9 +194,19 @@
       bladeLength: geometry.bladeLength, handleLength: geometry.handleLength, guardLength: geometry.guardLength,
       sourceSections: { handleEnd: y0 + sourceHandle, guardEnd: y0 + sourceGuard },
       nativeWidth: giant.width, nativeHeight: giant.height, tip: { x: tipXs.reduce((a, b) => a + b, 0) / tipXs.length, y: bottom + 1 } };
+    const angle = .24, ca = Math.cos(angle), sa = Math.sin(angle);
+    let guardOffset = -Infinity;
+    for (let yy = 0; yy < giant.height; yy++) for (let xx = 0; xx < giant.width; xx++) {
+      const i = (yy * giant.width + xx) * 4;
+      // Include the gold guard's pointed center, which extends below its source
+      // section into the blade. Blue steel must not push the stop point upward.
+      const guard = yy < nativeHandle + nativeGuard || px.data[i] > px.data[i + 2] * 1.25 && px.data[i + 1] > px.data[i + 2] * 1.15;
+      if (guard && px.data[i + 3]) guardOffset = Math.max(guardOffset, sa * (xx + .5 - giantMetrics.tip.x) * 2 + ca * (yy + .5 - giantMetrics.tip.y) * 2);
+    }
+    giantMetrics.stopDepth = (-18 - guardOffset) / ca;
+    giantMetrics.guardClearance = 18;
     giantPixels = g.getImageData(0, 0, giant.width, giant.height);
     giantThresholds = new Float32Array(giant.width * giant.height);
-    for (let yy = 0; yy < giant.height; yy++) for (let xx = 0; xx < giant.width; xx++) giantThresholds[yy * giant.width + xx] = FX.giantErosionThreshold(xx, yy, giant.width, giant.height);
     giantEroded = document.createElement('canvas'); giantEroded.width = giant.width; giantEroded.height = giant.height;
     giantErodedPixels = giantEroded.getContext('2d').createImageData(giant.width, giant.height);
     giantFragments = [];
@@ -189,8 +214,9 @@
       const sampleX = xx + Math.floor(FX.hash(xx, yy, 89) * 8), sampleY = yy + Math.floor(FX.hash(xx, yy, 90) * 8);
       if (!giantPixels.data[(sampleY * giant.width + sampleX) * 4 + 3]) continue;
       const random = FX.hash(xx, yy, 91);
-      giantFragments.push({ x: sampleX + .5, y: sampleY + .5, threshold: FX.giantErosionThreshold(sampleX, sampleY, giant.width, giant.height), vx: (random - .5) * 66, rise: 35 + FX.hash(xx, yy, 97) * 65, radius: random > .82 ? 6 : 4 });
+      giantFragments.push({ x: sampleX + .5, y: sampleY + .5, vx: (random - .5) * 66, rise: 35 + FX.hash(xx, yy, 97) * 65, radius: random > .82 ? 6 : 4 });
     }
+    cache.clear();
     render();
   };
   image.src = 'assets/namgung/imperial-jian-v2.png';

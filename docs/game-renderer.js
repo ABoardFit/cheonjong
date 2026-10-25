@@ -830,6 +830,9 @@
       } else if (this.lastHeroSourceFrame?.image.complete && this.lastHeroSourceFrame.image.naturalWidth > 0) {
         ({ image, pose: framePose } = this.lastHeroSourceFrame);
       }
+      // The fast drawing broadens the measured steel itself, beneath the authored
+      // body and its narrow bright blade. The grip and full-body PNG stay intact.
+      if (image && framePose === pose) this.drawBladeSmear(framePose);
       ctx.save(); ctx.scale(framePose.face, 1); ctx.imageSmoothingEnabled = false;
       if (image) {
         const crop = framePose.frameRect;
@@ -843,6 +846,65 @@
         this.lastRenderedHeroPose = null;
         ctx.drawImage(this.hero, -37, -76 + pose.bob, 74, 82);
       } else this.drawFigure(0, pose.bob, 'hero', 1.4, Math.sin(this.walkPhase), 1);
+      ctx.restore();
+    }
+
+    bladeSmearGeometry(pose) {
+      if (!pose || !['cleave', 'sweep', 'spin'].includes(pose.action) || pose.phase !== 'active' ||
+        !pose.trailActive || !pose.tipVisible || pose.socketOccluded || pose.bakedWeapon && !pose.hasCalibratedTip) return null;
+      const progress = clamp(pose.strokeProgress), edge = 0.08;
+      if (progress <= edge || progress >= 1 - edge) return null;
+      const strength = Math.min(1, (progress - edge) / .12, (1 - edge - progress) / .12);
+      const origin = pose.bladeOrigin, tip = pose.tip, body = pose.bodyOrigin;
+      if (!origin || !tip || !body) return null;
+      const length = Math.hypot(tip.x - origin.x, tip.y - origin.y);
+      if (length < 9 || !Number.isFinite(length)) return null;
+      const dx = (tip.x - origin.x) / length, dy = (tip.y - origin.y) / length;
+      const turn = pose.face < 0 && pose.action !== 'spin' ? -1 : 1;
+      const start = Math.min(7, length * .20), reach = length * (1 + strength * .14);
+      const breadth = Math.min(27, length * .52) * strength;
+      // A swept, tapered blade surface, rather than an annulus around the actor.
+      // The far end converges to one point; no detached line reaches a target.
+      const strip = (leading, trailing) => {
+        const front = [], back = [];
+        for (let i = 0; i <= 16; i++) {
+          const t = i / 16, distance = start + (reach - start) * t;
+          const width = Math.pow(Math.sin(Math.PI * t), .75) * breadth;
+          const point = offset => ({ x: origin.x - body.x + dx * distance - dy * offset * turn,
+            y: origin.y - body.y + dy * distance + dx * offset * turn });
+          front.push(point(width * leading)); back.push(point(-width * trailing));
+        }
+        return front.concat(back.reverse());
+      };
+      return { origin: { x: origin.x - body.x, y: origin.y - body.y },
+        tip: { x: tip.x - body.x, y: tip.y - body.y }, length, reach, breadth, strength,
+        layers: [{ color: '#899faf', points: strip(.13, 1) },
+          { color: '#c5d1d6', points: strip(.10, .72) },
+          { color: '#f5eed9', points: strip(.07, .26) }] };
+    }
+
+    drawBladeSmear(pose) {
+      const geometry = this.bladeSmearGeometry(pose); if (!geometry) return;
+      const ctx = this.ctx, step = 2;
+      const inside = (x, y, points) => {
+        let hit = false;
+        for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+          const a = points[i], b = points[j];
+          if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) hit = !hit;
+        }
+        return hit;
+      };
+      ctx.save(); ctx.imageSmoothingEnabled = false;
+      for (const layer of geometry.layers) {
+        const minX = Math.floor(Math.min(...layer.points.map(p => p.x)) / step) * step;
+        const maxX = Math.ceil(Math.max(...layer.points.map(p => p.x)) / step) * step;
+        const minY = Math.floor(Math.min(...layer.points.map(p => p.y)) / step) * step;
+        const maxY = Math.ceil(Math.max(...layer.points.map(p => p.y)) / step) * step;
+        ctx.fillStyle = layer.color;
+        for (let y = minY; y < maxY; y += step) for (let x = minX; x < maxX; x += step) {
+          if (inside(x + step / 2, y + step / 2, layer.points)) ctx.fillRect(x, y, step, step);
+        }
+      }
       ctx.restore();
     }
 
@@ -897,8 +959,29 @@
       const span = 75 * Math.PI / 180, reveal = span * clamp(progress);
       // Western views mirror the authored whole-body swing, including its arc order.
       const direction = ((Math.round(angle / (Math.PI / 4)) % 8) + 8) % 8;
-      const start = direction >= 3 && direction <= 5 ? angle + span / 2 - reveal : angle - span / 2;
-      this.drawInkCut(radius, start, reveal, alpha, palette);
+      const mirrored = direction >= 3 && direction <= 5;
+      const start = mirrored ? angle + span / 2 - reveal : angle - span / 2;
+      this.drawInkCut(radius, start, reveal, alpha, palette, { taperStart: 1, taperEnd: 1 });
+      if (reveal > 0) this.drawFanBoundary(radius, mirrored ? start : start + reveal, alpha, palette);
+    }
+
+    drawFanBoundary(radius, angle, alpha, palette = Object.values(INK)) {
+      if (!this.inkCutRasters) this.inkCutRasters = new Map();
+      const color = palette[1] || INK.body, key = `guide:${radius}:${angle.toFixed(5)}:${color}`;
+      let stamp = this.inkCutRasters.get(key);
+      // One native-pixel radial edge makes the swept sector legible without filling it.
+      if (!stamp) {
+        const half = Math.ceil(radius / 2) + 1, width = half * 2 + 1, data = new Uint8ClampedArray(width * width * 4);
+        const value = parseInt(color.slice(1), 16), rgba = [value >> 16, (value >> 8) & 255, value & 255, 255];
+        for (let distance = 0; distance <= radius; distance += 1.5) {
+          const x = Math.round(Math.cos(angle) * distance / 2) + half, y = Math.round(Math.sin(angle) * distance / 2) + half;
+          data.set(rgba, (y * width + x) * 4);
+        }
+        stamp = { canvas: this.rasterCanvas(data, width, width), center: half };
+        this.inkCutRasters.set(key, stamp);
+        while (this.inkCutRasters.size > 64) this.inkCutRasters.delete(this.inkCutRasters.keys().next().value);
+      }
+      this.drawPixelStamp(stamp.canvas, -stamp.center * 2, -stamp.center * 2, alpha * .6);
     }
 
     drawFilledPlumMotif(radius, progress, alpha = 1, options = {}) {
@@ -953,7 +1036,8 @@
     }
 
     drawCircleCut(radius, progress, alpha, color, angle = -Math.PI / 2) {
-      this.drawInkCut(radius, angle, TAU * clamp(progress), alpha);
+      const p = clamp(progress), taper = 1 - clamp((p - .86) / .14);
+      this.drawInkCut(radius, angle, TAU * p, alpha, undefined, { taperStart: taper, taperEnd: taper });
     }
 
     drawDashRipple(radius, progress, alpha = 1) {
@@ -998,9 +1082,10 @@
       }
     }
 
-    inkCutRaster(radius, start, span, colors = Object.values(INK)) {
+    inkCutRaster(radius, start, span, colors = Object.values(INK), options = {}) {
       if (!this.inkCutRasters) this.inkCutRasters = new Map();
-      const key = `${radius}:${start.toFixed(5)}:${span.toFixed(5)}:${colors.join(',')}`; let stamp = this.inkCutRasters.get(key);
+      const taperStart = Math.max(0, finite(options.taperStart)), taperEnd = Math.max(0, finite(options.taperEnd));
+      const key = `${radius}:${start.toFixed(5)}:${span.toFixed(5)}:${colors.join(',')}:${taperStart.toFixed(4)}:${taperEnd.toFixed(4)}`; let stamp = this.inkCutRasters.get(key);
       if (!stamp) {
         const half = Math.ceil(radius / 2) + 1, width = half * 2 + 1, data = new Uint8ClampedArray(width * width * 4);
         const palette = colors.map(hex => { const n = parseInt(hex.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; });
@@ -1008,22 +1093,26 @@
           const xx = (x - half) * 2 + 1, yy = (y - half) * 2 + 1, r = Math.hypot(xx, yy), a = Math.atan2(yy, xx);
           const offset = ((a - start) % TAU + TAU) % TAU;
           if (r > radius || offset > span + 1e-8) continue;
-          const grain = noise(x, y, 107), thickness = 17 + Math.sin(a * 9) * 2 + Math.sin(a * 17) * 1.5;
+          const capSpan = Math.min(span * .48, Math.max(18 / Math.max(1, radius), .12));
+          const cap = Math.min(taperStart ? clamp(offset / Math.max(.00001, capSpan * taperStart)) : 1,
+            taperEnd ? clamp((span - offset) / Math.max(.00001, capSpan * taperEnd)) : 1);
+          const grain = noise(x, y, 107), thickness = (17 + Math.sin(a * 9) * 2 + Math.sin(a * 17) * 1.5) * cap ** .8;
+          if (thickness <= 0) continue;
           const band = (radius - r) / thickness;
           if (band > 1 || (band > 0.83 && grain > 0.68)) continue;
           const color = band < 0.12 ? 0 : band > 0.78 ? 3 : band > 0.24 && band < 0.56 && grain > 0.58 ? 2 : 1;
           const at = (y * width + x) * 4; data.set([...palette[color], 255], at);
         }
-        stamp = { canvas: this.rasterCanvas(data, width, width), data, pixelStep: 2, center: half, radius, start, span, palette };
+        stamp = { canvas: this.rasterCanvas(data, width, width), data, pixelStep: 2, center: half, radius, start, span, palette, taperStart, taperEnd };
         this.inkCutRasters.set(key, stamp);
         while (this.inkCutRasters.size > 64) this.inkCutRasters.delete(this.inkCutRasters.keys().next().value);
       }
       return stamp;
     }
 
-    drawInkCut(radius, start, span, alpha = 1, palette) {
+    drawInkCut(radius, start, span, alpha = 1, palette, options) {
       if (span <= 0 || alpha <= 0) return;
-      const stamp = this.inkCutRaster(radius, start, span, palette);
+      const stamp = this.inkCutRaster(radius, start, span, palette, options);
       this.drawPixelStamp(stamp.canvas, -stamp.center * 2, -stamp.center * 2, alpha);
     }
 
@@ -1070,8 +1159,9 @@
         const stage = Math.max(1, Math.ceil(clamp(progress) * 32)), key = `${radius}:${finite(options.angle, -Math.PI / 2).toFixed(5)}:${stage}`;
         stamp = this.inkBloomRevealRasters.get(key);
         if (!stamp) {
-          const data = new Uint8ClampedArray(source.circleData);
-          for (let at = 0; at < source.angles.length; at++) if (source.angles[at] > stage / 32) data.fill(0, at * 4, at * 4 + 4);
+          const p = stage / 32, taper = 1 - clamp((p - .86) / .14);
+          const ring = this.inkCutRaster(radius, source.angle, TAU * p, undefined, { taperStart: taper, taperEnd: taper });
+          const data = new Uint8ClampedArray(ring.data);
           // Each authored petal appears whole, exactly like R4–6. Only the
           // surrounding ring is traced angularly; no fan slices cut the flower.
           for (let part = 0; part < 5; part++) {
@@ -1094,7 +1184,7 @@
       const key = `${radius.toFixed(3)}:${finite(angle, -Math.PI / 2).toFixed(5)}`;
       if (this.inkBloomUnravelSources.has(key)) return this.inkBloomUnravelSources.get(key);
       const source = this.inkBloomSource(radius, angle); if (!source) return null;
-      const { width, height } = source, releaseRanks = new Uint8Array(width * height), releaseValues = new Float32Array(width * height);
+      const { width, height } = source, phaseCount = 60, releaseRanks = new Uint8Array(width * height), releaseValues = new Float32Array(width * height);
       const occupied = new Uint8Array(width * height), births = [];
       const materialOrders = new Float32Array(width * height), localOrders = new Float32Array(width * height);
       const primary = this.bloomPrimaryGeometry(), scale = source.flowerRadius / primary.extent / 2;
@@ -1125,14 +1215,15 @@
           }
           const local = clamp(value / (weight || 1) + Math.sin(x*.73+y*.91)*.012);
           localOrders[at] = local;
-          materialOrders[at] = clamp(part*.17 + local*.32);
-          releaseRanks[at] = Math.max(1, Math.min(24, Math.ceil((part*.17 + Math.max(0,local-.10)*.32)*24)));
+          materialOrders[at] = (part + local) / 5;
+          releaseRanks[at] = Math.max(part * phaseCount / 5 + 1,
+            Math.min((part + 1) * phaseCount / 5, Math.ceil((part + local) * phaseCount / 5)));
         } else {
-          // A tiny wrapped disturbance breaks both ends of the circular front;
-          // the flower itself never receives a straight angular slice.
-          const order = ((source.angles[at] + Math.sin(x*.43+y*.57)*.012) % 1 + 1) % 1;
+          // Clamp the rough front: wrapping would erase the final seam together
+          // with the beginning, cutting both ends before the clockwise front arrives.
+          const order = clamp(source.angles[at] + Math.sin(x*.43+y*.57)*.008);
           localOrders[at] = order; materialOrders[at] = order;
-          releaseRanks[at] = Math.max(1, Math.min(24, Math.ceil(Math.max(0,order-.035)*24)));
+          releaseRanks[at] = Math.max(1, Math.min(phaseCount, Math.ceil(order * phaseCount)));
         }
       }
       for (let part = 0; part < 6; part++) {
@@ -1151,9 +1242,11 @@
             indices.push(at); low = Math.min(low, materialOrders[at]); high = Math.max(high, materialOrders[at]);
           }
           if (!valid || !indices.length || high - low > 0.15) continue;
-          const releaseFrame = Math.max(1, Math.min(24, Math.ceil((high + (part < 5 ? 0.020 : 0.035)) * 24)));
+          const lastFrame = part < 5 ? (part + 1) * phaseCount / 5 : phaseCount;
+          const firstFrame = part < 5 ? part * phaseCount / 5 + 1 : 1;
+          const releaseFrame = Math.max(firstFrame, Math.min(lastFrame, Math.ceil(high * phaseCount)));
           for (const at of indices) occupied[at] = 1;
-          candidates.push({ origin, sourceOrigin: origin, releaseTime: releaseFrame / 24, releaseFrame, part, kind: part === 5 ? 'circle' : 'flower',
+          candidates.push({ origin, sourceOrigin: origin, releaseTime: releaseFrame / phaseCount, releaseFrame, part, kind: part === 5 ? 'circle' : 'flower',
             sourceIndex: anchor, fineX, fineY, direction, maskRows: leaf.rows, sourceIndices: new Uint32Array(indices) });
         }
         candidates.sort((a, b) => a.releaseFrame - b.releaseFrame || a.sourceIndex - b.sourceIndex);
@@ -1164,8 +1257,8 @@
           births.push(birth);
         }
       }
-      for (let at = 0; at < releaseRanks.length; at++) releaseValues[at] = releaseRanks[at] / 24;
-      const entry = { source, releaseRanks, releaseValues, materialOrders, localOrders, births, budPatches: births, direction: this.bloomDirection(angle), phaseCount: 24 };
+      for (let at = 0; at < releaseRanks.length; at++) releaseValues[at] = releaseRanks[at] / phaseCount;
+      const entry = { source, releaseRanks, releaseValues, materialOrders, localOrders, births, budPatches: births, direction: this.bloomDirection(angle), phaseCount };
       this.inkBloomUnravelSources.set(key, entry);
       while (this.inkBloomUnravelSources.size > 3) this.inkBloomUnravelSources.delete(this.inkBloomUnravelSources.keys().next().value);
       return entry;
@@ -1173,7 +1266,7 @@
 
     inkBloomUnravelRaster(radius, progress, angle = -Math.PI / 2) {
       const plan = this.inkBloomUnravelSource(radius, angle); if (!plan) return null;
-      const stage = Math.max(0, Math.min(24, Math.floor(clamp(progress) * 24 + 1e-8)));
+      const stage = Math.max(0, Math.min(plan.phaseCount, Math.floor(clamp(progress) * plan.phaseCount + 1e-8)));
       if (!stage) return { ...plan, stage, canvas: plan.source.canvas, data: plan.source.data };
       if (!this.inkBloomUnravelRasters) this.inkBloomUnravelRasters = new Map();
       const key = `${radius}:${finite(angle, -Math.PI / 2).toFixed(5)}:${stage}`;

@@ -47,7 +47,7 @@
           level(4, '천뢰관공', '넓은 부채꼴 검격과 끝이 날카로운 번개 한 줄기가 전방을 관통한다. 적의 앞, 캐릭터의 뒤에 검기를 그린다.', { attack: 'fan_lightning', fanSize: 'large', lightningLines: 1, pointedLightning: true }, '天雷貫空'),
           level(5, '삼뢰분천', '넓은 부채꼴 검격과 함께 끝이 날카로운 번개 세 갈래가 각각 직선으로 뻗는다. 한 줄기 번개를 세 줄기로 강화한다.', { attack: 'fan_lightning', fanSize: 'large', lightningLines: 3, pointedLightning: true }, '三雷分天'),
           level(6, '창궁단악', '공격 반경 내 가장 먼 적을 향해 이전보다 세 배 굵고 두 배 긴 검격을 뻗는다. 부채꼴은 사라지며 검격은 적의 앞, 캐릭터의 뒤로 지나간다.', { attack: 'long_slash', target: 'farthest_in_radius', fan: false, widthMultiplier: 3, lengthMultiplier: 2 }, '蒼穹斷岳'),
-          level(7, '뇌제개천', '창궁대연신공 6성과 조합. 가장 먼 적을 향해 거대한 도트 검격을 뻗은 뒤, 그 검로를 따라 하늘에서 굵은 낙뢰가 차례로 내려친다. 심법의 강화 효과를 모두 유지한다.', { attack: 'long_slash_sequential_sky_lightning', target: 'farthest_in_radius', fan: false, lightningCollinear: true, lightningFromSky: true, sequentialStrikes: true, delaySeconds: null }, '雷帝開天')
+          level(7, '뇌제개천', '창궁대연신공 6성과 조합. 주변에서 적이 가장 많이 모인 무리의 중심을 가로지르는 거대한 검격을 그리고, 그 검로를 따라 휘어진 흰 천뢰와 지면의 불꽃이 차례로 내려친다. 심법의 강화 효과를 모두 유지한다.', { attack: 'long_slash_sequential_sky_lightning', target: 'densest_cluster_in_radius', targetRadius: 335, clusterRadius: 120, frozenCluster: true, fan: false, lightningCollinear: true, lightningFromSky: true, sequentialStrikes: true, delaySeconds: null }, '雷帝開天')
         ]
       },
       formation: {
@@ -59,7 +59,7 @@
           level(4, '팔검군림', '강화된 작은 검이 최대 여덟 자루로 증가해 서로 다른 적의 몸을 반복해서 찌른다. 적 수를 초과해 생성하지 않는다.', { attack: 'attached_swords', maxSwords: 8, distinctTargets: true, increasedDamage: true, swordScale: .5 }, '八劍君臨'),
           level(5, '검위진역', '커진 검 최대 여덟 자루가 각 적의 뒤에서 휘둘러져 몸을 통과해 앞으로 나온다. 대상과 주변 적에게 지속 피해를 주며 별도의 파문은 그리지 않는다.', { attack: 'sweeping_swords', maxSwords: 8, distinctTargets: true, increasedDamage: true, areaDamage: true, swordScale: 1, areaRipple: false }, '劍威震域'),
           level(6, '팔검회천', '적 수와 무관하게 검 여덟 자루가 상하좌우와 네 대각선의 고정된 여덟 방향으로 반경 끝까지 날아갔다 돌아온다. 왕복 중 직접 피해와 주변 피해를 준다.', { attack: 'out_return_swords', maxSwords: 8, fixedSwords: 8, distinctTargets: false, fixedDirections: 'cardinal_and_diagonal', increasedDamage: true, areaDamage: true, attached: false, endpoint: 'radius_edge' }, '八劍廻天'),
-          level(7, '제왕천림', '육합공 6성과 조합. 길어진 거대한 검이 원거리 적을 우선 겨냥해 연속해서 지면을 관통하고 손잡이가 드러난 상태에서 멈춘다. 땅에 박힌 검날부터 푸른 구슬로 풀려 사라진다. 주변 피해와 육합공 1~6성은 유지하며 충격 파문과 번개는 그리지 않는다.', { attack: 'giant_meteor_sword', maxSwords: 1, target: 'ranged_priority', increasedDamage: true, areaDamage: true, attached: false, returns: false, sizeReference: 'hwasan_great_flower', bladeLengthMultiplier: 1.5, stopAtExposedHilt: true, dissolution: 'blue_orbs_from_buried_tip', impactRipple: false, impactLightning: false }, '帝王天臨'),
+          level(7, '제왕천림', '육합공 6성과 조합. 길어진 거대한 검이 원거리 적을 우선 겨냥해 연속해서 지면을 관통하고 손잡이가 드러난 상태에서 멈춘다. 코등이는 지면 위에 남기며, 눈에 보이는 검날의 아래쪽부터 푸른 구슬로 풀려 사라진다. 주변 피해와 육합공 1~6성은 유지하며 충격 파문과 번개는 그리지 않는다.', { attack: 'giant_meteor_sword', maxSwords: 1, target: 'ranged_priority', increasedDamage: true, areaDamage: true, attached: false, returns: false, sizeReference: 'hwasan_great_flower', bladeLengthMultiplier: 1.5, stopAtExposedHilt: true, guardAboveGround: true, dissolution: 'blue_orbs_from_visible_cut_edge', impactRipple: false, impactLightning: false }, '帝王天臨'),
         ]
       },
       dash: {
@@ -71,7 +71,7 @@
           level(4, '축지일검', '감전 지대를 유지하며 도주기 사용 시 가까운 적 한 명에게 강력한 단일 직접 피해를 준다.', { groundSeconds: 3, groundEffect: 'increased_damage_taken', singleTargetDirectHit: true, invulnerable: false }, '縮地一劍'),
           level(5, '천뢰진역', '도주 경로의 감전 지대가 넓어진다. 가까운 적 한 명을 공격하는 축지일검도 유지한다.', { groundSeconds: 3, groundEffect: 'increased_damage_taken', wideGround: true, singleTargetDirectHit: true, invulnerable: false }, '天雷震域'),
           level(6, '일섬관뢰', '넓은 감전 지대를 유지하고 단일 대상 공격을 더욱 강화한다.', { groundSeconds: 3, groundEffect: 'increased_damage_taken', wideGround: true, singleTargetDirectHit: true, increasedSingleDamage: true, invulnerable: false }, '一閃貫雷'),
-          level(7, '천뢰무극보', '천뢰기 6성과 조합. 넓은 감전 지대를 남기며 근처 적 한 명에게 여러 갈래가 휘어져 모이는 거대한 천뢰를 내리친다. 흰 중심과 푸른 가장자리의 도트 낙뢰이며 모든 강화와 호신 검기 드랍을 유지한다. 무적은 부여하지 않는다.', { groundSeconds: 3, groundEffect: 'increased_damage_taken', wideGround: true, singleTargetDirectHit: true, increasedSingleDamage: true, singleLightningBurst: true, lightningFromSky: true, lightningShape: 'branching_flame', invulnerable: false }, '天雷無極步')
+          level(7, '천뢰무극보', '천뢰기 6성과 조합. 넓은 감전 지대를 남기며 근처 적 한 명에게 여러 갈래가 휘어져 모이는 거대한 천뢰를 내리친다. 지면에서 흰 불꽃이 터지는 흰 중심·푸른 가장자리의 도트 낙뢰이며 모든 강화와 호신 검기 드랍을 유지한다. 무적은 부여하지 않는다.', { groundSeconds: 3, groundEffect: 'increased_damage_taken', wideGround: true, singleTargetDirectHit: true, increasedSingleDamage: true, singleLightningBurst: true, lightningFromSky: true, lightningShape: 'branching_flame', invulnerable: false }, '天雷無極步')
         ]
       }
     },

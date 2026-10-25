@@ -14,12 +14,16 @@
     const start = direction >= 3 && direction <= 5 ? a + span / 2 - reveal : a - span / 2, end = start + reveal;
     for (let yy = -radius; yy <= radius; yy += 2) for (let xx = -radius; xx <= radius; xx += 2) {
       const r = Math.hypot(xx, yy), angle = delta(Math.atan2(yy, xx) - start);
-      if (r > radius || r < radius * .79 || angle < 0 || angle > end - start) continue;
+      const taper = Math.min(1, angle / .12, (end - start - angle) / .12);
+      if (r > radius || r < radius * (1 - .21 * Math.max(0, taper)) || angle < 0 || angle > end - start) continue;
       const n = hash(xx, yy, seed), outer = r / radius, leading = end - start - angle;
       if (outer < .83 && n < .65 || outer > .94 && n < .28) continue;
       const color = leading < .035 || outer > .91 && n > .45 ? P.white : outer > .78 ? P.light : outer > .64 ? P.body : P.dark;
       cell(ctx, x + xx, y + yy, color, alpha * (outer < .65 ? .22 : .8 + n * .2));
     }
+    // A thin radial leading edge makes the sector readable without filling it.
+    const leadingAngle = direction >= 3 && direction <= 5 ? start : end;
+    if (reveal > 0) for (let r = 0; r < radius; r += 2) cell(ctx, x + Math.cos(leadingAngle) * r, y + Math.sin(leadingAngle) * r, P.body, alpha * .6);
   }
   const lightningWidthAt = (width, progress) => width * Math.min(1, Math.max(0, (1 - progress) / .22));
   function lightning(ctx, x, y, a, length, age, seed, width = 13) {
@@ -91,6 +95,32 @@
         }
       }
     }
+    flameGroundImpact(ctx, x, groundY, age - .08, seed);
+  }
+  function flameImpactBranches(x, groundY, seed = 1) {
+    return Array.from({ length: 9 }, (_, index) => {
+      const side = index % 2 ? -1 : 1, reach = 38 + Math.floor(index / 2) * 19;
+      const height = 40 + hash(index, 18, seed) * 66;
+      return Array.from({ length: 33 }, (_, i) => {
+        const t = i / 32;
+        return { x: x + side * (reach * Math.sin(t * Math.PI / 2) + Math.sin(t * Math.PI * 2) * 12),
+          y: groundY - height * t + Math.sin(t * Math.PI) * 12,
+          width: i === 32 ? 0 : (5 + index % 3 * 2) * (1 - t) ** .7 };
+      });
+    });
+  }
+  function flameGroundImpact(ctx, x, groundY, age, seed = 1) {
+    if (age < 0 || age > .64) return;
+    const reveal = clamp(age / .055), alpha = clamp((.64 - age) / .3);
+    // The white impact root connects the descending tongues to the ground.
+    // Its pointed, rising forks are intentionally not a circle or shock ring.
+    for (let dx = -35; dx <= 35; dx += 2) for (let dy = 0; dy < 9 - Math.abs(dx) / 5; dy += 2)
+      cell(ctx, x + dx, groundY - dy, Math.abs(dx) < 23 ? '#f6fbff' : P.light, alpha);
+    for (const branch of flameImpactBranches(x, groundY, seed)) for (let i = 0; i < branch.length * reveal; i++) {
+      const p = branch[i];
+      for (let q = -Math.floor(p.width); q <= Math.floor(p.width); q += 2)
+        cell(ctx, p.x + q, p.y, Math.abs(q) < p.width * .55 ? '#f6fbff' : Math.abs(q) < p.width * .82 ? '#b7ddec' : P.body, alpha);
+    }
   }
   function ribbon(ctx, x, y, a, length, width, progress, alpha, seed) {
     const reach = length * clamp(progress), ca = Math.cos(a), sa = Math.sin(a);
@@ -120,9 +150,29 @@
     ctx.fillStyle = P.body; ctx.beginPath(); ctx.moveTo(4, 0); ctx.lineTo(68, 0); ctx.lineTo(56, 4); ctx.lineTo(4, 5); ctx.closePath(); ctx.fill();
     ctx.fillStyle = P.light; ctx.fillRect(6, 0, 49, 2); ctx.restore();
   }
-  function castDuration(path, rank) { return path === 'formation' ? rank < 6 ? 4.5 : rank === 6 ? 1.8 : 3.9 : path === 'dash' ? 3.5 : rank === 7 ? 1.65 : .78; }
+  function castDuration(path, rank) { return path === 'formation' ? rank < 6 ? 4.5 : rank === 6 ? 1.8 : 3.9 : path === 'dash' ? 3.5 : rank === 7 ? 1.72 : .78; }
   function swordGeometry(cast) {
     return { radius: cast.rank === 2 ? 122 : 186, length: (cast.length || 330) * 2, width: cast.rank === 7 ? 128 : 96 };
+  }
+  function swordCluster(cast, targets, radius = 335, neighborRadius = 120) {
+    const living = targets.filter(t => (t.hp == null || t.hp > 0) && Math.hypot(t.x - cast.x, t.y - cast.y) <= radius)
+      .sort((a, b) => typeof a.id === 'number' && typeof b.id === 'number' ? a.id - b.id || a.x - b.x || a.y - b.y : String(a.id ?? '').localeCompare(String(b.id ?? '')) || a.x - b.x || a.y - b.y);
+    if (!living.length) return Object.freeze({ x: cast.x + Math.cos(cast.angle) * radius * .55, y: cast.y + Math.sin(cast.angle) * radius * .55, angle: hash(1, 9, cast.seed || 1) * Math.PI, ids: Object.freeze([]) });
+    let chosen = [], distance = Infinity;
+    for (const candidate of living) {
+      const nearby = living.filter(t => Math.hypot(t.x - candidate.x, t.y - candidate.y) <= neighborRadius);
+      const d = Math.hypot(candidate.x - cast.x, candidate.y - cast.y);
+      if (nearby.length > chosen.length || nearby.length === chosen.length && d < distance) { chosen = nearby; distance = d; }
+    }
+    const x = chosen.reduce((n, t) => n + t.x, 0) / chosen.length, y = chosen.reduce((n, t) => n + t.y, 0) / chosen.length;
+    const xx = chosen.reduce((n, t) => n + (t.x - x) ** 2, 0), yy = chosen.reduce((n, t) => n + (t.y - y) ** 2, 0), xy = chosen.reduce((n, t) => n + (t.x - x) * (t.y - y), 0);
+    const angle = xx + yy > 1 ? Math.atan2(2 * xy, xx - yy) / 2 : hash(1, 9, cast.seed || 1) * Math.PI;
+    return Object.freeze({ x, y, angle, ids: Object.freeze(chosen.map(t => t.id)) });
+  }
+  function swordSlashPose(cast) {
+    const geometry = swordGeometry(cast), center = cast.cluster || { x: cast.x, y: cast.y, angle: cast.angle };
+    const angle = center.angle;
+    return { x: center.x - Math.cos(angle) * geometry.length / 2, y: center.y - Math.sin(angle) * geometry.length / 2, angle, ...geometry, center };
   }
   function sword(ctx, cast, age, options) {
     const { x, y, angle: a, rank, seed = 1 } = cast;
@@ -134,10 +184,11 @@
       if (rank === 4) lightning(ctx, x, y, a, 252, age - .16, seed);
       if (rank === 5) for (const offset of [-.34, 0, .34]) lightning(ctx, x, y, a + offset, 274, age - .16, seed + offset * 30);
     } else {
-      (options.ribbon || ribbon)(ctx, x + Math.cos(a) * 12, y + Math.sin(a) * 12, a, geometry.length, geometry.width, clamp(age / .15), clamp((.68 - age) / .3), seed);
+      const slash = rank === 7 ? swordSlashPose(cast) : { x: x + Math.cos(a) * 12, y: y + Math.sin(a) * 12, angle: a, ...geometry };
+      (options.ribbon || ribbon)(ctx, slash.x, slash.y, slash.angle, slash.length, slash.width, clamp(age / .15), clamp((.68 - age) / .3), seed);
       if (rank === 7) for (let i = 0; i < 7; i++) {
-        const p = point(x, y, a, 24 + (geometry.length - 24) * i / 6);
-        skyLightning(ctx, p.x, p.y, age - .28 - i * .10, seed + i, 30, 480);
+        const p = point(slash.x, slash.y, slash.angle, slash.length * (.08 + .84 * i / 6));
+        flameSkyLightning(ctx, p.x, p.y, age - .28 - i * .10, seed + i);
       }
     }
     ctx.globalAlpha = 1;
@@ -170,7 +221,7 @@
   }
   function giantSwordPose(cast, age, target) {
     const contact = .73, angle = .24, groundY = target.y + 33, accelerateUntil = .92, stopAt = 1.48;
-    const depth = giantSwordGeometry.bladeLength;
+    const depth = Number.isFinite(cast.giantStopDepth) ? cast.giantStopDepth : giantSwordGeometry.bladeLength - giantSwordGeometry.bladeWidth * Math.tan(angle) - 18 / Math.cos(angle);
     const acceleration = 2 * depth / (accelerateUntil * stopAt - contact * contact);
     const gap = acceleration * contact * contact / 2, t = Math.min(stopAt, Math.max(0, age));
     const speed = acceleration * accelerateUntil, decelerate = speed / (stopAt - accelerateUntil), after = Math.max(0, t - accelerateUntil);
@@ -183,6 +234,10 @@
   }
   function giantErosionThreshold(x, y, width, height) {
     return clamp((height - y - .5) / height + (hash(Math.floor(x / 3), Math.floor(y / 3), 73) - .5) * .022, .001, 1);
+  }
+  function giantVisibleErosionThreshold(worldY, groundY, topY, noise = 0) {
+    if (worldY > groundY) return Infinity;
+    return clamp((groundY - worldY) / Math.max(1, groundY - topY) + noise * .022, .001, 1);
   }
   function formation(ctx, cast, age, targets, layer, giant) {
     const { rank } = cast;
@@ -245,6 +300,6 @@
     const count = Math.min(8, rank);
     for (let i = 0; i < count; i++) { const a = time * 1.3 + i / count * TAU, front = Math.sin(a) >= 0; if (front !== (layer === 'front')) continue; const x = hero.x + Math.cos(a) * 35, y = hero.y - 29 + Math.sin(a) * 12; jian(ctx, x, y, a + Math.PI / 2, 25, .8); }
   }
-  window.CheonNamgungEffects = Object.freeze({ palette: P, giantSwordGeometry, castDuration, swordGeometry, attachedSwordPose, returningSwordPoses, giantSwordPose, giantErosionThreshold, lightningWidthAt, flameLightningBranches, flameSkyLightning, allocateTargets, fieldCells, draw, drawQi, field, jian, lightning, skyLightning, ring, hash, clamp });
+  window.CheonNamgungEffects = Object.freeze({ palette: P, giantSwordGeometry, castDuration, swordGeometry, swordCluster, swordSlashPose, attachedSwordPose, returningSwordPoses, giantSwordPose, giantErosionThreshold, giantVisibleErosionThreshold, lightningWidthAt, flameLightningBranches, flameImpactBranches, flameGroundImpact, flameSkyLightning, allocateTargets, fieldCells, draw, drawQi, field, jian, lightning, skyLightning, ring, hash, clamp });
 })();
 
