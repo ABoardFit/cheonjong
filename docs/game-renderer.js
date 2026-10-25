@@ -2553,24 +2553,41 @@
       const baseWidth = 17, baseHeight = 61, base = new Uint8ClampedArray(baseWidth * baseHeight * 4);
       const palette = [[72, 40, 82], [148, 67, 117], [233, 198, 220], [255, 240, 221], [211, 158, 154]];
       const pixel = (x, y, tone) => { if (x >= 0 && y >= 0 && x < baseWidth && y < baseHeight) base.set([...palette[tone], 255], (y * baseWidth + x) * 4); };
-      for (let y = 2; y < 14; y++) for (let x = 6; x <= 10; x++) pixel(x, y, x === 6 || x === 10 ? 0 : y % 3 === 0 ? 4 : 1);
-      for (let y = 0; y <= 3; y++) for (let x = 5; x <= 11; x++) if (Math.abs(x - 8) + Math.abs(y - 1) < 5) pixel(x, y, x === 8 ? 3 : 0);
-      for (let y = 13; y <= 16; y++) for (let x = 0; x < 17; x++) {
-        if ((x < 2 || x > 14) && y === 13) continue;
-        pixel(x, y, y === 13 || y === 16 || x === 0 || x === 16 ? 0 : x === 8 ? 3 : 4);
+      // Wrapped grip, a small metal pommel and an oval tsuba wider than the blade.
+      // The silhouette is one complete blade, not a symmetrical double-edge.
+      for (let y = 2; y < 13; y++) for (let x = 6; x <= 10; x++)
+        pixel(x, y, x === 6 || x === 10 ? 0 : (x + y) % 4 === 0 ? 4 : 1);
+      for (let y = 0; y <= 2; y++) for (let x = 6; x <= 10; x++)
+        pixel(x, y, y === 0 || x === 6 || x === 10 ? 0 : x === 8 ? 3 : 4);
+      for (let y = 12; y <= 15; y++) for (let x = 1; x <= 15; x++) {
+        if ((x === 1 || x === 15) && (y === 12 || y === 15)) continue;
+        pixel(x, y, y === 12 || y === 15 || x === 1 || x === 15 ? 0 : x === 7 ? 3 : 4);
       }
-      for (let y = 17; y <= 60; y++) {
-        const half = y < 54 ? 4 : Math.max(0, Math.floor((60 - y) * 0.65));
-        for (let x = 8 - half; x <= 8 + half; x++) pixel(x, y,
-          x === 8 - half || x === 8 + half ? 0 : x === 8 ? 3 : x < 8 ? 2 : (y % 9 === 0 && x === 9 ? 1 : 2));
+      for (let y = 16; y <= 18; y++) for (let x = 5; x <= 11; x++)
+        pixel(x, y, x === 5 ? 0 : x === 11 ? 3 : y === 17 ? 4 : 2);
+      // The dark left spine curves gradually into the right-facing kissaki.
+      // Ivory follows ONLY the right cutting edge, all the way to its real tip.
+      for (let y = 19; y <= 60; y++) {
+        const bend = Math.floor(Math.pow((y - 19) / 41, 2) * 3);
+        const left = y < 54 ? 4 + bend : Math.round(7 + (y - 54) * 1.5);
+        const right = y < 54 ? 12 + bend : Math.min(16, 15 + Math.floor((y - 54) / 3));
+        for (let x = left; x <= right; x++) pixel(x, y,
+          x === right ? 3 : x === left ? 0 : x === left + 1 ? 1 : 2);
       }
       const width = Math.round(baseWidth * scale), height = Math.round(baseHeight * scale), data = new Uint8ClampedArray(width * height * 4);
       for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
         const from = (Math.min(baseHeight - 1, Math.floor(y / scale)) * baseWidth + Math.min(baseWidth - 1, Math.floor(x / scale))) * 4;
         data.set(base.subarray(from, from + 4), (y * width + x) * 4);
       }
+      let tipY = height - 1, tipLeft = -1, tipRight = -1;
+      for (; tipY >= 0; tipY--) {
+        for (let x = 0; x < width; x++) if (data[(tipY * width + x) * 4 + 3]) {
+          if (tipLeft < 0) tipLeft = x; tipRight = x;
+        }
+        if (tipLeft >= 0) break;
+      }
       const entry = { canvas: this.rasterCanvas(data, width, height), data, width, height, pixelStep: 2,
-        tip: { x: (8.5 / baseWidth) * width, y: height - 0.5 }, palette };
+        tip: { x: (tipLeft + tipRight + 1) / 2, y: tipY + 0.5 }, palette };
       this.plumSwordRasters.set(key, entry);
       while (this.plumSwordRasters.size > 16) this.plumSwordRasters.delete(this.plumSwordRasters.keys().next().value);
       return entry;

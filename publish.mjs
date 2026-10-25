@@ -2,8 +2,8 @@
 // Only committed files go out, so work in progress in the game folder is never published.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const source = process.argv[2];
@@ -18,6 +18,9 @@ const excluded = path => path.startsWith('qa-motion') || path.endsWith('.txt');
 
 const commit = git('rev-parse', '--short', 'HEAD').toString().trim();
 const docs = fileURLToPath(new URL('./docs/', import.meta.url));
+if (relative(fileURLToPath(new URL('./', import.meta.url)), docs) !== 'docs') {
+  throw new Error('Publish target must be this repository’s docs/ directory.');
+}
 // docs/layout.json (page layout) and docs/tree.json (무공록 tree) are saved from the edit tools on the site
 // (committed by them); keep them.
 const layoutFile = join(docs, 'layout.json'), treeFile = join(docs, 'tree.json');
@@ -48,11 +51,23 @@ let html = readFileSync(index, 'utf8').replace('</head>', () =>
   '  <script src="ui-editor.js" defer></script>\n  <script src="tree-editor.js" defer></script>\n</head>');
 // GitHub Pages lets browsers keep files for 10 minutes. Each script and stylesheet address carries a hash of
 // its content, so a new deploy is fetched fresh and never mixed with old cached files.
-html = html.replace(/(href|src)="([^":?#]+\.(?:css|js))"/g, (match, attr, file) => {
-  const version = createHash('sha256').update(readFileSync(join(docs, file))).digest('hex').slice(0, 10);
-  return `${attr}="${file}?v=${version}"`;
-});
 writeFileSync(index, html);
+// Version the rehearsal's own dependencies before hashing its lazy iframe URL in index.html.
+const pages = readdirSync(docs).filter(file => file.endsWith('.html'))
+  .sort((a, b) => Number(a === 'index.html') - Number(b === 'index.html'));
+for (const page of pages) {
+  const filename = join(docs, page);
+  const content = readFileSync(filename, 'utf8').replace(
+    /(href|src|data-namgung-src)="([^":?#]+\.(?:css|js|html))(\?[^"#]*)?"/g,
+    (match, attr, file, query = '') => {
+      if (file.endsWith('.html') && attr !== 'data-namgung-src') return match;
+      const version = createHash('sha256').update(readFileSync(join(docs, file))).digest('hex').slice(0, 10);
+      const params = new URLSearchParams(query.slice(1)); params.set('v', version);
+      return `${attr}="${file}?${params}"`;
+    }
+  );
+  writeFileSync(filename, content);
+}
 // Serve the files as they are instead of running them through Jekyll.
 writeFileSync(join(docs, '.nojekyll'), '');
 console.log(`docs/ <- ${count} files from game commit ${commit}`);

@@ -7,26 +7,26 @@
   <title>천종지자 · 화산의 시련</title>
   <link rel="stylesheet" href="styles.css?v=f09a32d6c0">
   <link rel="stylesheet" href="game.css?v=a92ba4d2d0">
-  <link rel="stylesheet" href="dojo.css?v=de0c51b248">
+  <link rel="stylesheet" href="dojo.css?v=827465b0a0">
   <link rel="stylesheet" href="hub.css?v=94e91a11b8">
   <link rel="stylesheet" href="tree.css?v=efed739e6d">
-  <script src="data.js?v=eafceb3a1d" defer></script>
+  <script src="data.js?v=f8ec25dec8" defer></script>
   <script src="game-balance.js?v=a194c61096" defer></script>
   <script src="game-core.js?v=23c2fad3d6" defer></script>
   <script src="assets/hero-atlas.js?v=d5346d76d9" defer></script>
   <script src="combat-animation.js?v=35700f433d" defer></script>
-  <script src="game-renderer.js?v=2aea862b15" defer></script>
-  <script src="effect-preview.js?v=cabed08427" defer></script>
+  <script src="game-renderer.js?v=f20751781c" defer></script>
+  <script src="effect-preview.js?v=843114dbfd" defer></script>
   <script src="app.js?v=fbf1aac6f0" defer></script>
   <script src="game-controller.js?v=0837a6305b" defer></script>
-  <script src="dojo.js?v=410b8706c6" defer></script>
+  <script src="dojo.js?v=c383cd71ce" defer></script>
   <script src="hub.js?v=1c2e29e407" defer></script>
   <script src="tree.js?v=bc0723b0cc" defer></script>
   <script>document.documentElement.classList.add('uie-loading')</script>
-  <link rel="stylesheet" href="ui-editor.css?v=bd3054a5f9">
-  <link rel="stylesheet" href="tree-editor.css?v=e993c3cf93">
-  <script src="ui-editor.js?v=5f35d08b23" defer></script>
-  <script src="tree-editor.js?v=07d2095923" defer></script>
+  <link rel="stylesheet" href="ui-editor.css?v=25ac5377b8">
+  <link rel="stylesheet" href="tree-editor.css?v=95ad166233">
+  <script src="ui-editor.js?v=23669ef5ea" defer></script>
+  <script src="tree-editor.js?v=a99cb8bef2" defer></script>
 </head>
 <body>
   <div class="paper-grain" aria-hidden="true"></div>
@@ -121,13 +121,15 @@
       <div id="battle-modal" class="battle-modal" hidden><section id="battle-dialog" class="battle-dialog" role="dialog" aria-modal="true" aria-labelledby="battle-dialog-title"></section></div>
       <div id="battle-announcer" class="battle-sr-only" role="status" aria-live="polite"></div>
     </section>
-    <section id="dojo-screen" aria-labelledby="dojo-title" hidden>
+    <section id="dojo-screen" aria-labelledby="dojo-title" data-school="hwasan" data-namgung-src="namgung.html?embedded=1&v=b81860de26" hidden>
       <canvas id="dojo-canvas" aria-label="선택한 단계의 캐릭터 동작과 화산 무공을 반복 재생하는 연무장"></canvas>
       <header class="dojo-header">
         <button id="dojo-back" type="button">← 메인으로</button>
-        <div><p>演武場 · 華山</p><h1 id="dojo-title">한 자루에서, 만리의 향으로</h1><small>연출 비교 · 실제 전투와 별도</small></div>
+        <div><p id="dojo-school-caption">演武場 · 華山</p><h1 id="dojo-title">동작 비교</h1><small>연출 비교 · 실제 전투와 별도</small></div>
         <button id="dojo-pause" type="button" aria-pressed="false">일시정지</button>
       </header>
+      <nav class="dojo-school-tabs" aria-label="연무 문파 선택"><button type="button" data-dojo-school="hwasan" aria-pressed="true">화산</button><button type="button" data-dojo-school="namgung" aria-pressed="false">남궁</button></nav>
+      <div id="dojo-namgung-host" class="dojo-namgung-host" hidden><p id="dojo-namgung-error" class="dojo-namgung-error" role="status" hidden>남궁 연무를 불러오지 못했습니다. <a href="namgung.html">남궁 연무 직접 열기 ↗</a></p></div>
       <aside class="dojo-note"><span id="dojo-rank-tag">初 · 1단계</span><h2 id="dojo-form-name">매화노방</h2><p id="dojo-description"></p><span id="dojo-live" class="battle-sr-only" role="status" aria-live="polite"></span></aside>
       <footer class="dojo-controls">
         <div class="dojo-categories" role="group" aria-label="무공 갈래">

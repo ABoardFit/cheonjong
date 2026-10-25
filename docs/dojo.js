@@ -7,11 +7,12 @@
   const $ = id => document.getElementById(id);
   const paths = {
     sword: { active: 'plum_sword', partner: 'zixia', title: '매화만리향', summary: '손끝에서 이어지는 검로. 화경의 개화와 절세신공의 한 번에 압축된 매화 베기를 비교하세요.' },
-    rain: { active: 'plum_rain', partner: 'liuhe', title: '매향침골', summary: '가까운 서로 다른 적에게 최대 수량만큼 낙검합니다. 절세신공은 표적마다 검 또는 꽃잎 하나를 무작위로 내리며, 검은 남아 있는 원거리 적을 먼저 노립니다.' },
+    rain: { active: 'plum_rain', partner: 'liuhe', title: '매향침골', summary: '가까운 서로 다른 적에게 최대 수량만큼 외날 도를 내립니다. 절세신공은 표적마다 도 또는 꽃잎 하나를 무작위로 내리며, 도는 남아 있는 원거리 적을 먼저 노립니다.' },
     dash: { active: 'dark_fragrance', partner: 'five_elements', title: '매인설한', summary: '암향표와 오행매화보는 같은 도주기를 강화합니다. 한 번 이동하고 같은 착지 지점에서 하나의 먹빛 파문을 펼칩니다. 절세신공은 꽃잎을 모두 소모해 0.3초 무적을 얻습니다.' }
   };
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let renderer, run, active = false, paused = false, walking = false;
+  let school = 'hwasan', namgungFrame = null;
   let category = 'sword', rank = 1, frame = 0, lastFrame = 0, nextDash = .65;
   const partnerRanks = { sword: 0, rain: 0, dash: 0 };
   let detailSource = 'active';
@@ -20,7 +21,7 @@
   let direction = 'e';
 
   function resize() {
-    if (!renderer || !active) return;
+    if (!renderer || !active || school !== 'hwasan') return;
     renderer.resize(screen.clientWidth, screen.clientHeight);
     if (run) { run.width = screen.clientWidth; run.height = screen.clientHeight; }
   }
@@ -127,7 +128,7 @@
   }
 
   function animate(now) {
-    if (!active) return;
+    if (!active || school !== 'hwasan' || !renderer) return;
     const dt = Math.min(.04, Math.max(0, (now - lastFrame) / 1000));
     lastFrame = now;
     if (!paused && !document.hidden) advance(dt);
@@ -136,7 +137,63 @@
     frame = requestAnimationFrame(animate);
   }
 
+  function stopHwasan() {
+    cancelAnimationFrame(frame);
+    frame = 0;
+    renderer?.destroy();
+    renderer = null;
+  }
+
+  function removeNamgung() {
+    if (namgungFrame) {
+      namgungFrame.onload = null;
+      namgungFrame.onerror = null;
+      namgungFrame.remove();
+      namgungFrame = null;
+    }
+    $('dojo-namgung-host').hidden = true;
+    $('dojo-namgung-error').hidden = true;
+  }
+
+  function setSchool(next) {
+    if (!['hwasan', 'namgung'].includes(next)) return;
+    if (!active) { open(); if (next === 'hwasan') return; }
+    if (next === school && (school === 'namgung' ? namgungFrame : renderer)) return;
+    stopHwasan();
+    removeNamgung();
+    school = next;
+    screen.dataset.school = school;
+    $('dojo-school-caption').textContent = school === 'namgung' ? '演武場 · 南宮' : '演武場 · 華山';
+    $('dojo-pause').hidden = school === 'namgung';
+    screen.querySelectorAll('[data-dojo-school]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.dojoSchool === school)));
+    if (school === 'namgung') {
+      const host = $('dojo-namgung-host');
+      host.hidden = false;
+      const child = document.createElement('iframe');
+      child.className = 'dojo-namgung-frame';
+      child.title = '남궁세가 동작 비교 · 초식과 심법 단계 선택';
+      child.setAttribute('allow', 'fullscreen');
+      child.onload = () => {
+        if (child !== namgungFrame) return;
+        try { $('dojo-namgung-error').hidden = Boolean(child.contentWindow?.CHEON_NAMGUNG_PREVIEW); }
+        catch { $('dojo-namgung-error').hidden = false; }
+      };
+      child.onerror = () => { if (child === namgungFrame) $('dojo-namgung-error').hidden = false; };
+      child.src = screen.dataset.namgungSrc;
+      namgungFrame = child;
+      host.append(child);
+    } else {
+      renderer = new window.CheonGameRenderer(canvas);
+      resize();
+      if (!run) reset();
+      else updateControls();
+      lastFrame = performance.now();
+      frame = requestAnimationFrame(animate);
+    }
+  }
+
   function open() {
+    if (active) return;
     window.MartialPreview?.destroy();
     $('title-screen').hidden = true;
     $('martial-screen').hidden = true;
@@ -144,18 +201,16 @@
     document.body.classList.add('in-dojo');
     active = true;
     paused = false;
-    renderer = new window.CheonGameRenderer(canvas);
-    resize();
-    reset();
-    frame = requestAnimationFrame(animate);
+    school = 'hwasan';
+    run = null;
+    setSchool('hwasan');
     $('dojo-back').focus();
   }
 
   function close() {
     active = false;
-    cancelAnimationFrame(frame);
-    renderer?.destroy();
-    renderer = null;
+    stopHwasan();
+    removeNamgung();
     run = null;
     screen.hidden = true;
     document.body.classList.remove('in-dojo');
@@ -175,6 +230,9 @@
     updateControls();
   });
   screen.addEventListener('click', event => {
+    const schoolButton = event.target.closest('[data-dojo-school]');
+    if (schoolButton) { setSchool(schoolButton.dataset.dojoSchool); return; }
+    if (school !== 'hwasan') return;
     const pathButton = event.target.closest('[data-dojo-category]');
     const rankButton = event.target.closest('[data-dojo-rank]');
     const partnerButton = event.target.closest('[data-dojo-partner]');
@@ -188,8 +246,16 @@
   window.addEventListener('keydown', event => {
     if (!active || event.ctrlKey || event.metaKey || event.altKey) return;
     if (event.code === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); close(); }
+    else if (school !== 'hwasan') return;
     else if (/^[1-7]$/.test(event.key)) { event.preventDefault(); rank = Number(event.key); detailSource = 'active'; reset(); }
     else if (event.code === 'Space') { event.preventDefault(); event.stopImmediatePropagation(); if (!event.repeat) { paused = !paused; updateControls(); } }
   }, true);
-  document.addEventListener('visibilitychange', () => { if (active && document.hidden) { paused = true; updateControls(); } });
+  document.addEventListener('visibilitychange', () => { if (active && school === 'hwasan' && document.hidden) { paused = true; updateControls(); } });
+  window.addEventListener('message', event => {
+    if (!active || school !== 'namgung' || !namgungFrame || event.origin !== window.location.origin || event.source !== namgungFrame.contentWindow) return;
+    if (event.data?.type === 'cheon-namgung-close') close();
+  });
+  window.CheonDojo = Object.freeze({ open, close, setSchool,
+    getState: () => ({ active, school, paused, walking, category, rank, partnerRanks: { ...partnerRanks }, time: run?.time ?? null, hwasanAnimating: Boolean(frame), namgungMounted: Boolean(namgungFrame) })
+  });
 })();
