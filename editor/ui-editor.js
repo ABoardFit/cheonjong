@@ -37,7 +37,8 @@
     ['#title-screen .title-bottom', '하단 줄', '영역', { container: true }],
   ];
   // Other screens: these elements become parts automatically.
-  const AUTO = 'button, h1, h2, h3, header, footer, aside, nav, img, canvas, section, p, kbd, [id]';
+  // Decorations marked aria-hidden (rings, seals, glyphs) are included so ones lying under a picture still get a tag.
+  const AUTO = 'button, h1, h2, h3, header, footer, aside, nav, img, svg, canvas, section, p, kbd, [id], [aria-hidden="true"]';
   const AUTO_LIMIT = 150;
   const ADD_KIND = { button: '버튼', text: '글', box: '영역' };
 
@@ -158,8 +159,9 @@
   function autoName(el) {
     const label = el.getAttribute('aria-label') || el.getAttribute('title') || el.getAttribute('alt') || '';
     const text = (label || el.textContent || '').replace(/\s+/g, ' ').trim();
-    const kind = { BUTTON: '버튼', H1: '제목', H2: '제목', H3: '제목', IMG: '그림', CANVAS: '화면', P: '글', KBD: '키' }[el.tagName] || '영역';
-    const name = text ? text.slice(0, 16) + (text.length > 16 ? '…' : '') : `${kind}${el.id ? ` #${el.id}` : ''}`;
+    const kind = { BUTTON: '버튼', H1: '제목', H2: '제목', H3: '제목', IMG: '그림', svg: '그림', CANVAS: '화면', P: '글', KBD: '키' }[el.tagName] || '영역';
+    const hint = el.id ? `#${el.id}` : typeof el.className === 'string' ? el.className.split(/\s+/).find(name => name && !name.startsWith('uie-')) : el.getAttribute('class');
+    const name = text ? text.slice(0, 16) + (text.length > 16 ? '…' : '') : `${kind}${hint ? ` ${hint}` : ''}`;
     return { name, kind };
   }
   const visibleBox = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
@@ -168,7 +170,9 @@
     if (items.some(item => item.el === props.el)) return null;
     const item = { ...props };
     item.el.dataset.uie = item.key;
-    if (!item.dynamic && !item.auto && (item.added || item.el.textContent.trim())) {
+    // Automatic parts get a wording field only when they are plain text (no inner elements).
+    const plainText = item.auto && !item.el.children.length && item.el.textContent.trim();
+    if (!item.dynamic && (plainText || (!item.auto && (item.added || item.el.textContent.trim())))) {
       item.slot = textSlot(item.el);
       if (item.slot && !originals.has(item.el)) originals.set(item.el, item.slot.get());
     }
@@ -713,11 +717,47 @@
     startMove(event);
   }
 
+  // The exact element pressed, when the part list does not have it yet: decorations and plain boxes
+  // (labels, rings, legends …) are taken as they are pressed. Inside a registered button or text the
+  // whole part is meant; inside an area, background or graphic the pressed element itself.
+  function pressedElement(target) {
+    const active = activeScreen();
+    // A shape inside a drawing is taken as the whole drawing (its outermost <svg>).
+    let el = target;
+    while (el && el.ownerSVGElement) el = el.ownerSVGElement;
+    if (!el || !active || el === active || !active.contains(el) || el.closest('.uie-added')) return null;
+    const holder = itemFrom(el);
+    if (holder && holder.el !== el && !holder.fixed && !holder.container) return null;
+    if (holder && holder.el === el) return null;
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && hasOwnLook(el) ? el : null;
+  }
+  // Invisible layout wrappers count as background, so dragging over empty space still draws a selection box.
+  function hasOwnLook(el) {
+    if (/^(IMG|SVG|svg|CANVAS|VIDEO|BUTTON|INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) return true;
+    if ([...el.childNodes].some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim())) return true;
+    const cs = getComputedStyle(el), clear = color => /^(transparent|rgba\(0, 0, 0, 0\))$/.test(color);
+    return !clear(cs.backgroundColor) || cs.backgroundImage !== 'none' || cs.boxShadow !== 'none'
+      || ['Top', 'Right', 'Bottom', 'Left'].some(side => parseFloat(cs[`border${side}Width`]) > 0 && !clear(cs[`border${side}Color`]));
+  }
+  function adopt(el) {
+    const key = pathOf(el);
+    const known = items.find(item => item.key === key || item.el === el);
+    if (known) return known;
+    const { name, kind } = autoName(el);
+    const root = activeScreen();
+    const item = register({ key, el, defaultName: name, kind: `${SCREEN_NAMES[root.id]} · ${kind}`, selector: key, screen: root.id, auto: true });
+    markContainers();
+    apply(item);
+    return item;
+  }
+
   document.addEventListener('pointerdown', event => {
     if (!editing || event.button !== 0) return;
     const active = activeScreen();
     if (!active || !active.contains(event.target)) return;
-    const item = itemFrom(event.target);
+    const pressed = pressedElement(event.target);
+    const item = pressed ? adopt(pressed) : itemFrom(event.target);
     if (!item) return;
     event.preventDefault();
     event.stopPropagation();
@@ -747,11 +787,12 @@
 
   window.addEventListener('pointermove', event => {
     if (editing && !drag) {
-      const item = itemFrom(event.target);
-      if (item !== hovered) {
-        hovered?.el.classList.remove('uie-hover');
-        hovered = item;
-        hovered?.el.classList.add('uie-hover');
+      // Outline what a press here would pick (an element not yet in the list included).
+      const el = pressedElement(event.target) || itemFrom(event.target)?.el || null;
+      if (el !== hovered) {
+        hovered?.classList.remove('uie-hover');
+        hovered = el;
+        hovered?.classList.add('uie-hover');
       }
     }
     if (!drag) return;
