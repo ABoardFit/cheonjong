@@ -8,7 +8,18 @@
   let W = 1100, H = 680;
   world.width = W / 2; world.height = H / 2;
   const ctx = world.getContext('2d'), display = canvas.getContext('2d');
-  const renderer = new window.CheonGameRenderer(document.createElement('canvas'), { width: W, height: H });
+  let appearanceProvider;
+  if (embedded) {
+    try {
+      if (window.parent !== window && window.parent.location.origin === window.location.origin && window.parent.CheonHub) {
+        appearanceProvider = () => {
+          try { return window.parent.CheonHub?.getCurrentAppearance?.() || window.parent.CheonHub?.appearance; }
+          catch { return null; }
+        };
+      }
+    } catch { /* A foreign parent cannot supply this rehearsal's appearance. */ }
+  }
+  const renderer = new window.CheonGameRenderer(document.createElement('canvas'), { width: W, height: H, appearanceProvider });
   const directions = ['e', 'se', 's', 'sw', 'w', 'nw', 'n', 'ne'], names = ['오른쪽', '오른쪽 아래', '아래', '왼쪽 아래', '왼쪽', '왼쪽 위', '위', '오른쪽 위'];
   const arrows = [['nw', '↖'], ['n', '↑'], ['ne', '↗'], ['w', '←'], ['e', '→'], ['sw', '↙'], ['s', '↓'], ['se', '↘']];
   const ranks = { sword: 1, formation: 1, dash: 1 }, minds = { sword: 0, formation: 0, dash: 0 }, keys = new Set(), cache = new Map();
@@ -254,11 +265,15 @@
       ({ state, pose } = actorPose(hero, t, instances));
     }
     renderer.ctx = ctx; renderer.state = state; renderer.time = t; renderer.reduced = false;
+    if (renderer.appearanceProvider) {
+      renderer.frameMoving = walking || keys.size > 0 || hero.dashRemaining > 0;
+      renderer.walkPhase = t * 8;
+    }
     ctx.save(); ctx.translate(hero.x, hero.y); ctx.fillStyle = '#102529'; ctx.beginPath(); ctx.ellipse(0, 4, 21, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     FX.drawQi(ctx, hero, t, sampleHeld, 'back');
     ctx.save(); ctx.translate(hero.x, hero.y); renderer.drawHeroFrame(pose); ctx.restore();
     motionPose = renderer.lastRenderedHeroPose || pose; motionTime = t;
-    if (!pose.bakedWeapon && renderer.heroFrameReady(pose)) renderer.drawHeldBlade(pose);
+    if (!renderer.appearanceProvider && !pose.bakedWeapon && renderer.heroFrameReady(pose)) renderer.drawHeldBlade(pose);
     FX.drawQi(ctx, hero, t, sampleHeld, 'front');
   }
   function drawTarget(target, t, instances) {

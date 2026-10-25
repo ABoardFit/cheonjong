@@ -10,11 +10,16 @@
   if (!screen || !document.querySelector('.hub-center')) return;
 
   const CATEGORIES = [['righteous', '정파'], ['heterodox', '사파'], ['outer', '세외']];
-  // 주세력에 따라 가운데 문양과 도장이 바뀐다. 지금은 화산만 있다.
-  // 화산 문양은 검법 4·5·6단계에 피는 채워진 매화(렌더러 flatPlumRaster)를 그대로 그린다.
-  const SCHOOLS = {
-    hwasan: { name: '화산', emblem: 'plum-bloom', seal: '華山\n梅花' },
+  // 투자 수와 선택 별호로 결정한 외형에 문양·도장을 맞춘다. 백의는 무소속이다.
+  const SEALS = {
+    hwasan: '華山\n梅花', shaolin: '少林', wudang: '武當', sichuan: '四川', namgung: '南宮',
+    zhuge: '諸葛', murong: '慕容', hebei: '河北', beggars: '丐幫', heavenly_demon: '天魔\n神敎',
+    blood_cult: '血敎', green_forest: '綠林', river_bandits: '長江\n水路寨', assassins: '殺幕',
+    hao: '下五門', haedong: '海東', north_sea: '北海', southern_tribes: '南蠻',
   };
+  const SCHOOLS = Object.fromEntries(window.CHEONJONG_DATA.categories.flatMap(category => category.factions)
+    .map(faction => [faction.id, { id: faction.id, name: faction.name,
+      emblem: faction.id, seal: SEALS[faction.id] }]));
   const STAGES = [
     { id: 'hwasan', school: 'hwasan', name: '화산의 시련', hanja: '華山',
       summary: '사방에서 몰려드는 강호 무인을 버티고, 2분 30초에 나타나는 수문장을 4분 안에 쓰러뜨리세요.' },
@@ -31,10 +36,10 @@
   const TITLES = [
     { id: 'novice', name: '강호초출', condition: '처음부터 지닌 별호', unlocked: () => true },
     { id: 'first_step', name: '첫걸음', condition: '시련에 한 번 출전', unlocked: s => s.runs >= 1 },
-    { id: 'plum_bud', name: '매화봉오리', condition: '화산의 시련 첫 돌파', unlocked: s => (s.clears.hwasan || 0) >= 1 },
+    { id: 'plum_bud', name: '매화봉오리', faction: 'hwasan', condition: '화산의 시련 첫 돌파', unlocked: s => (s.clears.hwasan || 0) >= 1 },
     { id: 'hundred_cuts', name: '백인참', condition: '한 번의 시련에서 300명 격파', unlocked: s => s.best.kills >= 300 },
     { id: 'iron_blood', name: '철혈', condition: '난이도 평균 1.5배 이상으로 돌파', unlocked: s => s.best.hardClear >= 1.5 },
-    { id: 'plum_swordsman', name: '매화검수', condition: '화산의 시련 5회 돌파', unlocked: s => (s.clears.hwasan || 0) >= 5 },
+    { id: 'plum_swordsman', name: '매화검수', faction: 'hwasan', condition: '화산의 시련 5회 돌파', unlocked: s => (s.clears.hwasan || 0) >= 5 },
   ];
   const EQUIPMENT = [['weapon', '劍', '무기'], ['robe', '袍', '의복'], ['belt', '帶', '요대'], ['boots', '靴', '신발'], ['charm', '佩', '장신구']];
   const FACILITIES = {
@@ -55,7 +60,7 @@
   // ---- save data ----
   const fresh = () => ({
     version: 1, name: '무명객', title: 'novice', silver: 0, manuals: 0,
-    factions: { righteous: 0, heterodox: 0, outer: 0 }, mainSchool: 'hwasan',
+    factions: { righteous: 0, heterodox: 0, outer: 0 }, mainSchool: null,
     runs: 0, clears: {}, best: { kills: 0, hardClear: 0 },
     difficulty: { count: 1, attack: 1, health: 1 }, equipment: {}, lastReward: null,
     tree: { allocated: [] },
@@ -73,14 +78,36 @@
     return base;
   }
   function save() {
+    recomputeAppearance();
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch {}
   }
   let state = load();
+  let appearance = null;
 
   const totalClears = () => Object.values(state.clears).reduce((sum, n) => sum + n, 0);
   const realmIndex = () => REALMS.reduce((index, [need], i) => (totalClears() >= need ? i : index), 0);
   const unlockedTitles = () => TITLES.filter(title => title.unlocked(state));
   const titleName = () => (TITLES.find(title => title.id === state.title && title.unlocked(state)) || TITLES[0]).name;
+  function recomputeAppearance() {
+    const title = TITLES.find(item => item.id === state.title);
+    const next = window.CheonAppearance.resolve({
+      allocated: state.tree.allocated, nodes: window.CheonTree?.nodes,
+      factions: Object.keys(SCHOOLS),
+      selectedTitle: title && { id: title.id, faction: title.faction, unlocked: title.unlocked(state) },
+    });
+    state.mainSchool = next.faction;
+    // 트리가 아직 초기화되지 않았을 때에는 저장된 성장 집계를 덮어쓰지 않는다.
+    if (window.CheonTree) state.factions = { ...next.categoryCounts };
+    const changed = !appearance || JSON.stringify(appearance) !== JSON.stringify(next);
+    appearance = next;
+    document.querySelectorAll('[data-character-appearance]').forEach(image => {
+      if (image.getAttribute('src') !== next.src) { image.hidden = false; image.src = next.src; }
+      image.alt = `${next.name} 차림의 천종지자`;
+      image.dataset.appearance = next.id;
+    });
+    if (changed) window.dispatchEvent(new CustomEvent('cheon:appearance', { detail: next }));
+    return next;
+  }
   const times = value => `×${Number(value).toFixed(2).replace(/\.?0+$/, '')}`;
   const rewardFactor = d => Math.cbrt(d.count * d.attack * d.health);
 
@@ -99,16 +126,24 @@
 
   // ---- hub rendering ----
   function render() {
-    const school = SCHOOLS[state.mainSchool] || SCHOOLS.hwasan;
+    const current = recomputeAppearance();
+    const school = SCHOOLS[current.faction];
     for (const [id, label] of CATEGORIES) {
       const cell = document.querySelector(`[data-faction-count="${id}"]`);
       if (cell) cell.replaceChildren(h('span', {}, label), h('strong', {}, String(state.factions[id] || 0)));
     }
-    const emblem = document.querySelector('.hub-emblem');
-    if (emblem && emblem.dataset.emblem !== school.emblem) drawEmblem(emblem, school.emblem);
-    emblem?.setAttribute('aria-label', `${school.name} 문양`);
+    let emblem = document.querySelector('.hub-emblem');
+    if (emblem && school && emblem.dataset.emblem !== school.emblem) emblem = drawSchoolEmblem(emblem, school);
+    if (emblem) {
+      emblem.hidden = !school;
+      emblem.setAttribute('aria-label', school ? `${school.name} 문양` : '백의 · 소속 세력 없음');
+    }
     const seal = document.querySelector('.title-seal');
-    if (seal) seal.textContent = school.seal;
+    if (seal) {
+      seal.hidden = !school;
+      seal.textContent = school?.seal || '';
+      seal.setAttribute('aria-label', school ? `${school.name} 도장` : '소속 세력 없음');
+    }
     $('hub-wallet').replaceChildren(
       h('span', { title: '은자' }, h('i', { 'aria-hidden': 'true' }, '銀'), `은자 ${state.silver.toLocaleString('ko-KR')}`),
       h('span', { title: '비급' }, h('i', { 'aria-hidden': 'true' }, '書'), `비급 ${state.manuals.toLocaleString('ko-KR')}`));
@@ -118,31 +153,27 @@
     renderStats();
   }
 
-  // 문양 그리기. 'plum-bloom'은 게임 렌더러가 검법 단계 공격에 쓰는 꽃을 같은 2배 도트로 옮긴다.
-  function drawEmblem(canvas, kind) {
-    canvas.dataset.emblem = kind;
-    const Renderer = window.CheonGameRenderer;
-    if (kind !== 'plum-bloom' || !Renderer) return;
-    const renderer = new Renderer(document.createElement('canvas'));
-    const paint = () => {
-      const stamp = renderer.flatPlumRaster(140, -Math.PI / 2);
-      if (!stamp) return false;
-      const source = stamp.canvas, hub = stamp.displayCenter;
-      const alpha = source.getContext('2d').getImageData(0, 0, source.width, source.height).data;
-      let reach = 0;
-      for (let y = 0; y < source.height; y++) for (let x = 0; x < source.width; x++) {
-        if (alpha[(y * source.width + x) * 4 + 3]) reach = Math.max(reach, Math.abs(x + 0.5 - hub.x), Math.abs(y + 0.5 - hub.y));
-      }
-      // 꽃잎이 모이는 나선 중심을 캔버스 가운데에 둔다(게임에서도 이 점이 몸 중심에 맞는다).
-      const half = Math.ceil(reach) + 2;
-      canvas.width = canvas.height = half * 4;
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(source, Math.round((half - hub.x) * 2), Math.round((half - hub.y) * 2), source.width * 2, source.height * 2);
-      renderer.destroy?.();
-      return true;
-    };
-    if (!paint()) renderer.bloomAtlas.addEventListener('load', paint, { once: true });
+  // 공용 세력 문양 원화를 사용한다.
+  function drawSchoolEmblem(previous, school) {
+    // 교체된 캔버스에는 이전 세력의 비동기 그림이 덮어써지지 않는다.
+    const canvas = h('canvas', { class: 'hub-emblem', role: 'img', 'aria-label': `${school.name} 문양` });
+    canvas.dataset.emblem = school.emblem;
+    previous.replaceWith(canvas);
+    paintFactionEmblem(canvas, school.id);
+    return canvas;
+  }
+
+  async function paintFactionEmblem(canvas, factionId) {
+    try {
+      const buffer = document.createElement('canvas');
+      await window.CheonFactionEmblems.draw(buffer, factionId);
+      if (!canvas.isConnected) return;
+      canvas.width = buffer.width;
+      canvas.height = buffer.height;
+      canvas.getContext('2d').drawImage(buffer, 0, 0);
+    } catch {
+      if (canvas.isConnected) canvas.setAttribute('aria-label', `${SCHOOLS[factionId].name} 문양을 불러오지 못했습니다`);
+    }
   }
 
   function renderStats() {
@@ -191,6 +222,23 @@
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     }
   });
+
+  function openEmblems() {
+    const pending = [];
+    const sections = window.CHEONJONG_DATA.categories.map(category => h('section', { class: 'hub-emblem-category', 'aria-label': category.name },
+      h('h3', {}, `${category.name} · ${category.factions.length}`),
+      h('div', { class: 'hub-emblem-grid' }, ...category.factions.map(faction => {
+        const canvas = h('canvas', { role: 'img', 'aria-label': `${faction.name} 문양` });
+        pending.push([canvas, faction.id]);
+        return h('figure', {}, canvas, h('figcaption', {}, faction.name));
+      }))));
+    openModal('hub-emblems-title',
+      h('p', { class: 'hub-eyebrow' }, '紋樣 · 열여덟 세력'),
+      h('h2', { id: 'hub-emblems-title' }, '강호의 문양'),
+      ...sections);
+    modal.querySelector('.hub-dialog').classList.add('hub-emblem-dialog');
+    for (const [canvas, id] of pending) paintFactionEmblem(canvas, id);
+  }
 
   function openStageSelect() {
     const stage = STAGES[0];
@@ -310,15 +358,31 @@
   $('start-battle').addEventListener('click', openStageSelect);
   $('hub-nameplate').addEventListener('click', openNameplate);
   $('hub-character').addEventListener('click', () => $('open-martial').click());
+  $('open-emblems').addEventListener('click', openEmblems);
   document.querySelectorAll('[data-facility]').forEach(button => button.addEventListener('click', () => openFacility(button.dataset.facility)));
   render();
 
   // 무공록 스킬 트리(tree.js)가 저장 데이터·경지를 읽고 세력 칸을 갱신하는 창구.
   window.CheonHub = {
     get state() { return state; },
+    get appearance() { return appearance; },
+    getCurrentAppearance: () => appearance || recomputeAppearance(),
+    recomputeAppearance,
     save,
     render,
     realm: () => ({ index: realmIndex(), name: REALMS[realmIndex()][1], next: REALMS[realmIndex() + 1] || null }),
     schools: Object.keys(SCHOOLS),
   };
+  window.addEventListener('storage', event => {
+    if (event.key !== SAVE_KEY && event.key !== null) return;
+    state = load();
+    render();
+    window.CheonTree?.draw();
+  });
+  window.addEventListener('pageshow', event => {
+    if (!event.persisted) return;
+    state = load();
+    render();
+    window.CheonTree?.draw();
+  });
 })();

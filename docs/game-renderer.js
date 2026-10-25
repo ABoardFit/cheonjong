@@ -125,14 +125,18 @@
       this.width = 960;
       this.height = 600;
       this.dpr = Math.min(2, finite(window.devicePixelRatio, 1));
+      this.appearanceProvider = options.appearanceProvider;
       this.hero = new Image();
-      this.hero.src = options.heroSrc || 'assets/hero.png';
       this.heroAtlas = new Image();
-      this.heroAtlas.src = window.CHEON_HERO_ATLAS?.src || 'assets/hero-atlas.png';
       this.heroImages = new Map();
       this.lastHeroSourceFrame = null;
       this.lastRenderedHeroPose = null;
-      this.preloadHeroImages();
+      if (this.appearanceProvider) this.outfitFrame();
+      else {
+        this.hero.src = options.heroSrc || 'assets/hero.png';
+        this.heroAtlas.src = window.CHEON_HERO_ATLAS?.src || 'assets/hero-atlas.png';
+        this.preloadHeroImages();
+      }
       this.bloomAtlas = new Image();
       this.bloomAtlas.src = window.CHEON_HERO_ATLAS?.effects?.bloomAtlas?.src || 'assets/plum-bloom-pixel-v1.png';
       this.tile = this.makeTile();
@@ -177,6 +181,57 @@
         if (!entry?.src || this.heroImages.has(entry.src)) continue;
         const image = new Image(); image.src = entry.src; this.heroImages.set(entry.src, image);
       }
+    }
+
+    outfitFrame() {
+      const base = window.CheonAppearance?.resolve({}) || { id: 'baekui', src: 'assets/outfits-v5/baekui.png' };
+      const selected = this.appearanceProvider?.() || base;
+      this.outfitImages ||= new Map();
+      const load = appearance => {
+        if (!this.outfitImages.has(appearance.src)) {
+          const image = new Image(), entry = { image, appearance, bounds: null };
+          this.outfitImages.set(appearance.src, entry);
+          // A late image can populate only its own cache entry, never change selection.
+          image.onload = () => {
+            if (this.destroyed) return;
+            const canvas = document.createElement('canvas');
+            canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0);
+            const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            let left = canvas.width, top = canvas.height, right = 0, bottom = 0;
+            for (let y = 0; y < canvas.height; y++) for (let x = 0; x < canvas.width; x++) {
+              if (pixels[(y * canvas.width + x) * 4 + 3] < 32) continue;
+              left = Math.min(left, x); top = Math.min(top, y);
+              right = Math.max(right, x + 1); bottom = Math.max(bottom, y + 1);
+            }
+            if (right > left && bottom > top) entry.bounds = { left, top, right, bottom };
+          };
+          image.src = appearance.src;
+        }
+        return this.outfitImages.get(appearance.src);
+      };
+      const fallback = load(base), requested = selected.src ? load(selected) : fallback;
+      const ready = entry => entry.image.complete && entry.image.naturalWidth > 0 && entry.bounds;
+      return ready(requested) ? requested : ready(fallback) ? fallback : null;
+    }
+
+    drawOutfit(pose) {
+      const entry = this.outfitFrame();
+      // While both images load, leave the actor empty rather than revive the old hero.
+      if (!entry) return;
+      const { image, appearance, bounds: b } = entry;
+      // Zhuge's painted floor formation extends below his boots.
+      const footY = appearance.id === 'zhuge' ? image.naturalHeight * .84 : b.bottom;
+      const scale = 80 / Math.max(1, footY - b.top), width = b.right - b.left, height = b.bottom - b.top;
+      const bob = this.reduced || !this.frameMoving ? 0 : Math.sin(this.walkPhase) * 1.5;
+      const ctx = this.ctx;
+      ctx.save(); ctx.scale(pose.face < 0 ? -1 : 1, 1); ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(image, b.left, b.top, width, height, -width * scale / 2, (b.top - footY) * scale + bob, width * scale, height * scale);
+      ctx.restore();
+      this.lastRenderedHeroPose = null;
+      this.renderedAppearanceId = appearance.id;
+      if (this.canvas?.dataset) this.canvas.dataset.appearance = appearance.id;
     }
 
     resize(width, height) {
@@ -470,7 +525,7 @@
 
     sampleSwordTip(pose, time) {
       const key = pose.attack?.id;
-      if (pose.socketOccluded || (pose.bakedWeapon && pose.tipVisible === false) || (pose.imageSrc && this.heroImages && !this.heroFrameReady(pose))) {
+      if (pose.socketOccluded || (pose.bakedWeapon && pose.tipVisible === false) || (!this.appearanceProvider && pose.imageSrc && this.heroImages && !this.heroFrameReady(pose))) {
         this.tipHistory = []; this.windupTip = null; this.trailKey = null; return;
       }
       if (!pose.trailActive || key == null) {
@@ -790,7 +845,7 @@
       ctx.restore();
       if (pose.rank < 5 && !options.skipChoreography) this.drawSwordChoreography(pose);
       this.drawPetals(player, 'back');
-      const sourceReady = this.heroFrameReady(pose);
+      const sourceReady = !this.appearanceProvider && this.heroFrameReady(pose);
       if (sourceReady && !pose.bakedWeapon && pose.bladeBehind) this.drawHeldBlade(pose);
       ctx.save(); ctx.translate(player.x, player.y);
       if (finite(player.hurtUntil) > this.time && Math.floor(this.time * 24) % 2 === 0) ctx.globalAlpha = 0.55;
@@ -822,6 +877,7 @@
     }
 
     drawHeroFrame(pose) {
+      if (this.appearanceProvider) { this.drawOutfit(pose); return; }
       const ctx = this.ctx;
       let framePose = pose, image = null;
       if (this.heroFrameReady(pose)) {
@@ -2870,6 +2926,8 @@
       this.paintedBloomMaterial = null;
       for (const image of this.heroImages.values()) { image.onload = null; image.onerror = null; }
       this.heroImages.clear();
+      for (const entry of this.outfitImages?.values() || []) { entry.image.onload = null; entry.image.onerror = null; }
+      this.outfitImages?.clear();
       this.spriteCache.clear();
       this.lastPlayer = null;
       this.lastHeroSourceFrame = null;

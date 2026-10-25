@@ -196,12 +196,12 @@
   }
 
   // ---- 찍기 규칙: 시작점(캐릭터)과 이어진 노드만, 되돌릴 때는 남은 노드가 끊기지 않을 때만 ----
-  const allocated = () => new Set((hub()?.state.tree.allocated || []).filter(id => nodes.has(id)));
+  const allocated = () => new Set((hub()?.state.tree.allocated || []).filter(id => window.CheonAppearance.isAllocatable(nodes.get(id))));
   const totalPoints = () => pointsFor(hub()?.realm().index || 0);
   const isOn = (id, set = allocated()) => id === 'origin' || set.has(id);
   function canTake(id) {
     const n = nodes.get(id), set = allocated();
-    if (!n || n.kind === 'locked' || n.kind === 'origin' || set.has(id)) return false;
+    if (!window.CheonAppearance.isAllocatable(n) || set.has(id)) return false;
     return [...neighbors.get(id)].some(other => isOn(other, set));
   }
   function connectedWithout(id) {
@@ -216,17 +216,7 @@
   function commit(list) {
     const state = hub().state;
     state.tree.allocated = list;
-    // 찍은 수 → 허브의 [정파·사파·세외] 칸, 가장 많이 찍은 세력 → 주세력(문양·도장).
-    const counts = { righteous: 0, heterodox: 0, outer: 0 }, perFaction = {};
-    for (const id of list) {
-      const n = nodes.get(id);
-      if (!n) continue;
-      if (n.category in counts) counts[n.category]++;
-      if (n.faction) perFaction[n.faction] = (perFaction[n.faction] || 0) + 1;
-    }
-    state.factions = counts;
-    const best = Object.entries(perFaction).filter(([faction]) => hub().schools.includes(faction)).sort((a, b) => b[1] - a[1])[0];
-    state.mainSchool = best ? best[0] : 'hwasan';
+    // 집계와 동률 별호 판정은 허브·전투가 함께 사용하는 resolver에 맡긴다.
     hub().save();
     hub().render();
     draw();
@@ -349,6 +339,7 @@
   let labelViews = [];
   // 모양을 처음부터 다시 그린다(노드·연결이 늘거나 줄었을 때).
   function rebuild() {
+    window.CheonTreeFactions?.restore(nodes);
     relink();
     edgeLayer.replaceChildren();
     labelLayer.replaceChildren();
@@ -378,6 +369,7 @@
     }
     layout();
     markSearch();
+    if (window.CheonTree) hub()?.render();
   }
   // 위치만 다시: 노드 자리, 이름표 방향, 줄 경로.
   function layout() {
@@ -673,4 +665,6 @@
     setCloseGuard(fn) { closeGuard = fn; },
     on(name, fn) { (listeners[name] ||= []).push(fn); },
   };
+  // 저장 복구 시에는 실제 모델이 만들어진 뒤 외형과 세력 집계를 다시 계산한다.
+  hub()?.render();
 })();

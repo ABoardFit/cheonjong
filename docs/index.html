@@ -8,28 +8,31 @@
   <link rel="stylesheet" href="styles.css?v=960fd53ba2">
   <link rel="stylesheet" href="game.css?v=0a78ca78fb">
   <link rel="stylesheet" href="dojo.css?v=cca98761d8">
-  <link rel="stylesheet" href="hub.css?v=fba0fe41e1">
+  <link rel="stylesheet" href="hub.css?v=bb06820a27">
   <link rel="stylesheet" href="tree.css?v=a2805e3ad5">
   <link rel="stylesheet" href="facilities.css?v=0231d43720">
   <script src="data.js?v=51d640ffc3" defer></script>
+  <script src="appearance.js?v=5df48a7d7c" defer></script>
   <script src="game-balance.js?v=e32aab8b4f" defer></script>
   <script src="game-core.js?v=68c53a8a4d" defer></script>
   <script src="assets/hero-atlas.js?v=9cc4cd821b" defer></script>
   <script src="combat-animation.js?v=963ebdc316" defer></script>
-  <script src="game-renderer.js?v=04b7db0d3e" defer></script>
-  <script src="effect-preview.js?v=8853fc060e" defer></script>
+  <script src="game-renderer.js?v=5eb472cd1f" defer></script>
+  <script src="faction-emblems.js?v=df23ed01dc" defer></script>
+  <script src="effect-preview.js?v=feeeb0fca9" defer></script>
   <script src="app.js?v=fbf1aac6f0" defer></script>
-  <script src="game-controller.js?v=134ad063d2" defer></script>
-  <script src="dojo.js?v=4e01dead2a" defer></script>
-  <script src="hub.js?v=1c2e29e407" defer></script>
-  <script src="tree.js?v=996d8b327f" defer></script>
+  <script src="game-controller.js?v=95a69013cd" defer></script>
+  <script src="dojo.js?v=49d1dea1bb" defer></script>
+  <script src="hub.js?v=636fcc27f2" defer></script>
+  <script src="tree-factions.js?v=fd3d0e0586" defer></script>
+  <script src="tree.js?v=d2e88a3fa8" defer></script>
   <script src="facilities.js?v=19c1fb5b21" defer></script>
   <script src="hanja.js?v=0a24633196" defer></script>
   <script>document.documentElement.classList.add('uie-loading')</script>
   <link rel="stylesheet" href="ui-editor.css?v=25ac5377b8">
   <link rel="stylesheet" href="tree-editor.css?v=95ad166233">
   <script src="ui-editor.js?v=23669ef5ea" defer></script>
-  <script src="tree-editor.js?v=a99cb8bef2" defer></script>
+  <script src="tree-editor.js?v=99f41e6585" defer></script>
 </head>
 <body>
   <div class="paper-grain" aria-hidden="true"></div>
@@ -45,7 +48,7 @@
       </div>
       <nav class="hub-art-links" aria-label="동작과 세력 문양">
         <button id="open-dojo" class="hub-devlink" type="button">동작 비교 <span aria-hidden="true">↗</span></button>
-        <a id="open-emblems" class="hub-devlink" href="emblems.html">세력 문양 <span aria-hidden="true">↗</span></a>
+        <button id="open-emblems" class="hub-devlink" type="button">세력 문양 <span aria-hidden="true">↗</span></button>
       </nav>
       <div class="hub-center">
         <aside class="hub-side" aria-label="재화와 시설">
@@ -58,12 +61,11 @@
           </nav>
         </aside>
         <div class="hub-portrait">
-          <div class="ink-circle"><canvas class="hub-emblem" role="img" aria-label="화산 문양"></canvas></div>
+          <div class="ink-circle"><canvas class="hub-emblem" role="img" aria-label="백의 · 소속 세력 없음" hidden></canvas></div>
           <button id="hub-character" class="hub-character" type="button" aria-label="캐릭터 · 무공록 열기" title="무공록 열기">
-            <img src="assets/hero.png" alt="" class="hero-art" onerror="this.hidden=true">
+            <img src="assets/outfits-v5/baekui.png" alt="백의 차림의 천종지자" class="hero-art" data-character-appearance onerror="this.hidden=true">
           </button>
-          <span class="title-seal" aria-label="주세력 도장">華山
-梅花</span>
+          <span class="title-seal" aria-label="소속 세력 없음" hidden></span>
         </div>
         <button id="hub-nameplate" class="hub-nameplate" type="button" title="별호와 이름"></button>
         <div class="hub-actions">
@@ -96,7 +98,7 @@
         <div class="map-character">
           <div class="character-ring" aria-hidden="true"></div>
           <span class="character-fallback" aria-hidden="true">武</span>
-          <img src="assets/hero.png" alt="검을 든 천종지자 주인공의 콘셉트 이미지" onerror="this.hidden=true">
+          <img src="assets/outfits-v5/baekui.png" alt="백의 차림의 천종지자" data-character-appearance onerror="this.hidden=true">
           <div class="character-label"><span>천종지자</span><small>모든 무학의 시작</small></div>
         </div>
         <div id="category-clusters"></div>
@@ -127,7 +129,7 @@
       <div id="battle-modal" class="battle-modal" hidden><section id="battle-dialog" class="battle-dialog" role="dialog" aria-modal="true" aria-labelledby="battle-dialog-title"></section></div>
       <div id="battle-announcer" class="battle-sr-only" role="status" aria-live="polite"></div>
     </section>
-    <section id="dojo-screen" aria-labelledby="dojo-title" data-school="hwasan" data-namgung-src="namgung.html?embedded=1&v=34ac6dc598" hidden>
+    <section id="dojo-screen" aria-labelledby="dojo-title" data-school="hwasan" data-namgung-src="namgung.html?embedded=1&v=6dfb05cf80" hidden>
       <canvas id="dojo-canvas" aria-label="선택한 단계의 캐릭터 동작과 화산 무공을 반복 재생하는 연무장"></canvas>
       <header class="dojo-header">
         <button id="dojo-back" type="button">← 메인으로</button>

@@ -4,7 +4,7 @@
   const rows = [
     ['hwasan','화산','righteous','나선으로 피어난 매화',['#6e294a','#b4577b','#d181a0','#8f3b60']],
     ['shaolin','소림','righteous','다섯 잎의 금련',['#63502d','#aa8550','#c7a873','#89673c']],
-    ['wudang','무당','righteous','태극을 감싼 팔괘',['#324b55','#61828a','#8fa9aa','#496a75']],
+    ['wudang','무당','righteous','태극을 감싼 팔괘',['#202020','#666666','#bdbdbd','#f2f2f2']],
     ['sichuan','사천','righteous','세 날의 독표',['#3c4d37','#738a57','#9eac77','#596c42']],
     ['namgung','남궁','righteous','뇌광을 가르는 제왕검',['#354d68','#607eab','#91a9cb','#47638d']],
     ['zhuge','제갈','righteous','칠우선과 삼효',['#3d5855','#6f9690','#9db8ab','#537870']],
@@ -166,7 +166,7 @@
     q.putImageData(pixels,0,0);const result=make(320),ctx=result.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.drawImage(source,0,0,320,320);return result;
   }
   async function hwasan() {
-    const renderer=new window.CheonGameRenderer(make());
+    const renderer=new window.CheonGameRenderer(make(),{appearanceProvider:()=>window.CheonAppearance?.resolve({})});
     try {
       if(!renderer.flatPlumRaster(140,-Math.PI/2))await new Promise((resolve,reject)=>{
         renderer.bloomAtlas.addEventListener('load',resolve,{once:true});renderer.bloomAtlas.addEventListener('error',()=>reject(new Error('화산 매화 원본을 불러올 수 없습니다.')),{once:true});

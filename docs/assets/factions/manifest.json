@@ -38,13 +38,13 @@
       "group": "righteous",
       "motif": "태극을 감싼 팔괘",
       "palette": [
-        "#324b55",
-        "#61828a",
-        "#8fa9aa",
-        "#496a75"
+        "#202020",
+        "#666666",
+        "#bdbdbd",
+        "#f2f2f2"
       ],
-      "width": 320,
-      "height": 320,
+      "width": 1254,
+      "height": 1254,
       "file": "wudang.png"
     },
     {

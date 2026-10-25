@@ -195,7 +195,7 @@
       namgungFrame = child;
       host.append(child);
     } else {
-      renderer = new window.CheonGameRenderer(canvas);
+      renderer = new window.CheonGameRenderer(canvas, { appearanceProvider: () => window.CheonHub?.getCurrentAppearance?.() || window.CheonHub?.appearance || window.CheonAppearance?.resolve({}) });
       resize();
       if (!run) reset();
       else updateControls();

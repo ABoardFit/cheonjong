@@ -80,7 +80,7 @@
       painter.state = state; painter.time = elapsed;
       const pose = window.CheonCombatAnimation.poseFor(state, elapsed, { attack, moving: false, walkDistance: 0, reducedMotion: false });
       painter.pose = pose;
-      const sourceReady=painter.heroFrameReady(pose);
+      const sourceReady=!painter.appearanceProvider && painter.heroFrameReady(pose);
       ctx.save(); ctx.globalAlpha *= ghost ? .24 : 1;
       if (armor) painter.drawPetals(body,'back');
       if (sourceReady && !pose.bakedWeapon && pose.bladeBehind) painter.drawHeldBlade(pose);
@@ -90,10 +90,8 @@
       ctx.restore(); return;
     }
     const painter = diagramRenderer();
-    if (painter.hero.complete && painter.hero.naturalWidth > 0) {
-      ctx.save(); ctx.globalAlpha *= ghost ? .24 : 1;
-      ctx.imageSmoothingEnabled = false; ctx.drawImage(painter.hero,x-37,y-38,74,82); ctx.restore();
-    }
+    ctx.save(); ctx.globalAlpha *= ghost ? .24 : 1; ctx.translate(x, y + 38);
+    painter.drawHeroFrame({ face: 1, bob: 0 }); ctx.restore();
   }
   function foes(offset = 0, t = 0) {
     const painter=diagramRenderer(); painter.time=t*DURATION/1000;
@@ -114,12 +112,12 @@
   let diagramBloomSource;
   function diagramRenderer() {
     if (!diagramBloomSource) {
-      const heroAtlas=new Image(), heroImage=new Image(); heroAtlas.src=window.CHEON_HERO_ATLAS?.src||'assets/hero-atlas.png'; heroImage.src='assets/hero.png';
       diagramBloomSource = Object.assign(Object.create(window.CheonGameRenderer.prototype), {
       bloomAtlas: diagramBloom, pose: { attack: { id: 1 } }, reduced: false,
-      width: W, height: H, state: { skills: { plum_sword: 0 } }, time: 0, heroAtlas, hero:heroImage, heroImages:new Map(), walkPhase:0
+      width: W, height: H, state: { skills: { plum_sword: 0 } }, time: 0, heroImages:new Map(), walkPhase:0,
+      appearanceProvider: () => window.CheonHub?.getCurrentAppearance?.() || window.CheonHub?.appearance || window.CheonAppearance?.resolve({})
       });
-      diagramBloomSource.preloadHeroImages();
+      diagramBloomSource.outfitFrame();
     }
     diagramBloomSource.ctx = ctx;
     return diagramBloomSource;

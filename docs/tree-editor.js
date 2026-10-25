@@ -9,7 +9,7 @@
   const T = window.CheonTree;
   if (!T) return;
   const DRAFT = 'cheonjong-tree-draft-v1', MEMOS = 'cheonjong-tree-memo-v1', PATH = 'docs/tree.json';
-  const FIELDS = ['x', 'y', 'kind', 'category', 'glyph', 'name', 'desc', 'effects'];
+  const FIELDS = ['x', 'y', 'kind', 'category', 'faction', 'glyph', 'name', 'desc', 'effects'];
   const KINDS = [['minor', '수련(작은 점)'], ['entry', '입문'], ['skill', '무공'], ['fusion', '절세신공'], ['notable', '요결(큰 점)'], ['locked', '잠김']];
   const CATEGORIES = [['', '갈래 없음'], ['righteous', '정파'], ['heterodox', '사파'], ['outer', '세외']];
 

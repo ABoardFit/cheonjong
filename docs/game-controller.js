@@ -112,7 +112,7 @@
     screen.hidden = false;
     document.body.classList.add('in-battle');
     active = true;
-    renderer ||= new window.CheonGameRenderer(canvas);
+    renderer ||= new window.CheonGameRenderer(canvas, { appearanceProvider: () => window.CheonHub?.getCurrentAppearance?.() || window.CheonHub?.appearance || window.CheonAppearance?.resolve({}) });
     resize();
     setupRun(true);
     lastFrame = performance.now();
@@ -347,6 +347,11 @@
   window.addEventListener('resize', resize);
   window.addEventListener('blur', () => { clearInput(); heldActionKeys.clear(); if (active && !modalKind && run.status === 'running') showPause(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) { clearInput(); if (active && !modalKind && run.status === 'running') showPause(); } });
-  window.addEventListener('pagehide', () => renderer?.destroy());
+  window.addEventListener('pagehide', event => {
+    // BFCache resumes this same renderer and its pending outfit image loads.
+    if (event.persisted) return;
+    renderer?.destroy();
+    renderer = null;
+  });
   requestAnimationFrame(frame);
 })();
