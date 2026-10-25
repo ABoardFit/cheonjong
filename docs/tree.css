@@ -76,19 +76,19 @@ body.tree-open { overflow: hidden; }
 }
 .tree-top button {
   min-width: 0; margin: 0; padding: 7px 12px; display: inline-flex; border: 1px solid var(--line); background: var(--paper-light);
-  color: var(--ink); font-size: 12px; letter-spacing: .08em;
+  color: var(--ink); font-size: 16px; letter-spacing: .08em;
 }
 .tree-top button:hover { border-color: var(--ink); }
 .tree-title { display: grid; }
-.tree-title strong { font-family: var(--serif); font-size: 20px; font-weight: 500; letter-spacing: .1em; }
-.tree-title small { font-size: 10px; color: var(--muted); }
+.tree-title strong { font-family: var(--serif); font-size: 16px; font-weight: 500; letter-spacing: .1em; }
+.tree-title small { font-size: 16px; color: var(--muted); }
 .tree-points { margin-left: auto; display: flex; gap: 12px; align-items: baseline; font-family: var(--serif); }
-.tree-points span { color: var(--muted); font-size: 13px; }
+.tree-points span { color: var(--muted); font-size: 16px; }
 .tree-points strong { color: var(--accent); font-size: 16px; font-weight: 500; }
 .tree-tools { display: flex; gap: 6px; }
 
 .tree-legend {
-  position: absolute; left: 16px; bottom: 14px; display: flex; gap: 14px; font-size: 11px; color: var(--muted);
+  position: absolute; left: 16px; bottom: 14px; display: flex; gap: 14px; font-size: 16px; color: var(--muted);
   padding: 6px 10px; background: #f8f5edcc; border: 1px solid var(--line);
 }
 .tree-legend span { display: inline-flex; align-items: center; gap: 6px; }
@@ -101,34 +101,34 @@ body.tree-open { overflow: hidden; }
   position: absolute; right: 16px; bottom: 16px; z-index: 2; width: 320px; display: grid; gap: 8px;
   padding: 18px 18px 16px; background: var(--paper-light); border: 1px solid var(--ink); box-shadow: 0 12px 34px #292e2c33;
 }
-.tree-info h2 { margin: 0; font-family: var(--serif); font-weight: 500; font-size: 21px; }
-.tree-info p { margin: 0; font-size: 12px; line-height: 1.7; color: #565c55; }
-.tree-info .tree-info-kind { font-size: 11px; letter-spacing: .14em; color: var(--accent); }
+.tree-info h2 { margin: 0; font-family: var(--serif); font-weight: 500; font-size: 16px; }
+.tree-info p { margin: 0; font-size: 16px; line-height: 1.7; color: #565c55; }
+.tree-info .tree-info-kind { font-size: 16px; letter-spacing: .14em; color: var(--accent); }
 .tree-info .tree-info-status { color: var(--ink); }
-.tree-info-effects { margin: 0; padding-left: 18px; font-size: 12px; color: var(--accent); }
+.tree-info-effects { margin: 0; padding-left: 18px; font-size: 16px; color: var(--accent); }
 
 /* 오른쪽 위: 검색창 + 접을 수 있는 효과 합계 */
 .tree-side { position: absolute; top: 74px; right: 16px; width: 260px; display: grid; gap: 8px; }
 .tree-search { position: relative; display: block; }
 .tree-search input {
   width: 100%; box-sizing: border-box; padding: 9px 44px 9px 12px; border: 1px solid var(--ink); background: var(--paper-light);
-  font: 13px var(--sans); color: var(--ink);
+  font: 16px var(--sans); color: var(--ink);
 }
-.tree-search-count { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--accent); }
+.tree-search-count { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--accent); }
 .tree-effects { border: 1px solid var(--ink); background: #f8f5edf0; box-shadow: 0 8px 24px #292e2c1f; }
 .tree-effects-toggle {
   width: 100%; min-width: 0; margin: 0; padding: 9px 12px; display: flex; justify-content: space-between; border: 0; background: none;
-  color: var(--ink); font-family: var(--serif); font-size: 14px; letter-spacing: .05em; text-align: left;
+  color: var(--ink); font-family: var(--serif); font-size: 16px; letter-spacing: .05em; text-align: left;
 }
-.tree-effects-list { margin: 0; padding: 4px 12px 12px 28px; max-height: 40vh; overflow-y: auto; display: grid; gap: 4px; font-size: 13px; border-top: 1px solid var(--line); }
-.tree-effects-list .is-empty { list-style: none; margin-left: -16px; color: var(--muted); font-size: 12px; }
+.tree-effects-list { margin: 0; padding: 4px 12px 12px 28px; max-height: 40vh; overflow-y: auto; display: grid; gap: 4px; font-size: 16px; border-top: 1px solid var(--line); }
+.tree-effects-list .is-empty { list-style: none; margin-left: -16px; color: var(--muted); font-size: 16px; }
 .tree-info button {
   min-width: 0; margin: 4px 0 0; padding: 10px 14px; justify-content: center; border: 1px solid var(--ink); background: transparent;
   color: var(--ink); letter-spacing: .15em;
 }
 .tree-info button.is-primary { background: var(--ink); color: var(--paper-light); }
 .tree-info button:disabled { opacity: .5; cursor: default; }
-.tree-info .tree-info-close { position: absolute; top: 6px; right: 8px; margin: 0; padding: 2px 8px; border: 0; font-size: 20px; letter-spacing: 0; }
+.tree-info .tree-info-close { position: absolute; top: 6px; right: 8px; margin: 0; padding: 2px 8px; border: 0; font-size: 16px; letter-spacing: 0; }
 
 @media (max-width: 960px) {
   .tree-top { flex-wrap: wrap; gap: 8px 12px; padding: 10px 12px; }
@@ -146,3 +146,7 @@ body.tree-open { overflow: hidden; }
   .title-screen.hub .hub-stats, .title-screen.hub .title-bottom { transition: none; }
   .tree-node.is-open .tree-dot { animation: none; }
 }
+/* 16px 도트 글꼴: 머리줄 버튼·포인트는 한 줄, 안내 문구는 말줄임 */
+.tree-top button, .tree-points, .tree-points > * { white-space: nowrap; flex-shrink: 0; }
+.tree-title { min-width: 0; }
+.tree-title small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
