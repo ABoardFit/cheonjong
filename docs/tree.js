@@ -127,26 +127,70 @@
   }
   relink();
 
-  // ---- 줄 경로: 사이에 다른 원이 있으면 돌아서 간다(돌아갈 길이 없으면 blocked) ----
-  function route(a, b) {
+  // ---- 줄 경로: 다른 원은 반드시 비켜 가고(못 비키면 blocked), 이미 그린 줄과는 되도록 엇갈리지 않게 휜다 ----
+  const SAMPLES = 16;
+  const curve = (p, c, q) => Array.from({ length: SAMPLES + 1 }, (_, i) => {
+    const t = i / SAMPLES, u = 1 - t;
+    return { x: u * u * p.x + 2 * u * t * c.x + t * t * q.x, y: u * u * p.y + 2 * u * t * c.y + t * t * q.y };
+  });
+  // 한 번 휘어서는 못 피할 때 쓰는 S자(3차) 곡선. 크게 돌아가므로 점을 더 촘촘히 찍는다.
+  const curve3 = (p, c, e, q) => Array.from({ length: SAMPLES * 2 + 1 }, (_, i) => {
+    const t = i / (SAMPLES * 2), u = 1 - t, a = u * u * u, b = 3 * u * u * t, m = 3 * u * t * t, z = t * t * t;
+    return { x: a * p.x + b * c.x + m * e.x + z * q.x, y: a * p.y + b * c.y + m * e.y + z * q.y };
+  });
+  const boxOf = points => points.reduce((b, pt) => ({ x0: Math.min(b.x0, pt.x), y0: Math.min(b.y0, pt.y), x1: Math.max(b.x1, pt.x), y1: Math.max(b.y1, pt.y) }),
+    { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity });
+  const cross = (a, b, c, d) => {
+    const s = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+    return s(a, b, c) * s(a, b, d) < 0 && s(c, d, a) * s(c, d, b) < 0;
+  };
+  // 이미 그린 줄(placed: {a, b, points, box})과 몇 번 엇갈리는지. 같은 노드에서 만나는 줄은 세지 않는다.
+  // limit: 그 수에 닿으면 더 셀 필요 없이 바로 돌려준다(이미 더 나은 후보가 있음).
+  function crossings(points, box, a, b, placed, limit = Infinity) {
+    let count = 0;
+    for (const other of placed) {
+      if (other.a === a || other.a === b || other.b === a || other.b === b) continue;
+      if (other.box.x0 > box.x1 || other.box.x1 < box.x0 || other.box.y0 > box.y1 || other.box.y1 < box.y0) continue;
+      for (let i = 0; i < points.length - 1; i++) for (let j = 0; j < other.points.length - 1; j++) {
+        if (cross(points[i], points[i + 1], other.points[j], other.points[j + 1]) && ++count >= limit) return count;
+      }
+    }
+    return count;
+  }
+  function route(a, b, placed = []) {
     const p = nodes.get(a), q = nodes.get(b);
     const obstacles = [...nodes.values()].filter(n => n.id !== a && n.id !== b);
-    const clear = c => {
-      for (let i = 1; i < 20; i++) {
-        const t = i / 20, u = 1 - t;
-        const x = u * u * p.x + 2 * u * t * c.x + t * t * q.x, y = u * u * p.y + 2 * u * t * c.y + t * t * q.y;
-        for (const o of obstacles) if (Math.hypot(x - o.x, y - o.y) < radiusOf(o) + 7) return false;
-      }
-      return true;
-    };
+    const clear = points => points.slice(1, -1).every(pt => obstacles.every(o => Math.hypot(pt.x - o.x, pt.y - o.y) >= radiusOf(o) + 7));
     const mid = { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 };
     const len = Math.hypot(q.x - p.x, q.y - p.y) || 1;
     const nx = -(q.y - p.y) / len, ny = (q.x - p.x) / len;
-    for (const k of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5]) {
+    let best = null;
+    for (const k of [0, 0.5, -0.5, 1, -1, 1.5, -1.5, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6]) {
       const c = { x: mid.x + nx * k * 45, y: mid.y + ny * k * 45 };
-      if (clear(c)) return { d: `M${p.x} ${p.y}Q${c.x} ${c.y} ${q.x} ${q.y}`, ok: true };
+      const points = curve(p, c, q);
+      const box = boxOf(points);
+      const hits = placed.length ? crossings(points, box, a, b, placed, best ? best.hits : Infinity) : 0;
+      if (best && hits >= best.hits) continue;
+      if (!clear(points)) continue;
+      best = { c, points, box, hits };
+      if (!hits) break;
     }
-    return { d: `M${p.x} ${p.y}L${q.x} ${q.y}`, ok: false };
+    if (!best || best.hits) {
+      // 양 끝 손잡이를 따로 벌려 S자·큰 활 모양으로 돌아가 본다.
+      const at = (f, k) => ({ x: p.x + (q.x - p.x) * f + nx * k * 60, y: p.y + (q.y - p.y) * f + ny * k * 60 });
+      const ks = [0, 1, -1, 2, -2, 3, -3, 4, -4, 6, -6, 8, -8, 11, -11];
+      for (const f of [0.25, 0]) for (const k1 of ks) for (const k2 of ks) {
+        if (best && !best.hits) break;
+        const c = at(f, k1), e = at(1 - f, k2), points = curve3(p, c, e, q);
+        const box = boxOf(points);
+        const hits = crossings(points, box, a, b, placed, best ? best.hits : Infinity);
+        if (best && hits >= best.hits) continue;
+        if (clear(points)) best = { c, e, points, box, hits };
+      }
+    }
+    if (!best) return { d: `M${p.x} ${p.y}L${q.x} ${q.y}`, ok: false, points: curve(p, mid, q) };
+    const d = best.e ? `M${p.x} ${p.y}C${best.c.x} ${best.c.y} ${best.e.x} ${best.e.y} ${q.x} ${q.y}` : `M${p.x} ${p.y}Q${best.c.x} ${best.c.y} ${q.x} ${q.y}`;
+    return { d, ok: true, points: best.points, box: best.box, crossings: best.hits };
   }
 
   // ---- 찍기 규칙: 시작점(캐릭터)과 이어진 노드만, 되돌릴 때는 남은 노드가 끊기지 않을 때만 ----
@@ -349,10 +393,15 @@
         name.setAttribute('text-anchor', anchor);
       }
     }
-    for (const view of edgeViews) {
-      const result = route(view.a, view.b);
+    // 짧은 줄부터 그려 두고, 긴 줄이 그 사이를 피해 휘게 한다.
+    const placed = [];
+    const length = view => Math.hypot(nodes.get(view.a).x - nodes.get(view.b).x, nodes.get(view.a).y - nodes.get(view.b).y);
+    for (const view of [...edgeViews].sort((x, y) => length(x) - length(y))) {
+      const result = route(view.a, view.b, placed);
       view.path.setAttribute('d', result.d);
       view.ok = result.ok;
+      view.crossings = result.crossings || 0;
+      placed.push({ a: view.a, b: view.b, points: result.points, box: result.box || boxOf(result.points) });
     }
     draw();
   }

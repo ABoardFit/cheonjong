@@ -89,28 +89,30 @@
       "x": -439,
       "y": -353,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "공격력 +1",
+      "category": "righteous",
+      "glyph": "力",
+      "name": "검세 단련",
+      "desc": "매화로 가는 수련의 길.",
       "effects": [
         "공격력 +1"
       ],
-      "custom": true
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnwtcf1",
       "x": -566,
       "y": -411,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "이동 속도 1%",
+      "category": "righteous",
+      "glyph": "輕",
+      "name": "경신 수련",
+      "desc": "매화로 가는 수련의 길.",
       "effects": [
-        "이동 속도 1%"
+        "이동 속도 +1%"
       ],
-      "custom": true
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnx18tf",
@@ -118,9 +120,9 @@
       "y": -573,
       "kind": "minor",
       "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
+      "glyph": "路",
+      "name": "사잇길",
+      "desc": "세력과 세력을 잇는 길.",
       "effects": [],
       "custom": true
     },
@@ -129,636 +131,780 @@
       "x": -623,
       "y": -452,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "체력 +5",
+      "category": "righteous",
+      "glyph": "體",
+      "name": "체력 단련",
+      "desc": "매화로 가는 수련의 길.",
       "effects": [
         "체력 +5"
       ],
-      "custom": true
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxb8zq",
       "x": -680,
       "y": -493,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "공격력 +1",
+      "category": "righteous",
+      "glyph": "力",
+      "name": "검세 단련",
+      "desc": "매화로 가는 수련의 길.",
       "effects": [
         "공격력 +1"
       ],
-      "custom": true
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxb98u",
       "x": -737,
       "y": -534,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "체력 +5",
+      "category": "righteous",
+      "glyph": "體",
+      "name": "체력 단련",
+      "desc": "매화로 가는 수련의 길.",
       "effects": [
         "체력 +5"
       ],
-      "custom": true
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxb9ix",
       "x": -309,
       "y": -599,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "이동 속도 +1%",
+      "category": "righteous",
+      "glyph": "輕",
+      "name": "경신 수련",
+      "desc": "매화로 가는 수련의 길.",
       "effects": [
         "이동 속도 +1%"
       ],
-      "custom": true
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxb9vj",
       "x": -434,
       "y": -1388,
-      "kind": "minor",
-      "category": "",
-      "glyph": "",
+      "kind": "fusion",
+      "category": "righteous",
+      "glyph": "絶",
       "name": "매향침골",
-      "desc": "매향침골 해금",
-      "effects": [],
-      "custom": true
+      "desc": "절세신공. 육합공과 조합. 주변의 서로 다른 적 최대 스무 명에게 도 또는 꽃잎 중 하나가 무작위로 떨어진다. 도는 남아 있는 원거리 적을 우선 타게팅한다. 실제 꽃잎 낙하만 획득할 꽃잎을 생성하며, 도와 꽃잎 모두 지속 피해 영역을 남긴다.",
+      "effects": [
+        "매향침골 해금 (절세신공)"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxb9zv",
       "x": -485,
       "y": -1271,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "雨",
+      "name": "매향성류",
+      "desc": "매화검우 6단계. 꽃잎이 떨어진 곳에 3초간 지속 데미지를 주는 장판을 남긴다.",
+      "effects": [
+        "매화검우 6단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxba49",
       "x": -469,
       "y": -1138,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "雨",
+      "name": "낙매성우",
+      "desc": "매화검우 5단계. 주변의 서로 다른 적 최대 스무 명에게 도 대신 매화 꽃잎이 하나씩 순차적으로 떨어진다. 처치하지 않아도 실제로 꽃잎이 떨어진 곳에 획득할 꽃잎이 생성된다.",
+      "effects": [
+        "매화검우 5단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxclq6",
       "x": -393,
       "y": -1012,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "華",
+      "name": "화산 검결",
+      "desc": "화산 무공의 위력을 끌어올린다.",
+      "effects": [
+        "화산 스킬 피해 +6%"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxcrfl",
       "x": -544,
       "y": -952,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "雨",
+      "name": "매화난만",
+      "desc": "매화검우 4단계. 주변의 서로 다른 적 최대 열 명에게 외날 도가 하나씩 동시에 떨어져 데미지를 준다.",
+      "effects": [
+        "매화검우 4단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxczs1",
       "x": -721,
       "y": -1013,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "雨",
+      "name": "매화혈우",
+      "desc": "매화검우 3단계. 주변의 서로 다른 적 최대 열 명에게 외날 도가 하나씩 순차적으로 떨어진다.",
+      "effects": [
+        "매화검우 3단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxd1ys",
       "x": -782,
       "y": -1197,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "華",
+      "name": "화산 검결",
+      "desc": "화산 무공의 위력을 끌어올린다.",
+      "effects": [
+        "화산 스킬 피해 +6%"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxdspz",
       "x": -664,
       "y": -1360,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
+      "category": "righteous",
+      "glyph": "雨",
       "name": "매화낙락",
-      "desc": "매화낙락 해금",
-      "effects": [],
-      "custom": true
+      "desc": "매화검우 2단계. 주변의 서로 다른 적 최대 세 명에게 외날 도가 하나씩 떨어진다. 적이 한 명이면 도도 하나만 떨어진다.",
+      "effects": [
+        "매화검우 2단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxdzog",
       "x": -518,
       "y": -1455,
-      "kind": "minor",
-      "category": "",
-      "glyph": "",
+      "kind": "skill",
+      "category": "righteous",
+      "glyph": "雨",
       "name": "매개이도",
-      "desc": "매개이도 해금",
-      "effects": [],
-      "custom": true
+      "desc": "매화검우 1단계 · 해금. 주변의 가까운 적 최대 한 명에게 한쪽에만 날이 선 휘어진 외날 도가 하나 떨어진다. 도는 적 뒤로 내려와 땅에 절반쯤 박혔다가 사라진다. 적이 없으면 떨어지지 않는다.",
+      "effects": [
+        "매화검우 해금"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxebd9",
       "x": -346,
       "y": -1404,
-      "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "육합공 6성 해금",
+      "kind": "notable",
+      "category": "righteous",
+      "glyph": "梅",
+      "name": "매화심",
+      "desc": "다섯 꽃잎이 모이는 화산 무학의 중심.",
       "effects": [
         "육합공 6성 해금"
       ],
-      "custom": true
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxeef4",
       "x": -381,
       "y": -1596,
-      "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "매화접무",
-      "desc": "매화접무 해금",
-      "effects": [],
-      "custom": true
+      "kind": "skill",
+      "category": "righteous",
+      "glyph": "影",
+      "name": "매화 접무",
+      "desc": "암향표 1단계 · 해금. 이동속도 증가.",
+      "effects": [
+        "암향표 해금"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxeha0",
       "x": -522,
       "y": -1711,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
+      "category": "righteous",
+      "glyph": "影",
       "name": "매개이도",
-      "desc": "매개이도 해금",
-      "effects": [],
-      "custom": true
+      "desc": "암향표 2단계. 이동속도 증가.",
+      "effects": [
+        "암향표 2단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxeoh0",
       "x": -725,
       "y": -1751,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "華",
+      "name": "화산 검결",
+      "desc": "화산 무공의 위력을 끌어올린다.",
+      "effects": [
+        "화산 스킬 피해 +6%"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxer2i",
       "x": -872,
       "y": -1662,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "影",
+      "name": "매화낙섬",
+      "desc": "암향표 3단계. 도주기 착지 자리에 단순한 먹빛 파문이 한 번 퍼진다. 바깥으로 장식 꽃잎을 뿌리지 않으며 넉백 이전에 데미지를 판정한다.",
+      "effects": [
+        "암향표 3단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxeuwe",
       "x": -894,
       "y": -1475,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "影",
+      "name": "매화인동",
+      "desc": "암향표 4단계. 도주기 사용 도중 + 사용 후 1초 동안 받는 데미지 30% 감소.",
+      "effects": [
+        "암향표 4단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxey4e",
       "x": -767,
       "y": -1363,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "華",
+      "name": "화산 검결",
+      "desc": "화산 무공의 위력을 끌어올린다.",
+      "effects": [
+        "화산 스킬 피해 +6%"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnxf0yd",
       "x": -690,
       "y": -1405,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "影",
+      "name": "매화분분",
+      "desc": "암향표 5단계. 이동하는 경로에 3초간 지속 데미지를 주는 장판 생성.",
+      "effects": [
+        "암향표 5단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvny78x8",
       "x": -615,
       "y": -1482,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "影",
+      "name": "매영조하",
+      "desc": "암향표 6단계. 넓은 경로에 3초간 지속 데미지를 주는 장판 생성.",
+      "effects": [
+        "암향표 6단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvny8bxx",
       "x": -342,
       "y": -997,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "육합공이 화산검법에 맞게 변한다.",
+      "category": "righteous",
+      "glyph": "合",
+      "name": "육합 낙화",
+      "desc": "육합공의 기운이 꽃잎을 떨군다.",
       "effects": [
         "육합공이 꽃잎을 드랍"
       ],
-      "custom": true
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvny900b",
       "x": -276,
       "y": -1421,
-      "kind": "minor",
-      "category": "",
-      "glyph": "",
+      "kind": "skill",
+      "category": "righteous",
+      "glyph": "劍",
       "name": "매화노방",
-      "desc": "매화노방 해",
-      "effects": [],
-      "custom": true
+      "desc": "이십사수매화검법 1단계 · 해금. 바로 앞의 적 한 명을 8방향으로 내려찍는다. 먼 적까지 선을 연결하지 않는다.",
+      "effects": [
+        "이십사수매화검법 해금"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvny9ti8",
       "x": -154,
       "y": -1575,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
+      "category": "righteous",
+      "glyph": "劍",
       "name": "매화토염",
-      "desc": "매화토염 해금",
-      "effects": [],
-      "custom": true
+      "desc": "이십사수매화검법 2단계. 몸 중심에서 적이 있는 방향으로 가로로 벤다. 두껍고 거친 무광 분홍색 도트 검로를 그리며, 몸을 꼭짓점으로 한 75도 부채꼴과 실제 피해 범위가 일치한다.",
+      "effects": [
+        "이십사수매화검법 2단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnyaifa",
       "x": -401,
       "y": -1477,
-      "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "매인설한 해금",
-      "desc": "매인설한 해금",
-      "effects": [],
-      "custom": true
+      "kind": "fusion",
+      "category": "righteous",
+      "glyph": "絶",
+      "name": "매인설한",
+      "desc": "절세신공. 오행매화보와 조합. 꽃잎이 1개 이상일 때 도주기 사용 시 보유 꽃잎을 모두 소모하고 0.3초간 무적. 동시에 3초간 꽃잎 획득 불가(생성은 가능).",
+      "effects": [
+        "매인설한 해금 (절세신공)"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnyamd2",
       "x": -149,
       "y": -1855,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "華",
+      "name": "화산 검결",
+      "desc": "화산 무공의 위력을 끌어올린다.",
+      "effects": [
+        "화산 스킬 피해 +6%"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnyapkw",
       "x": -215,
       "y": -1945,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "劍",
+      "name": "매화구변",
+      "desc": "이십사수매화검법 3단계. 바라보는 방향에서 시작해 몸 중심으로 검을 시계방향 360도 휘두른다. 실제 검 끝의 회전과 함께 두껍고 거친 무광 분홍색 도트 검로가 원을 이루며 이전 종·횡베기 연출을 대체한다.",
+      "effects": [
+        "이십사수매화검법 3단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnyarzx",
       "x": -372,
       "y": -1986,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "華",
+      "name": "화산 검결",
+      "desc": "화산 무공의 위력을 끌어올린다.",
+      "effects": [
+        "화산 스킬 피해 +6%"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnyaw90",
       "x": -505,
       "y": -1914,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "劍",
+      "name": "매화점점",
+      "desc": "이십사수매화검법 4단계. 바라보는 방향부터 시계방향으로 원형 검로와 다섯 꽃잎을 그린다. 몸 중심의 꽃잎 안쪽에도 같은 분홍 먹의 거친 붓결이 남는다.",
+      "effects": [
+        "이십사수매화검법 4단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnyb0fz",
       "x": -534,
       "y": -1791,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "劍",
+      "name": "매향취접",
+      "desc": "이십사수매화검법 5단계. 완성된 원과 속이 채워진 다섯 꽃잎 위에 길고 두꺼운 검격을 흩뿌린다. 1차 타격에 이어 원형 폭발이 기본 검격 반경의 1.5배까지 커지며 사라지고 해당 영역에 2차 충격 피해를 준다.",
+      "effects": [
+        "이십사수매화검법 5단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnyb3jb",
       "x": -394,
       "y": -1717,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "華",
+      "name": "화산 검결",
+      "desc": "화산 무공의 위력을 끌어올린다.",
+      "effects": [
+        "화산 스킬 피해 +6%"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnyb5ia",
       "x": -317,
       "y": -1581,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "劍",
+      "name": "매향성류",
+      "desc": "이십사수매화검법 6단계. 5단계의 꽃·긴 검격·원형 폭발과 1·2차 충격 피해를 유지한다. 원형 폭발이 퍼지는 범위에 맞춰 옅은 반투명 분홍빛의 3초 지속 피해 영역이 커진다. 같은 무공이 같은 구역을 덮으면 장판 피해와 이펙트를 중첩하지 않는다.",
+      "effects": [
+        "이십사수매화검법 6단계"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnyb7yf",
       "x": -322,
       "y": -1455,
-      "kind": "minor",
-      "category": "",
-      "glyph": "",
+      "kind": "fusion",
+      "category": "righteous",
+      "glyph": "絶",
       "name": "매화만리향",
-      "desc": "매화만리향 해금",
-      "effects": [],
-      "custom": true
+      "desc": "절세신공. 자하신공과 조합. 4·5·6단계에서 쓰는 단색 분홍 먹의 꽃 모양과 질감을 그대로 큰 크기로 펼치고, 몸 중심에 같은 질감의 큰 원을 함께 그린다. 꽃과 원은 바라보는 방향부터 시계방향으로 나타난 뒤, 같은 방향으로 작은 도트 꽃잎으로 풀려 사라진다. 아직 풀리지 않은 꽃과 원은 원래 색과 불투명도를 유지한다. 흩어진 꽃잎은 큰 꽃의 원 주변에서 빠르게 사라지며, 공격마다 움직임을 독립적으로 유지한다. 반경 안에 길고 두꺼운 검격을 하나씩 흩뿌리며 기존 1·2차 직접 피해의 합계를 한 번에 준다. 추가 상향 계수는 추후 조정한다. 기초 검격을 겹쳐 재생하지 않는다. 옅은 반투명 분홍빛의 3초 장판과 양쪽 무공의 효과를 계승하되 같은 구역의 장판 이펙트는 중첩하지 않고, 화면 전체에 꽃잎이 천천히 내린다. 꽃잎은 캐릭터를 따라 끌려가지 않고 바람과 중력을 따라 흐른다. 지속 피해 범위는 캐릭터 몸 중심의 큰 꽃 반경이며 이동을 따라간다. 화면 전체에 피해를 주지는 않고 기존 검법 장판과 같은 무공의 피해로 처리해 중첩하지 않는다.",
+      "effects": [
+        "매화만리향 해금 (절세신공)"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnybflr",
       "x": -256,
       "y": -1315,
-      "kind": "minor",
-      "category": "",
-      "glyph": "",
+      "kind": "skill",
+      "category": "righteous",
+      "glyph": "步",
       "name": "오행매화보",
-      "desc": "오행매화보 해금",
-      "effects": [],
-      "custom": true
+      "desc": "오행매화보 · 해금.",
+      "effects": [
+        "오행매화보 해금"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnybie6",
       "x": -93,
       "y": -1288,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
+      "category": "righteous",
+      "glyph": "步",
       "name": "오행매화보 1성",
-      "desc": "오행매화보 1성 해금",
-      "effects": [],
-      "custom": true
+      "desc": "오행매화보 1성. 이동속도 증가. 암향표와 같은 도주기를 강화하며, 착지 지점에서 매화낙섬과 같은 먹빛 파문을 한 번 펼친다. 이 파문 자체는 추가 피해를 주지 않는다.",
+      "effects": [
+        "오행매화보 1성"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnybkll",
       "x": 92,
       "y": -1321,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "步",
+      "name": "오행매화보 2성",
+      "desc": "오행매화보 2성. 도주기 이동 거리 증가.",
+      "effects": [
+        "오행매화보 2성"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnybmrb",
       "x": 185,
       "y": -1512,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "氣",
+      "name": "운기조식",
+      "desc": "기혈을 다스려 내력을 쌓는다.",
+      "effects": [
+        "내력 +15"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnybp00",
       "x": 96,
       "y": -1665,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "步",
+      "name": "오행매화보 3성",
+      "desc": "오행매화보 3성. 이동속도 증가.",
+      "effects": [
+        "오행매화보 3성"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnybs57",
       "x": 19,
       "y": -1738,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "步",
+      "name": "오행매화보 4성",
+      "desc": "오행매화보 4성. 도주기에 돌진 데미지 계수 추가.",
+      "effects": [
+        "오행매화보 4성"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnybvz2",
       "x": -70,
       "y": -1712,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "氣",
+      "name": "운기조식",
+      "desc": "기혈을 다스려 내력을 쌓는다.",
+      "effects": [
+        "내력 +15"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnybycr",
       "x": -108,
       "y": -1519,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "步",
+      "name": "오행매화보 5성",
+      "desc": "오행매화보 5성. 도주기 착지 지점에서 몹들 넉백.",
+      "effects": [
+        "오행매화보 5성"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnyc194",
       "x": -257,
       "y": -1399,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
+      "category": "righteous",
+      "glyph": "步",
       "name": "오행매화보 6성",
-      "desc": "오행매화보 6성 해금",
-      "effects": [],
-      "custom": true
+      "desc": "오행매화보 6성. 도주기 데미지에 피격받은 적들이 꽃잎을 떨어뜨린다. 암향표 3단계를 보유하면 해당 폭발 데미지도 적용.",
+      "effects": [
+        "오행매화보 6성"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnycfbz",
       "x": -418,
       "y": -1349,
-      "kind": "minor",
-      "category": "",
-      "glyph": "",
+      "kind": "skill",
+      "category": "righteous",
+      "glyph": "紫",
       "name": "자하신공",
-      "desc": "자하신공 해금",
-      "effects": [],
-      "custom": true
+      "desc": "자하신공 · 해금.",
+      "effects": [
+        "자하신공 해금"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnycibs",
       "x": -418,
       "y": -1179,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
+      "category": "righteous",
+      "glyph": "紫",
       "name": "자하신공 1성",
-      "desc": "자하신공 1성 해금",
-      "effects": [],
-      "custom": true
+      "desc": "자하신공 1성. 적 처치 시 꽃잎 드랍. 보유 꽃잎은 캐릭터 몸통 주위를 앞뒤로 돌며 받는 데미지를 상쇄시켜 준다.",
+      "effects": [
+        "자하신공 1성"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnycki9",
       "x": -362,
       "y": -1056,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "紫",
+      "name": "자하신공 2성",
+      "desc": "자하신공 2성. 꽃잎 한계치 상승.",
+      "effects": [
+        "자하신공 2성"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnycmvf",
       "x": -241,
       "y": -965,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "氣",
+      "name": "운기조식",
+      "desc": "기혈을 다스려 내력을 쌓는다.",
+      "effects": [
+        "내력 +15"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnycozn",
       "x": -137,
       "y": -951,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "紫",
+      "name": "자하신공 3성",
+      "desc": "자하신공 3성. 꽃잎 갑옷 한계치 상승. 한 번의 데미지에 꽃잎 최대 1개 더 소모 가능.",
+      "effects": [
+        "자하신공 3성"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnycr2w",
       "x": 22,
       "y": -1063,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "紫",
+      "name": "자하신공 4성",
+      "desc": "자하신공 4성. 보유한 꽃잎 개수당 데미지 증가. 검이 보라색이 된다.",
+      "effects": [
+        "자하신공 4성"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnycv44",
       "x": 99,
       "y": -1210,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "氣",
+      "name": "운기조식",
+      "desc": "기혈을 다스려 내력을 쌓는다.",
+      "effects": [
+        "내력 +15"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnycxrd",
       "x": -143,
       "y": -1226,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
-      "name": "새 노드",
-      "desc": "",
-      "effects": [],
-      "custom": true
+      "category": "righteous",
+      "glyph": "紫",
+      "name": "자하신공 5성",
+      "desc": "자하신공 5성. 보유 꽃잎 N개로 서로 다른 주변 적 최대 N명에게 한 개씩 부착해 지속 데미지. 한 적에게 여러 꽃잎은 붙지 않으며, 부착 비용과 시간 만료는 없다. 적 머리 위의 꽃잎과 몸 전체를 두르는 분홍 외곽선으로 부착을 표시한다. 피격으로 보유량이 줄면 그에 맞춰 부착 수가 줄고, 보유량 0개에서는 모든 부착이 사라진다.",
+      "effects": [
+        "자하신공 5성"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     },
     {
       "id": "custom:mvnyd1af",
       "x": -353,
       "y": -1342,
       "kind": "minor",
-      "category": "",
-      "glyph": "",
+      "category": "righteous",
+      "glyph": "紫",
       "name": "자하신공 6성",
-      "desc": "자하신공 6성 해금",
-      "effects": [],
-      "custom": true
+      "desc": "자하신공 6성. 꽃잎 부착 적에게 검·검우·경공·착지 직접 공격이 명중하면 단일 대상 추가 피해를 주고 적의 몸 전체가 잠깐 분홍빛으로 점멸한다. 장판·꽃잎 부착·매화향의 지속 피해는 이 명중 효과를 발동하지 않는다.",
+      "effects": [
+        "자하신공 6성"
+      ],
+      "custom": true,
+      "faction": "hwasan"
     }
   ],
   "removed": [
@@ -1084,5 +1230,5 @@
       ]
     ]
   },
-  "savedAt": "2026-10-25T15:53:17.961Z"
+  "savedAt": "2026-10-25T16:02:16.597Z"
 }
