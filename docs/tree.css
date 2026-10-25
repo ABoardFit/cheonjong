@@ -32,12 +32,21 @@ body.tree-open { overflow: hidden; }
 .tree-shell[hidden] { display: none; }
 .tree-svg:active { cursor: grabbing; }
 
-.tree-edges line { stroke: #cdc9bb; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linecap: round; }
-.tree-edges line.is-reach { stroke: var(--accent); stroke-dasharray: 5 6; opacity: .65; }
-.tree-edges line.is-on { stroke: var(--accent); stroke-width: 4; }
+.tree-edges path { fill: none; stroke: #cdc9bb; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.tree-edges path.is-reach { stroke: var(--accent); stroke-dasharray: 5 6; opacity: .65; }
+.tree-edges path.is-on { stroke: var(--accent); stroke-width: 4; }
 
 .tree-node { cursor: pointer; outline: none; }
 .tree-hit { fill: transparent; }
+.tree-glow { fill: none; stroke: none; }
+/* 검색에 걸린 패시브: 흰빛으로 점멸 */
+.tree-node.is-match .tree-glow { fill: #ffffff; stroke: #ffffff; stroke-width: 6; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px #fff); animation: tree-blink .9s ease-in-out infinite; }
+.tree-node.is-match .tree-dot { stroke: var(--ink); }
+@keyframes tree-blink { 0%, 100% { opacity: .95; } 50% { opacity: .15; } }
+/* 수정 중: 연결이 하나도 없는 노드는 노랗게 빛나고, 돌아갈 길이 없는 줄은 붉은 점선 */
+.tree-screen.is-editing .tree-node.is-isolated .tree-glow { fill: #ffd84a; stroke: #f5b400; stroke-width: 3; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 8px #ffcf33); animation: tree-isolated 1.4s ease-in-out infinite; }
+@keyframes tree-isolated { 0%, 100% { opacity: .9; } 50% { opacity: .45; } }
+.tree-edges path.is-blocked { stroke: #c0392b; stroke-dasharray: 3 5; }
 .tree-dot { fill: var(--paper-light); stroke: #9ea094; stroke-width: 2; vector-effect: non-scaling-stroke; transition: fill .2s, stroke .2s; }
 .tree-glyph { fill: #6f7268; font-family: var(--serif); pointer-events: none; }
 .tree-name {
@@ -96,6 +105,23 @@ body.tree-open { overflow: hidden; }
 .tree-info p { margin: 0; font-size: 12px; line-height: 1.7; color: #565c55; }
 .tree-info .tree-info-kind { font-size: 11px; letter-spacing: .14em; color: var(--accent); }
 .tree-info .tree-info-status { color: var(--ink); }
+.tree-info-effects { margin: 0; padding-left: 18px; font-size: 12px; color: var(--accent); }
+
+/* 오른쪽 위: 검색창 + 접을 수 있는 효과 합계 */
+.tree-side { position: absolute; top: 74px; right: 16px; width: 260px; display: grid; gap: 8px; }
+.tree-search { position: relative; display: block; }
+.tree-search input {
+  width: 100%; box-sizing: border-box; padding: 9px 44px 9px 12px; border: 1px solid var(--ink); background: var(--paper-light);
+  font: 13px var(--sans); color: var(--ink);
+}
+.tree-search-count { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--accent); }
+.tree-effects { border: 1px solid var(--ink); background: #f8f5edf0; box-shadow: 0 8px 24px #292e2c1f; }
+.tree-effects-toggle {
+  width: 100%; min-width: 0; margin: 0; padding: 9px 12px; display: flex; justify-content: space-between; border: 0; background: none;
+  color: var(--ink); font-family: var(--serif); font-size: 14px; letter-spacing: .05em; text-align: left;
+}
+.tree-effects-list { margin: 0; padding: 4px 12px 12px 28px; max-height: 40vh; overflow-y: auto; display: grid; gap: 4px; font-size: 13px; border-top: 1px solid var(--line); }
+.tree-effects-list .is-empty { list-style: none; margin-left: -16px; color: var(--muted); font-size: 12px; }
 .tree-info button {
   min-width: 0; margin: 4px 0 0; padding: 10px 14px; justify-content: center; border: 1px solid var(--ink); background: transparent;
   color: var(--ink); letter-spacing: .15em;
@@ -111,6 +137,8 @@ body.tree-open { overflow: hidden; }
   .tree-tools { margin-left: auto; }
   .tree-legend { display: none; }
   .tree-info { left: 10px; right: 10px; bottom: 10px; width: auto; }
+  .tree-side { top: 112px; left: 10px; right: 10px; width: auto; }
+  .tree-effects-list { max-height: 26vh; }
 }
 @media (prefers-reduced-motion: reduce) {
   .title-screen.hub .hub-brand, .title-screen.hub .hub-factions, .title-screen.hub .hub-devlink, .title-screen.hub .hub-side,

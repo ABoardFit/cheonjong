@@ -18,10 +18,12 @@ const excluded = path => path.startsWith('qa-motion') || path.endsWith('.txt');
 
 const commit = git('rev-parse', '--short', 'HEAD').toString().trim();
 const docs = fileURLToPath(new URL('./docs/', import.meta.url));
-// docs/layout.json is the layout saved from the edit tool on the site (committed by it); keep it.
-const layoutFile = join(docs, 'layout.json');
-let layout = null;
+// docs/layout.json (page layout) and docs/tree.json (무공록 tree) are saved from the edit tools on the site
+// (committed by them); keep them.
+const layoutFile = join(docs, 'layout.json'), treeFile = join(docs, 'tree.json');
+let layout = null, tree = null;
 try { layout = readFileSync(layoutFile); } catch {}
+try { tree = readFileSync(treeFile); } catch {}
 rmSync(docs, { recursive: true, force: true });
 let count = 0;
 for (const path of git('ls-tree', '-r', '-z', '--full-tree', '--name-only', 'HEAD', '--', prefix).toString().split('\0')) {
@@ -34,14 +36,16 @@ for (const path of git('ls-tree', '-r', '-z', '--full-tree', '--name-only', 'HEA
 }
 // The page edit tool lives in this repo (editor/) and is added to the game's page here. The page stays
 // hidden (at most 1.5s) until the saved layout is applied, so visitors do not see parts jump.
-for (const file of ['ui-editor.js', 'ui-editor.css']) {
+for (const file of ['ui-editor.js', 'ui-editor.css', 'tree-editor.js', 'tree-editor.css']) {
   writeFileSync(join(docs, file), readFileSync(new URL(`./editor/${file}`, import.meta.url)));
 }
-writeFileSync(layoutFile, layout || `${JSON.stringify({ version: 3, wide: { parts: {}, added: [], seq: 0 }, narrow: { parts: {}, added: [], seq: 0 } }, null, 2)}\n`);
+writeFileSync(treeFile, tree || `${JSON.stringify({ version: 1, nodes: {}, added: [], removed: [], links: { add: [], remove: [] } }, null, 2)}\n`);
+writeFileSync(layoutFile, layout ||`${JSON.stringify({ version: 3, wide: { parts: {}, added: [], seq: 0 }, narrow: { parts: {}, added: [], seq: 0 } }, null, 2)}\n`);
 const index = join(docs, 'index.html');
 let html = readFileSync(index, 'utf8').replace('</head>', () =>
   '  <script>document.documentElement.classList.add(\'uie-loading\')</script>\n' +
-  '  <link rel="stylesheet" href="ui-editor.css">\n  <script src="ui-editor.js" defer></script>\n</head>');
+  '  <link rel="stylesheet" href="ui-editor.css">\n  <link rel="stylesheet" href="tree-editor.css">\n' +
+  '  <script src="ui-editor.js" defer></script>\n  <script src="tree-editor.js" defer></script>\n</head>');
 // GitHub Pages lets browsers keep files for 10 minutes. Each script and stylesheet address carries a hash of
 // its content, so a new deploy is fetched fresh and never mixed with old cached files.
 html = html.replace(/(href|src)="([^":?#]+\.(?:css|js))"/g, (match, attr, file) => {

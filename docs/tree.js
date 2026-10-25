@@ -1,7 +1,8 @@
 /* 무공록 스킬 트리. 허브의 무공록(또는 캐릭터)을 누르면 다른 부분은 화면 밖으로 밀려나고, 캐릭터·먹 원·도장이
  * 남은 채 줌아웃되며 그 둘레로 트리가 펼쳐진다. 캐릭터가 트리의 시작점이고 정파는 왼쪽 위, 사파는 오른쪽 위,
  * 세외는 아래로 갈라진다. 우선 개발 6세력은 원형 군집(화산만 실제 무공 이름), 나머지는 잠긴 자리다.
- * 지금은 화면과 찍기만 있다. 전투 효과는 다음 단계에서 연결하며, 포인트(기본 3 + 경지마다 3)도 임시 규칙이다. */
+ * 노드의 효과 값·포인트(기본 3 + 경지마다 3)는 임시이며 아직 전투에 연결하지 않았다(오른쪽 위 효과 합계에만 보인다).
+ * 트리 모양(위치·연결·글·효과)은 CheonTree.model 을 고치고 rebuild()/layout() 하면 다시 그려진다(수정 도구용). */
 (() => {
   'use strict';
   const data = window.CHEONJONG_DATA;
@@ -21,16 +22,22 @@
   };
   const HWASAN_GLYPHS = { plum_sword: '劍', zixia: '紫', plum_rain: '雨', liuhe: '合', dark_fragrance: '影', five_elements: '步' };
   const HWASAN_PAIRS = [['plum_sword', 'zixia', '매화만리향'], ['plum_rain', 'liuhe', '매향침골'], ['dark_fragrance', 'five_elements', '매인설한']];
+  // 노드 종류별 임시 효과(전투 연결 전, 효과 합계에 보이는 값).
+  const DEFAULT_EFFECTS = {
+    path: ['이동 속도 +2%'], bridge: ['공력 +2%'], minor: ['체력 +3%'], entry: ['공력 +3%'],
+    gate: ['치명타 확률 +2%'], heart: ['피해 +8%'],
+  };
+  const RADIUS = { origin: 0, minor: 9, entry: 15, skill: 19, fusion: 17, notable: 27, locked: 15 };
+  const radiusOf = n => (n.kind === 'origin' ? PORTRAIT_W / 2 : RADIUS[n.kind] || 12);
   const pointsFor = realmIndex => 3 + realmIndex * 3;
   const rad = degrees => degrees * Math.PI / 180;
   const polar = (r, degrees) => ({ x: Math.cos(rad(degrees)) * r, y: Math.sin(rad(degrees)) * r });
 
-  // ---- 트리 모양 ----
-  const nodes = new Map();
-  const edges = [];
-  const labels = [];
-  function node(id, props) { nodes.set(id, { id, ...props }); return id; }
-  function link(a, b) { edges.push([a, b]); }
+  // ---- 트리 모양(기본) ----
+  const model = { nodes: new Map(), edges: [], labels: [] };
+  const nodes = model.nodes;
+  function node(id, props) { nodes.set(id, { id, effects: [], ...props }); return id; }
+  function link(a, b) { model.edges.push([a, b]); }
 
   node('origin', { kind: 'origin', x: 0, y: 0, name: '천종지자', desc: '모든 무학의 시작. 여기에서 이어진 노드만 찍을 수 있습니다.' });
 
@@ -43,35 +50,39 @@
     // 군집 입구는 트리 중심 쪽을 향한다.
     const inward = facing + 180;
     const entry = node(`${prefix}entry`, { kind: 'entry', category, faction: faction.id, ...polar(ringRadius + 64, inward), glyph: '門',
-      name: `${faction.name} 입문`, desc: hwasan ? '화산의 문을 두드립니다. 매화검수의 길이 여기서 시작됩니다.' : `${faction.name}의 문. 임시 뼈대이며 무공은 설계 예정입니다.` });
+      name: `${faction.name} 입문`, effects: [...DEFAULT_EFFECTS.entry],
+      desc: hwasan ? '화산의 문을 두드립니다. 매화검수의 길이 여기서 시작됩니다.' : `${faction.name}의 문. 임시 뼈대이며 무공은 설계 예정입니다.` });
     shift(entry, center);
-    // 고리: [무공, 짝 무공, 합] × 3, 사이사이 기운 노드.
+    // 고리: [무공, 합, 짝 무공, 기운] × 3.
     const ring = [];
     for (let pair = 0; pair < 3; pair++) {
       const [a, b, fusion] = hwasan ? HWASAN_PAIRS[pair] : [null, null, null];
       const skillA = hwasan ? skills.find(skill => skill.id === a) : null;
       const skillB = hwasan ? skills.find(skill => skill.id === b) : null;
+      const nameA = hwasan ? skillA.name : `${faction.name} 초식 ${'一二三'[pair]}`;
+      const nameB = hwasan ? skillB.name : `${faction.name} 심법 ${'一二三'[pair]}`;
+      const fusionName = hwasan ? fusion : `${faction.name} 합 ${'一二三'[pair]}`;
       ring.push(node(`${prefix}s${pair * 2}`, { kind: 'skill', category, faction: faction.id, glyph: hwasan ? HWASAN_GLYPHS[a] : glyphs[pair * 2],
-        name: hwasan ? skillA.name : `${faction.name} 초식 ${'一二三'[pair]}`,
+        name: nameA, effects: [`${nameA} 습득`],
         desc: hwasan ? `${skillA.type} · ${skillA.levels[0].title}: ${skillA.levels[0].description}` : '임시 뼈대 · 초식 설계 예정' }));
       ring.push(node(`${prefix}f${pair}`, { kind: 'fusion', category, faction: faction.id, glyph: '合',
-        name: hwasan ? fusion : `${faction.name} 합 ${'一二三'[pair]}`,
+        name: fusionName, effects: [`${fusionName} 해금`],
         desc: hwasan ? `${skillA.name}과 ${skillB.name}을 함께 완성하면 피어나는 절세신공.` : '임시 뼈대 · 조합 설계 예정' }));
       ring.push(node(`${prefix}s${pair * 2 + 1}`, { kind: 'skill', category, faction: faction.id, glyph: hwasan ? HWASAN_GLYPHS[b] : glyphs[pair * 2 + 1],
-        name: hwasan ? skillB.name : `${faction.name} 심법 ${'一二三'[pair]}`,
+        name: nameB, effects: [`${nameB} 습득`],
         desc: hwasan ? `${skillB.type} · ${skillB.levels[0].title}: ${skillB.levels[0].description}` : '임시 뼈대 · 심법 설계 예정' }));
-      ring.push(node(`${prefix}m${pair}`, { kind: 'minor', category, faction: faction.id,
-        name: hwasan ? '매화의 기운' : `${faction.name}의 기운`, desc: '기초 수련. 효과는 다음 단계에서 연결합니다.' }));
+      ring.push(node(`${prefix}m${pair}`, { kind: 'minor', category, faction: faction.id, effects: [...DEFAULT_EFFECTS.minor],
+        name: hwasan ? '매화의 기운' : `${faction.name}의 기운`, desc: '기초 수련.' }));
     }
-    // 입구와 마주 보는 기운 노드가 입구 쪽에 오도록 고리를 돌린다.
     ring.forEach((id, i) => { Object.assign(nodes.get(id), polar(ringRadius, inward + 45 + i * 30), { cx: center.x, cy: center.y }); shift(id, center); });
     ring.forEach((id, i) => link(id, ring[(i + 1) % ring.length]));
     link(entry, ring[ring.length - 1]);
     const heart = node(`${prefix}heart`, { kind: 'notable', category, faction: faction.id, x: center.x, y: center.y, glyph: '奧',
-      name: `${faction.name} 오의`, desc: hwasan ? '화산 무학의 정점. 세 절세신공을 잇는 자리이며 효과는 설계 예정입니다.' : '임시 뼈대 · 오의 설계 예정' });
+      name: `${faction.name} 오의`, effects: [...DEFAULT_EFFECTS.heart],
+      desc: hwasan ? '화산 무학의 정점. 세 절세신공을 잇는 자리입니다.' : '임시 뼈대 · 오의 설계 예정' });
     ring.filter(id => nodes.get(id).kind === 'fusion').forEach(id => link(id, heart));
     const far = polar(ringRadius + 78, facing);
-    labels.push({ x: center.x + far.x, y: center.y + far.y + 10, text: faction.name, size: 34, kind: 'faction' });
+    model.labels.push({ x: center.x + far.x, y: center.y + far.y + 10, text: faction.name, size: 34, kind: 'faction' });
     return entry;
   }
   function shift(id, by) { const n = nodes.get(id); n.x += by.x; n.y += by.y; }
@@ -80,22 +91,21 @@
     const branch = BRANCHES[category.id];
     if (!branch) continue;
     const start = node(`${category.id}:path`, { kind: 'minor', category: category.id, ...polar(185, branch.angle),
-      name: `${branch.label}의 길`, desc: `${branch.label}으로 나아가는 첫걸음.` });
+      name: `${branch.label}의 길`, desc: `${branch.label}으로 나아가는 첫걸음.`, effects: [...DEFAULT_EFFECTS.path] });
     link('origin', start);
     const gate = node(`${category.id}:gate`, { kind: 'notable', category: category.id, ...polar(360, branch.angle), glyph: branch.glyph,
-      name: branch.label, desc: `${category.name}의 갈림길. 여기서 각 세력으로 갈라집니다.` });
+      name: branch.label, desc: `${category.name}의 갈림길. 여기서 각 세력으로 갈라집니다.`, effects: [...DEFAULT_EFFECTS.gate] });
     link(start, gate);
-    labels.push({ ...polar(360, branch.angle), dy: -52, text: branch.label, size: 44, kind: 'branch' });
+    model.labels.push({ ...polar(360, branch.angle), dy: -52, text: branch.label, size: 44, kind: 'branch' });
     const priority = category.factions.filter(faction => faction.planned);
     const others = category.factions.filter(faction => !faction.planned);
     // 우선 세력: 갈래 방향 양옆으로 큰 원형 군집.
     const spread = priority.length > 1 ? 30 : 0;
     priority.forEach((faction, i) => {
       const angle = branch.angle + (i - (priority.length - 1) / 2) * spread;
-      const center = polar(880, angle);
-      const entry = buildCluster(category.id, faction, center, angle);
+      const entry = buildCluster(category.id, faction, polar(880, angle), angle);
       const bridge = node(`${faction.id}:bridge`, { kind: 'minor', category: category.id, faction: faction.id, ...polar(560, angle + (i - (priority.length - 1) / 2) * 4),
-        name: `${faction.name}로 가는 길`, desc: `${faction.name}의 문으로 이어집니다.` });
+        name: `${faction.name}로 가는 길`, desc: `${faction.name}의 문으로 이어집니다.`, effects: [...DEFAULT_EFFECTS.bridge] });
       link(gate, bridge);
       link(bridge, entry);
     });
@@ -103,20 +113,45 @@
     const leftCount = Math.ceil(others.length / 2);
     others.forEach((faction, i) => {
       const side = i < leftCount ? -1 : 1, step = i < leftCount ? i : i - leftCount;
-      const angle = branch.angle + side * (34 + step * 15);
-      const id = node(`${faction.id}:locked`, { kind: 'locked', category: category.id, faction: faction.id, ...polar(500 + (step % 2) * 70, angle),
+      const id = node(`${faction.id}:locked`, { kind: 'locked', category: category.id, faction: faction.id, ...polar(500 + (step % 2) * 70, branch.angle + side * (34 + step * 15)),
         glyph: '鎖', name: faction.name, desc: '설계 예정인 세력입니다. 아직 찍을 수 없습니다.' });
       link(gate, id);
     });
   }
 
-  const neighbors = new Map([...nodes.keys()].map(id => [id, new Set()]));
-  for (const [a, b] of edges) { neighbors.get(a).add(b); neighbors.get(b).add(a); }
+  let neighbors = new Map();
+  function relink() {
+    model.edges = model.edges.filter(([a, b]) => nodes.has(a) && nodes.has(b) && a !== b);
+    neighbors = new Map([...nodes.keys()].map(id => [id, new Set()]));
+    for (const [a, b] of model.edges) { neighbors.get(a).add(b); neighbors.get(b).add(a); }
+  }
+  relink();
+
+  // ---- 줄 경로: 사이에 다른 원이 있으면 돌아서 간다(돌아갈 길이 없으면 blocked) ----
+  function route(a, b) {
+    const p = nodes.get(a), q = nodes.get(b);
+    const obstacles = [...nodes.values()].filter(n => n.id !== a && n.id !== b);
+    const clear = c => {
+      for (let i = 1; i < 20; i++) {
+        const t = i / 20, u = 1 - t;
+        const x = u * u * p.x + 2 * u * t * c.x + t * t * q.x, y = u * u * p.y + 2 * u * t * c.y + t * t * q.y;
+        for (const o of obstacles) if (Math.hypot(x - o.x, y - o.y) < radiusOf(o) + 7) return false;
+      }
+      return true;
+    };
+    const mid = { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 };
+    const len = Math.hypot(q.x - p.x, q.y - p.y) || 1;
+    const nx = -(q.y - p.y) / len, ny = (q.x - p.x) / len;
+    for (const k of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5]) {
+      const c = { x: mid.x + nx * k * 45, y: mid.y + ny * k * 45 };
+      if (clear(c)) return { d: `M${p.x} ${p.y}Q${c.x} ${c.y} ${q.x} ${q.y}`, ok: true };
+    }
+    return { d: `M${p.x} ${p.y}L${q.x} ${q.y}`, ok: false };
+  }
 
   // ---- 찍기 규칙: 시작점(캐릭터)과 이어진 노드만, 되돌릴 때는 남은 노드가 끊기지 않을 때만 ----
-  const allocated = () => new Set(hub()?.state.tree.allocated || []);
+  const allocated = () => new Set((hub()?.state.tree.allocated || []).filter(id => nodes.has(id)));
   const totalPoints = () => pointsFor(hub()?.realm().index || 0);
-  const spent = () => allocated().size;
   const isOn = (id, set = allocated()) => id === 'origin' || set.has(id);
   function canTake(id) {
     const n = nodes.get(id), set = allocated();
@@ -127,7 +162,7 @@
     const set = allocated();
     set.delete(id);
     const seen = new Set(['origin']), queue = ['origin'];
-    while (queue.length) for (const next of neighbors.get(queue.shift())) if (set.has(next) && !seen.has(next)) { seen.add(next); queue.push(next); }
+    while (queue.length) for (const next of neighbors.get(queue.shift()) || []) if (set.has(next) && !seen.has(next)) { seen.add(next); queue.push(next); }
     return [...set].every(other => seen.has(other));
   }
   const canGive = id => allocated().has(id) && connectedWithout(id);
@@ -144,15 +179,37 @@
       if (n.faction) perFaction[n.faction] = (perFaction[n.faction] || 0) + 1;
     }
     state.factions = counts;
-    const known = hub().schools;
-    const best = Object.entries(perFaction).filter(([faction]) => known.includes(faction)).sort((a, b) => b[1] - a[1])[0];
+    const best = Object.entries(perFaction).filter(([faction]) => hub().schools.includes(faction)).sort((a, b) => b[1] - a[1])[0];
     state.mainSchool = best ? best[0] : 'hwasan';
     hub().save();
     hub().render();
     draw();
   }
-  function take(id) { if (canTake(id) && spent() < totalPoints()) commit([...allocated(), id]); }
+  function take(id) { if (canTake(id) && allocated().size < totalPoints()) commit([...allocated(), id]); }
   function give(id) { if (canGive(id)) commit([...allocated()].filter(other => other !== id)); }
+
+  // ---- 효과 합계: 같은 효과(이름·단위)는 더하고, 숫자 없는 효과는 개수로 묶는다 ----
+  const EFFECT = /^(.+?)\s*([+-]\s*\d+(?:\.\d+)?)\s*(%|초|개|회|점)?$/;
+  function effectTotals() {
+    const sums = new Map(), flags = new Map();
+    for (const id of allocated()) {
+      for (const line of nodes.get(id)?.effects || []) {
+        const text = line.trim();
+        if (!text) continue;
+        const m = text.match(EFFECT);
+        if (m) {
+          const key = `${m[1].trim()}|${m[3] || ''}`;
+          sums.set(key, (sums.get(key) || 0) + Number(m[2].replace(/\s/g, '')));
+        } else flags.set(text, (flags.get(text) || 0) + 1);
+      }
+    }
+    const lines = [...sums].map(([key, value]) => {
+      const [name, unit] = key.split('|');
+      return `${name} ${value >= 0 ? '+' : ''}${Math.round(value * 100) / 100}${unit}`;
+    });
+    for (const [text, count] of flags) lines.push(count > 1 ? `${text} ×${count}` : text);
+    return lines;
+  }
 
   // ---- 화면 ----
   const el = (tag, attrs = {}, ...children) => {
@@ -178,59 +235,126 @@
   const edgeLayer = el('g', { class: 'tree-edges' });
   const labelLayer = el('g', { class: 'tree-labels' });
   const nodeLayer = el('g', { class: 'tree-nodes' });
-  world.append(edgeLayer, labelLayer, nodeLayer);
+  const overlayLayer = el('g', { class: 'tree-overlay' });
+  world.append(edgeLayer, labelLayer, nodeLayer, overlayLayer);
   const svg = el('svg', { class: 'tree-svg', role: 'img', 'aria-label': '무공록 스킬 트리' }, world);
   const pointsText = h('strong');
   const realmText = h('span');
   const info = h('aside', { class: 'tree-info', hidden: true, 'aria-live': 'polite' });
   const backButton = h('button', { type: 'button', class: 'tree-back', onclick: () => close() }, '← 메인으로');
+  const tools = h('div', { class: 'tree-tools' },
+    h('button', { type: 'button', onclick: resetAll }, '모두 되돌리기'),
+    h('button', { type: 'button', 'aria-label': '축소', onclick: () => zoomBy(1 / 1.25) }, '−'),
+    h('button', { type: 'button', 'aria-label': '확대', onclick: () => zoomBy(1.25) }, '+'),
+    h('button', { type: 'button', 'aria-label': '가운데로', onclick: () => fit(true) }, '⌖'));
   const top = h('header', { class: 'tree-top' },
     backButton,
-    h('div', { class: 'tree-title' }, h('strong', {}, '무공록'), h('small', {}, '찍은 노드는 다음 단계에서 전투에 연결됩니다')),
+    h('div', { class: 'tree-title' }, h('strong', {}, '무공록'), h('small', {}, '효과 값은 임시이며 아직 전투에 연결되지 않았습니다')),
     h('div', { class: 'tree-points' }, realmText, pointsText),
-    h('div', { class: 'tree-tools' },
-      h('button', { type: 'button', onclick: resetAll }, '모두 되돌리기'),
-      h('button', { type: 'button', 'aria-label': '축소', onclick: () => zoomBy(1 / 1.25) }, '−'),
-      h('button', { type: 'button', 'aria-label': '확대', onclick: () => zoomBy(1.25) }, '+'),
-      h('button', { type: 'button', 'aria-label': '가운데로', onclick: () => fit(true) }, '⌖')));
+    tools);
   const legend = h('div', { class: 'tree-legend', 'aria-hidden': 'true' },
     h('span', { class: 'is-on' }, '찍음'), h('span', { class: 'is-open' }, '찍을 수 있음'), h('span', {}, '이어지지 않음'), h('span', { class: 'is-locked' }, '설계 예정'));
+  // 오른쪽 위: 검색창과 접을 수 있는 효과 합계.
+  const searchInput = h('input', { type: 'search', placeholder: '패시브 검색', 'aria-label': '패시브 검색', autocomplete: 'off', spellcheck: false });
+  const searchCount = h('span', { class: 'tree-search-count' });
+  const effectsToggle = h('button', { type: 'button', class: 'tree-effects-toggle', 'aria-expanded': 'true' });
+  const effectsList = h('ul', { class: 'tree-effects-list' });
+  const side = h('div', { class: 'tree-side' },
+    h('label', { class: 'tree-search' }, searchInput, searchCount),
+    h('section', { class: 'tree-effects', 'aria-label': '찍은 패시브 효과 합계' }, effectsToggle, effectsList));
   // 상단 바·범례·정보 창은 트리 위의 캐릭터 초상보다 위 층에 둔다.
-  const ui = h('div', { class: 'tree-ui' }, top, legend, info);
+  const ui = h('div', { class: 'tree-ui' }, top, side, legend, info);
   const screen = h('div', { class: 'tree-screen', id: 'tree-screen', hidden: true }, svg);
   const shell = h('div', { class: 'tree-shell', hidden: true }, screen, ui);
   title.append(shell);
 
-  const nodeViews = new Map();
-  const edgeViews = [];
-  const RADIUS = { origin: 0, minor: 9, entry: 15, skill: 19, fusion: 17, notable: 27, locked: 15 };
-  for (const [a, b] of edges) {
-    const p = nodes.get(a), q = nodes.get(b);
-    const line = el('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y });
-    edgeLayer.append(line);
-    edgeViews.push({ a, b, line });
+  let effectsOpen = true;
+  try { effectsOpen = localStorage.getItem('cheonjong-tree-effects') !== 'closed'; } catch {}
+  effectsToggle.addEventListener('click', () => {
+    effectsOpen = !effectsOpen;
+    try { localStorage.setItem('cheonjong-tree-effects', effectsOpen ? 'open' : 'closed'); } catch {}
+    renderEffects();
+  });
+  function renderEffects() {
+    const lines = effectTotals();
+    effectsToggle.textContent = `찍은 효과 합계 (${allocated().size}) ${effectsOpen ? '▴' : '▾'}`;
+    effectsToggle.setAttribute('aria-expanded', String(effectsOpen));
+    effectsList.hidden = !effectsOpen;
+    effectsList.replaceChildren(...(lines.length ? lines.map(line => h('li', {}, line)) : [h('li', { class: 'is-empty' }, '찍은 패시브가 없습니다.')]));
   }
-  for (const label of labels) {
-    labelLayer.append(el('text', { x: label.x, y: label.y + (label.dy || 0), class: `tree-label is-${label.kind}`, 'font-size': label.size, 'text-anchor': 'middle' }, label.text));
-  }
-  for (const n of nodes.values()) {
-    if (n.kind === 'origin') continue;
-    const r = RADIUS[n.kind];
-    const group = el('g', { class: `tree-node is-${n.kind}`, transform: `translate(${n.x} ${n.y})`, 'data-node': n.id, tabindex: '0', role: 'button', 'aria-label': n.name });
-    group.append(el('circle', { r: r + 9, class: 'tree-hit' }), el('circle', { r, class: 'tree-dot' }));
-    if (n.glyph) group.append(el('text', { class: 'tree-glyph', 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': Math.round(r * 1.05) }, n.glyph));
-    if (['skill', 'notable', 'locked', 'fusion'].includes(n.kind)) {
-      // 군집 고리의 이름은 군집 바깥쪽으로 펼쳐 이웃과 겹치지 않게 한다.
-      let lx = 0, ly = r + 17, anchor = 'middle';
-      if (n.cx !== undefined) {
-        const a = Math.atan2(n.y - n.cy, n.x - n.cx), ux = Math.cos(a), uy = Math.sin(a);
-        lx = ux * (r + 10); ly = uy * (r + 10) + 4 + (uy > 0.5 ? 8 : 0);
-        anchor = ux > 0.35 ? 'start' : ux < -0.35 ? 'end' : 'middle';
-      }
-      group.append(el('text', { class: 'tree-name', x: lx, y: ly, 'text-anchor': anchor, 'font-size': n.kind === 'notable' ? 15 : 12 }, n.name));
+
+  // 검색: 이름·설명·효과·한자에 검색어가 든 노드가 흰빛으로 점멸한다.
+  let searchTerm = '';
+  searchInput.addEventListener('input', () => { searchTerm = searchInput.value.trim().toLowerCase(); markSearch(); });
+  searchInput.addEventListener('keydown', event => { if (event.key === 'Escape') { searchInput.value = ''; searchTerm = ''; markSearch(); event.stopPropagation(); } });
+  function markSearch() {
+    let count = 0;
+    for (const [id, view] of nodeViews) {
+      const n = nodes.get(id);
+      const hit = Boolean(searchTerm) && [n.name, n.desc, n.glyph, ...(n.effects || [])].some(text => String(text || '').toLowerCase().includes(searchTerm));
+      view.classList.toggle('is-match', hit);
+      if (hit) count++;
     }
-    nodeLayer.append(group);
-    nodeViews.set(n.id, group);
+    searchCount.textContent = searchTerm ? `${count}개` : '';
+  }
+
+  const nodeViews = new Map();
+  let edgeViews = [];
+  // 모양을 처음부터 다시 그린다(노드·연결이 늘거나 줄었을 때).
+  function rebuild() {
+    relink();
+    edgeLayer.replaceChildren();
+    labelLayer.replaceChildren();
+    nodeLayer.replaceChildren();
+    nodeViews.clear();
+    edgeViews = model.edges.map(([a, b]) => {
+      const path = el('path', { 'data-edge': `${a}|${b}` });
+      edgeLayer.append(path);
+      return { a, b, path };
+    });
+    for (const label of model.labels) {
+      labelLayer.append(el('text', { x: label.x, y: label.y + (label.dy || 0), class: `tree-label is-${label.kind}`, 'font-size': label.size, 'text-anchor': 'middle' }, label.text));
+    }
+    for (const n of nodes.values()) {
+      if (n.kind === 'origin') continue;
+      const r = radiusOf(n);
+      const group = el('g', { class: `tree-node is-${n.kind}`, 'data-node': n.id, tabindex: '0', role: 'button', 'aria-label': n.name });
+      group.append(el('circle', { r: r + 9, class: 'tree-hit' }), el('circle', { r: r + 7, class: 'tree-glow' }), el('circle', { r, class: 'tree-dot' }));
+      if (n.glyph) group.append(el('text', { class: 'tree-glyph', 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': Math.round(r * 1.05) }, n.glyph));
+      if (['skill', 'notable', 'locked', 'fusion'].includes(n.kind) || n.custom) {
+        group.append(el('text', { class: 'tree-name', 'font-size': n.kind === 'notable' ? 15 : 12 }, n.name));
+      }
+      nodeLayer.append(group);
+      nodeViews.set(n.id, group);
+    }
+    layout();
+    markSearch();
+  }
+  // 위치만 다시: 노드 자리, 이름표 방향, 줄 경로.
+  function layout() {
+    for (const [id, group] of nodeViews) {
+      const n = nodes.get(id), r = radiusOf(n);
+      group.setAttribute('transform', `translate(${n.x} ${n.y})`);
+      const name = group.querySelector('.tree-name');
+      if (name) {
+        // 군집 고리의 이름은 군집 바깥쪽으로 펼쳐 이웃과 겹치지 않게 한다.
+        let lx = 0, ly = r + 17, anchor = 'middle';
+        if (n.cx !== undefined) {
+          const a = Math.atan2(n.y - n.cy, n.x - n.cx), ux = Math.cos(a), uy = Math.sin(a);
+          lx = ux * (r + 10); ly = uy * (r + 10) + 4 + (uy > 0.5 ? 8 : 0);
+          anchor = ux > 0.35 ? 'start' : ux < -0.35 ? 'end' : 'middle';
+        }
+        name.setAttribute('x', lx);
+        name.setAttribute('y', ly);
+        name.setAttribute('text-anchor', anchor);
+      }
+    }
+    for (const view of edgeViews) {
+      const result = route(view.a, view.b);
+      view.path.setAttribute('d', result.d);
+      view.ok = result.ok;
+    }
+    draw();
   }
 
   let selected = null;
@@ -243,19 +367,21 @@
       view.classList.toggle('is-on', on);
       view.classList.toggle('is-open', open);
       view.classList.toggle('is-selected', id === selected);
+      view.classList.toggle('is-isolated', !neighbors.get(id)?.size);
     }
-    for (const { a, b, line } of edgeViews) {
+    for (const { a, b, path, ok } of edgeViews) {
       const on = isOn(a, set) && isOn(b, set);
       const reach = !on && (isOn(a, set) || isOn(b, set)) && nodes.get(a).kind !== 'locked' && nodes.get(b).kind !== 'locked';
-      line.setAttribute('class', on ? 'is-on' : reach ? 'is-reach' : '');
+      path.setAttribute('class', [on ? 'is-on' : reach ? 'is-reach' : '', ok === false ? 'is-blocked' : ''].join(' ').trim());
     }
     renderInfo();
+    renderEffects();
   }
 
   function renderInfo() {
     const n = selected && nodes.get(selected);
-    info.hidden = !n;
-    if (!n) return;
+    info.hidden = !n || editing;
+    if (!n || editing) return;
     const set = allocated(), left = totalPoints() - set.size;
     const kindName = { minor: '수련', entry: '입문', skill: '무공', fusion: '절세신공', notable: '요결', locked: '설계 예정' }[n.kind];
     const category = n.category && BRANCHES[n.category]?.label;
@@ -274,6 +400,7 @@
       h('p', { class: 'tree-info-kind' }, [category, faction, kindName].filter(Boolean).join(' · ')),
       h('h2', {}, n.name),
       h('p', {}, n.desc),
+      n.effects?.length ? h('ul', { class: 'tree-info-effects' }, ...n.effects.map(line => h('li', {}, line))) : null,
       h('p', { class: 'tree-info-status' }, status),
       ...(action ? [action] : []));
   }
@@ -290,8 +417,8 @@
     screen.classList.toggle('is-far', view.k < 0.8);
   }
   // 처음 보이는 크기: 트리 전체(이름표 여유 포함)가 화면에 들어오게.
-  const bounds = [...nodes.values()].reduce((b, n) => ({ x: Math.max(b.x, Math.abs(n.x)), y: Math.max(b.y, Math.abs(n.y)) }), { x: 0, y: 0 });
   function fitK() {
+    const bounds = [...nodes.values()].reduce((b, n) => ({ x: Math.max(b.x, Math.abs(n.x)), y: Math.max(b.y, Math.abs(n.y)) }), { x: 0, y: 0 });
     const w = screen.clientWidth, hgt = screen.clientHeight - 70;
     return clampK(Math.min(w / (bounds.x * 2 + 160), hgt / (bounds.y * 2 + 160)));
   }
@@ -307,6 +434,8 @@
     view.k = k;
     applyView();
   }
+  function panBy(dx, dy) { view.x += dx; view.y += dy; applyView(); }
+  const toWorld = (clientX, clientY) => ({ x: (clientX - view.x) / view.k, y: (clientY - view.y) / view.k });
   // 트리와 그 위 UI를 함께 흐리게(둘을 묶은 상자에 걸면 초상이 그 사이에 끼지 못한다).
   const setOpacity = value => { screen.style.opacity = value; ui.style.opacity = value; };
   let tweenFrame = 0;
@@ -326,16 +455,20 @@
     tweenFrame = requestAnimationFrame(step);
   }
 
+  // 수정 도구가 켜져 있으면 왼쪽 버튼·한 손가락은 도구가 쓰고, 트리는 가운데·오른쪽 버튼 끌기와 휠·핀치만 받는다.
+  let editing = false;
   const pointers = new Map();
   let pan = null, pinch = null;
   svg.addEventListener('pointerdown', event => {
+    const primary = event.button === 0;
+    if (editing && primary && !pointers.size) return;
     try { svg.setPointerCapture(event.pointerId); } catch {}
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
       pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), k: view.k };
       pan = null;
-    } else pan = { x: event.clientX, y: event.clientY, vx: view.x, vy: view.y, moved: false, target: event.target.closest('[data-node]') };
+    } else pan = { x: event.clientX, y: event.clientY, vx: view.x, vy: view.y, moved: false, primary, target: event.target.closest('[data-node]') };
   });
   svg.addEventListener('pointermove', event => {
     if (!pointers.has(event.pointerId)) return;
@@ -357,16 +490,17 @@
   const release = event => {
     pointers.delete(event.pointerId);
     if (pointers.size < 2) pinch = null;
-    if (pan && !pan.moved && event.type === 'pointerup') {
-      const id = pan.target?.dataset.node;
-      selected = id || null;
+    if (pan && !pan.moved && pan.primary && !editing && event.type === 'pointerup') {
+      selected = pan.target?.dataset.node || null;
       draw();
     }
-    pan = null;
+    if (!pointers.size) pan = null;
   };
   svg.addEventListener('pointerup', release);
   svg.addEventListener('pointercancel', release);
+  svg.addEventListener('contextmenu', event => { if (editing) event.preventDefault(); });
   svg.addEventListener('dblclick', event => {
+    if (editing) return;
     const id = event.target.closest('[data-node]')?.dataset.node;
     if (!id) return;
     allocated().has(id) ? give(id) : take(id);
@@ -377,7 +511,7 @@
   }, { passive: false });
   nodeLayer.addEventListener('keydown', event => {
     const id = event.target.closest?.('[data-node]')?.dataset.node;
-    if (!id || (event.key !== 'Enter' && event.key !== ' ')) return;
+    if (editing || !id || (event.key !== 'Enter' && event.key !== ' ')) return;
     event.preventDefault();
     if (selected === id) allocated().has(id) ? give(id) : take(id);
     selected = id;
@@ -417,10 +551,11 @@
     applyView();
     draw();
     const target = { x: screen.clientWidth / 2, y: (screen.clientHeight + 40) / 2, k: fitK(), opacity: [0, 1] };
-    tween(target, reduce() ? 0 : 900, () => { busy = false; setOpacity(''); backButton.focus({ preventScroll: true }); });
+    tween(target, reduce() ? 0 : 900, () => { busy = false; setOpacity(''); backButton.focus({ preventScroll: true }); emit('open'); });
   }
   function close() {
     if (!open || busy) return;
+    if (closeGuard && closeGuard() === false) return;
     busy = true;
     selected = null;
     info.hidden = true;
@@ -436,22 +571,39 @@
       open = false;
       busy = false;
       openButton.focus({ preventScroll: true });
+      emit('close');
     });
   }
 
   openButton.addEventListener('click', openTree);
   document.addEventListener('keydown', event => {
-    if (!open || event.key !== 'Escape' || event.defaultPrevented) return;
+    if (!open || editing || event.key !== 'Escape' || event.defaultPrevented) return;
     if (selected) { selected = null; draw(); return; }
     close();
   });
-  addEventListener('resize', () => { if (open && !busy) { measurePortraitKeepingView(); } });
-  // 창 크기가 바뀌면 초상의 원래 자리를 다시 재되 트리 시점은 유지한다.
-  function measurePortraitKeepingView() {
+  addEventListener('resize', () => {
+    if (!open || busy) return;
+    // 창 크기가 바뀌면 초상의 원래 자리를 다시 재되 트리 시점은 유지한다.
     const transform = portrait.style.transform;
     measurePortrait();
     portrait.style.transform = transform;
     applyView();
-  }
-  window.CheonTree = { open: openTree, close, nodes, take, give };
+  });
+
+  // ---- 수정 도구용 창구 ----
+  const listeners = {};
+  const emit = name => (listeners[name] || []).forEach(fn => fn());
+  let closeGuard = null;
+  rebuild();
+  window.CheonTree = {
+    open: openTree, close, take, give, model, nodes, route, rebuild, layout, draw,
+    get isOpen() { return open; },
+    get view() { return { ...view }; },
+    toWorld, panBy, zoomBy, svg, nodeLayer, overlayLayer, ui, tools, screen,
+    radiusOf,
+    neighbors: id => [...(neighbors.get(id) || [])],
+    setEditing(on) { editing = on; selected = null; screen.classList.toggle('is-editing', on); draw(); },
+    setCloseGuard(fn) { closeGuard = fn; },
+    on(name, fn) { (listeners[name] ||= []).push(fn); },
+  };
 })();

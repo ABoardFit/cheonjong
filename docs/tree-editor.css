@@ -1,0 +1,52 @@
+/* 무공록 수정 도구 (editor/tree-editor.js). */
+.tree-tools .te-toggle.is-on { background: #b0344a; border-color: #b0344a; color: #fff; }
+.te-panel {
+  position: absolute; left: 16px; top: 74px; width: 320px; max-height: calc(100% - 150px); overflow-y: auto; display: grid; gap: 10px;
+  padding: 14px; background: #f6f3eaf5; border: 1px solid #1f2420; box-shadow: 0 10px 30px #1f242026;
+  font: 12px/1.45 system-ui, sans-serif; color: #1f2420;
+}
+.te-panel[hidden] { display: none; }
+.te-panel header { display: flex; justify-content: space-between; align-items: center; }
+.te-panel header strong { font-size: 15px; }
+.te-panel button {
+  min-width: 0; margin: 0; padding: 6px 9px; display: inline-flex; font: inherit; color: #1f2420; background: #fff;
+  border: 1px solid #c9c6b9; letter-spacing: 0; cursor: pointer;
+}
+.te-panel button:hover { border-color: #1f2420; }
+.te-panel button:disabled { opacity: .4; cursor: default; }
+.te-panel .te-primary { background: #b0344a; border-color: #b0344a; color: #fff; }
+.te-panel .te-danger { color: #b0344a; }
+.te-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.te-hint, .te-links { margin: 0; color: #6c7068; font-size: 11px; }
+.te-kind { margin: 0; color: #b0344a; font-size: 11px; letter-spacing: .05em; }
+.te-body { display: grid; gap: 9px; }
+.te-row { display: flex; gap: 8px; align-items: end; }
+.te-row > * { flex: 1; }
+.te-field { display: grid; gap: 3px; color: #6c7068; }
+.te-field input, .te-field textarea, .te-field select {
+  font: 13px/1.4 system-ui, sans-serif; color: #1f2420; background: #fff; border: 1px solid #c9c6b9; padding: 5px 7px; box-sizing: border-box; width: 100%;
+}
+.te-field textarea { resize: vertical; }
+.te-regions { display: grid; gap: 5px; padding-top: 8px; border-top: 1px solid #c9c6b9; }
+.te-region-item { display: flex; gap: 6px; align-items: start; justify-content: space-between; }
+.te-region-item span { flex: 1; }
+.te-region-item button { padding: 0 6px; }
+.te-marquee { position: fixed; z-index: 3; border: 1px dashed #2f6f8f; background: #2f6f8f1a; pointer-events: none; }
+.te-marquee[hidden] { display: none; }
+.te-toast {
+  position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); margin: 0; max-width: min(560px, calc(100% - 32px));
+  padding: 9px 16px; background: #1f2420; color: #fff; font: 13px/1.4 system-ui, sans-serif;
+}
+.te-toast[hidden] { display: none; }
+
+/* 트리 위 표시(편집 중) */
+.tree-node.is-picked .tree-dot { stroke: #2f6f8f; stroke-width: 4; }
+.tree-node.is-picked .tree-hit { fill: #2f6f8f22; }
+.tree-screen.is-editing .tree-node { cursor: move; }
+.te-region { fill: #2f6f8f12; stroke: #2f6f8f; stroke-width: 1.5; stroke-dasharray: 6 5; vector-effect: non-scaling-stroke; pointer-events: none; }
+.te-region.is-pending { fill: #b0344a10; stroke: #b0344a; }
+.te-region-label { fill: #2f6f8f; font: 600 22px system-ui, sans-serif; pointer-events: none; }
+
+@media (max-width: 960px) {
+  .te-panel { left: 10px; right: 10px; top: auto; bottom: 10px; width: auto; max-height: 52vh; }
+}

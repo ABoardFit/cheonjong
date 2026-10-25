@@ -863,6 +863,7 @@
   const typing = target => target.closest?.('input, textarea, select, [contenteditable], .uie-modal');
   window.addEventListener('keydown', event => {
     // Undo / redo work with the tool on or off.
+    if (document.documentElement.classList.contains('tree-editing')) return; // the 무공록 tool has its own undo
     if ((event.ctrlKey || event.metaKey) && !event.altKey && !typing(event.target) && (event.code === 'KeyZ' || event.code === 'KeyY')) {
       const redo = event.code === 'KeyY' || event.shiftKey;
       if (redo ? redoStack.length : undoStack.length) {
@@ -938,17 +939,16 @@
     for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
     return btoa(binary);
   };
-  async function publish(token) {
-    const api = `https://api.github.com/repos/${REPO}/contents/${LAYOUT_PATH}`;
+  // Writes one file of this repo through the GitHub contents API (owner key kept in this browser).
+  async function putFile(token, path, text, message) {
+    const api = `https://api.github.com/repos/${REPO}/contents/${path}`;
     const headers = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
-    const body = { ...clean(doc), savedAt: new Date().toISOString() };
     for (let attempt = 0; attempt < 2; attempt++) {
       const current = await fetch(`${api}?ref=main`, { headers, cache: 'no-store' });
       if (current.status === 401 || current.status === 403) throw new Error('key');
       const sha = current.ok ? (await current.json()).sha : undefined;
       const saved = await fetch(api, { method: 'PUT', headers, body: JSON.stringify({
-        message: '화면 배치 저장 (수정 도구)', branch: 'main',
-        content: toBase64(`${JSON.stringify(body, null, 2)}\n`), ...(sha ? { sha } : {}) }) });
+        message, branch: 'main', content: toBase64(text), ...(sha ? { sha } : {}) }) });
       if (saved.ok) return;
       if (saved.status === 401 || saved.status === 403) throw new Error('key');
       if (saved.status !== 409) throw new Error(String(saved.status));
@@ -964,7 +964,8 @@
     return dialog;
   }
 
-  function openSaveDialog() {
+  // Save / keep / discard dialog shared by this tool and the 무공록 tool (tree-editor.js).
+  function saveDialog({ title, lead, path, message, text, onSaved, onDiscard, note }) {
     const status = h('p', { class: 'uie-status' });
     const tokenInput = h('input', { type: 'password', placeholder: 'github_pat_…', autocomplete: 'off', spellcheck: false });
     const hasToken = Boolean(store.get(TOKEN));
@@ -974,16 +975,15 @@
         'GitHub의 ', h('a', { href: 'https://github.com/settings/personal-access-tokens/new', target: '_blank', rel: 'noopener' }, 'Fine-grained token 만들기'),
         '에서 저장소는 ABoardFit/cheonjong 하나만, 권한은 Contents: Read and write 로 만든 열쇠를 넣으세요. 이 브라우저에만 기억됩니다.'));
     const saveButton = h('button', { type: 'button', class: 'uie-primary' }, '사이트에 저장');
-    const changes = Object.keys(clean(doc).wide.parts).length + Object.keys(clean(doc).narrow.parts).length + doc.wide.added.length + doc.narrow.added.length;
-    const dialog = dialogShell('바뀐 배치를 저장할까요?',
-      h('p', { class: 'uie-lead' }, `바꾼 부분 ${changes}곳이 있습니다. 사이트에 저장하면 1~2분 뒤 모든 사람에게 그대로 보입니다.`),
+    const dialog = dialogShell(title,
+      h('p', { class: 'uie-lead' }, lead),
       keyBox, status,
       h('div', { class: 'uie-actions' },
-        h('button', { type: 'button', class: 'uie-danger', onclick: () => { mark(); doc = normalize(JSON.parse(JSON.stringify(published))); commit(); dialog.remove(); } }, '변경 버리기'),
+        h('button', { type: 'button', class: 'uie-danger', onclick: () => { onDiscard(); dialog.remove(); } }, '변경 버리기'),
         h('button', { type: 'button', onclick: () => dialog.remove() }, '이 브라우저에만 두기'),
         saveButton),
       hasToken ? h('button', { type: 'button', class: 'uie-link', onclick: () => { store.del(TOKEN); keyBox.hidden = false; } }, '저장 열쇠 바꾸기/지우기') : null,
-      memoCount() ? h('p', { class: 'uie-hint' }, `요청 메모 ${memoCount()}개는 저장과 따로, 상단의 "요청서 복사"로 보내 주세요.`) : null);
+      note ? h('p', { class: 'uie-hint' }, note) : null);
     saveButton.addEventListener('click', async () => {
       const typed = tokenInput.value.trim();
       const token = typed || store.get(TOKEN);
@@ -991,11 +991,9 @@
       saveButton.disabled = true;
       status.textContent = '저장하는 중…';
       try {
-        await publish(token);
+        await putFile(token, path, text(), message);
         if (typed) store.set(TOKEN, typed);
-        published = clean(doc);
-        store.del(DRAFT);
-        renderBar();
+        onSaved();
         status.textContent = '저장했습니다. 1~2분 뒤 모두에게 보입니다.';
         setTimeout(() => dialog.remove(), 1600);
       } catch (error) {
@@ -1006,7 +1004,23 @@
         if (error.message === 'key') { store.del(TOKEN); keyBox.hidden = false; }
       }
     });
+    return dialog;
   }
+
+  function openSaveDialog() {
+    const changes = Object.keys(clean(doc).wide.parts).length + Object.keys(clean(doc).narrow.parts).length + doc.wide.added.length + doc.narrow.added.length;
+    saveDialog({
+      title: '바뀐 배치를 저장할까요?',
+      lead: `바꾼 부분 ${changes}곳이 있습니다. 사이트에 저장하면 1~2분 뒤 모든 사람에게 그대로 보입니다.`,
+      path: LAYOUT_PATH, message: '화면 배치 저장 (수정 도구)',
+      text: () => `${JSON.stringify({ ...clean(doc), savedAt: new Date().toISOString() }, null, 2)}
+`,
+      onSaved: () => { published = clean(doc); store.del(DRAFT); renderBar(); },
+      onDiscard: () => { mark(); doc = normalize(JSON.parse(JSON.stringify(published))); commit(); },
+      note: memoCount() ? `요청 메모 ${memoCount()}개는 저장과 따로, 상단의 "요청서 복사"로 보내 주세요.` : null,
+    });
+  }
+
 
   // ---- change request: only parts that carry a request memo ----
   function describe(item) {
@@ -1049,20 +1063,23 @@
     return out.join('\n');
   }
 
-  function openRequest() {
-    const text = requestText();
+  function openRequest() { copyDialog('수정 요청서', requestText()); }
+  function copyDialog(title, text) {
     const status = h('span', { class: 'uie-status' });
     const area = h('textarea', { readOnly: true, rows: 14, value: text });
     const copy = async () => {
       try { await navigator.clipboard.writeText(text); status.textContent = '복사했어요. 대화창에 붙여넣으세요.'; }
       catch { area.select(); status.textContent = '자동 복사가 막혔어요. 글을 선택해서 복사하세요.'; }
     };
-    const dialog = dialogShell('수정 요청서', area,
+    const dialog = dialogShell(title, area,
       h('div', { class: 'uie-actions' }, status,
         h('button', { type: 'button', onclick: copy }, '다시 복사'),
         h('button', { type: 'button', onclick: () => dialog.remove() }, '닫기')));
     copy();
   }
+
+  // Shared with the 무공록 tool (tree-editor.js).
+  window.UIE = { saveDialog, copyDialog, dialogShell };
 
   // ---- start: show the published layout (or this browser's unsaved draft) ----
   const ready = () => document.documentElement.classList.remove('uie-loading');
