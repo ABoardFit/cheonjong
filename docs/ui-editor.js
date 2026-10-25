@@ -117,6 +117,7 @@
   const originals = new WeakMap(); // element → wording before any edit
   const styled = new Set();        // elements this tool has styled
   const forcedPosition = new WeakSet();
+  const carriers = new Map();      // part → the box its stacking order is set on
 
   const screenEl = id => document.getElementById(id);
   const activeScreen = () => SCREENS.map(screenEl).find(el => el && !el.hidden) || null;
@@ -196,12 +197,48 @@
     style.width = e.w ? `${e.w}px` : '';
     style.height = e.h ? `${e.h}px` : '';
     style.fontSize = e.fs ? `${e.fs}px` : '';
-    // Stacking order: z-index needs a positioned box, so a static part becomes relative (no visual shift).
-    style.zIndex = Number.isFinite(e.z) ? String(e.z) : '';
-    if (forcedPosition.has(el)) { style.position = ''; forcedPosition.delete(el); }
-    if (Number.isFinite(e.z) && getComputedStyle(el).position === 'static') { style.position = 'relative'; forcedPosition.add(el); }
+    // Stacking order goes on the box that actually competes with the rest of the screen (see stackCarrier).
+    const carrier = Number.isFinite(e.z) ? stackCarrier(el) : null, previous = carriers.get(el);
+    if (previous && previous !== carrier) setZ(previous, null);
+    if (!carrier) { setZ(el, null); carriers.delete(el); }
+    else if (carrier === el) { setZ(el, e.z); carriers.set(el, el); }
+    else {
+      // Several trapped parts share their group's box: a group with its own order keeps it,
+      // otherwise the frontmost of them counts.
+      const owner = items.find(other => other.el === carrier);
+      const own = owner && Number.isFinite(edit(owner).z);
+      const current = carrier.style.zIndex === '' ? -Infinity : Number(carrier.style.zIndex);
+      if (!own) setZ(carrier, Math.max(current, e.z));
+      carriers.set(el, carrier);
+    }
     el.classList.toggle('uie-gone', Boolean(e.hidden));
     if (item.slot) item.slot.set(typeof e.text === 'string' ? e.text : originals.get(el) ?? '');
+  }
+
+  // z-index only orders boxes inside one stacking layer. If an ancestor (below the screen) opens its own
+  // layer - moved, faded, or given an order itself - the part cannot leave it, so the order goes on the
+  // outermost such ancestor and the whole group moves in front of / behind the rest.
+  function opensLayer(node) {
+    const cs = getComputedStyle(node), parentDisplay = node.parentElement ? getComputedStyle(node.parentElement).display : '';
+    return (cs.zIndex !== 'auto' && (cs.position !== 'static' || /flex|grid/.test(parentDisplay)))
+      || cs.translate !== 'none' || cs.transform !== 'none' || cs.scale !== 'none' || cs.rotate !== 'none'
+      || Number(cs.opacity) < 1 || cs.isolation === 'isolate' || cs.filter !== 'none' || cs.mixBlendMode !== 'normal'
+      || /paint|strict|content/.test(cs.contain) || /transform|opacity|filter/.test(cs.willChange);
+  }
+  function stackCarrier(el) {
+    const root = SCREENS.map(screenEl).find(screen => screen && screen.contains(el));
+    let carrier = el;
+    for (let node = el.parentElement; node && node !== root; node = node.parentElement) {
+      if (opensLayer(node)) carrier = node;
+    }
+    return carrier;
+  }
+  // z-index needs a positioned box, so a static one becomes relative (no visual shift).
+  function setZ(node, z) {
+    styled.add(node);
+    node.style.zIndex = z === null ? '' : String(z);
+    if (forcedPosition.has(node)) { node.style.position = ''; forcedPosition.delete(node); }
+    if (z !== null && getComputedStyle(node).position === 'static') { node.style.position = 'relative'; forcedPosition.add(node); }
   }
 
   function unstyle(el) {
@@ -221,6 +258,7 @@
     }
     styled.forEach(unstyle);
     styled.clear();
+    carriers.clear();
     items = [];
     const title = screenEl('title-screen');
     for (const [selector, defaultName, kind, options = {}] of TITLE_PARTS) {
@@ -436,16 +474,38 @@
 
   // ---- stacking order: a higher number draws over lower ones; below 0 goes behind ordinary parts ----
   function restack(how) {
-    const chosen = selection.filter(movable);
+    // A part trapped in a moved group (see stackCarrier) reorders that whole group.
+    const unitOf = item => {
+      const carrier = stackCarrier(item.el);
+      return carrier === item.el ? item : items.find(other => other.el === carrier) || item;
+    };
+    const chosen = [...new Set(selection.filter(movable).map(unitOf))];
     if (!chosen.length) return;
     mark();
     const zOf = item => (Number.isFinite(edit(item).z) ? edit(item).z : 0);
-    const others = items.filter(item => movable(item) && !chosen.includes(item)).map(zOf);
+    const others = items.filter(item => movable(item) && !chosen.includes(item) && !ungrouped(item));
+    const related = (a, b) => a.el.contains(b.el) || b.el.contains(a.el);
+    const overlaps = (a, b) => {
+      const p = a.el.getBoundingClientRect(), q = b.el.getBoundingClientRect();
+      return p.left < q.right && p.right > q.left && p.top < q.bottom && p.bottom > q.top;
+    };
+    // Orders stay 1 or more: below 0 a part would sink under the page's plain (transparent) boxes and could
+    // no longer be clicked. To go behind something, the parts it overlaps are lifted above it instead.
+    // A part trapped in a moved group goes back as that whole group (see stackCarrier).
+    const sendBack = item => {
+      const unit = { el: stackCarrier(item.el) };
+      const covering = others.filter(other => !related(unit, other) && overlaps(unit, other) && stackCarrier(other.el) !== unit.el);
+      const lowest = Math.min(...covering.map(zOf));
+      const lift = covering.length && lowest < 2 ? 2 - lowest : 0;
+      for (const other of covering) edit(other).z = zOf(other) + lift;
+      edit(item).z = 1;
+    };
     for (const item of chosen) {
       const z = zOf(item);
-      const next = how === 'forward' ? z + 1 : how === 'backward' ? z - 1
-        : how === 'front' ? Math.max(0, ...others) + 1 : Math.min(0, ...others) - 1;
-      if (next === 0) delete edit(item).z; else edit(item).z = next;
+      if (how === 'front') edit(item).z = Math.max(0, ...others.map(zOf)) + 1;
+      else if (how === 'forward') edit(item).z = Math.max(1, z + 1);
+      else if (how === 'back' || z <= 1) sendBack(item);
+      else edit(item).z = z - 1;
     }
     commit();
   }
