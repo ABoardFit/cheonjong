@@ -13,7 +13,7 @@
     version: 'hwasan-playtest-1', provisional: true,
     player: { hp: 160, radius: 12, speed: 180, regeneration: 0.16,
       attackSpeed: 1, attackDamage: 26, attackRadius: 58, attackRankRadius: 15, fusedRadiusMultiplier: 2,
-      bodyCenterOffset: 38, circleCenterCorrection: 26, flowerRadiusMultiplier: 1.5,
+      bodyCenterOffset: 38, swordFanRadius: 122, circleCenterCorrection: 26, flowerRadiusMultiplier: 1.5,
       bloomScatterMultiplier: 1.5, swordSectorHalfAngle: Math.PI * 5 / 24, bloomDelay: 0.35,
       attackRankDamage: 0.24, critChance: 0.08, critMultiplier: 1.7,
       hurtGrace: 0.48, pickupRadius: 35, xpMagnetRadius: 115 },

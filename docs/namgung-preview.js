@@ -28,7 +28,7 @@
   $('replay').onclick = () => reset();
   $('step').onclick = () => { paused = true; time = Math.min(7, time + 1 / 60); update(); render(); };
   $('timeline').oninput = e => { time = Number(e.target.value); paused = true; cache.clear(); update(); render(); };
-  const mechanics = { sword: ['짧은 검로 · 국소 찌르기', '몸 중심 · 75° 부채꼴', '확장된 75° 검격', '부채꼴 + 직선 천뢰 한 줄기', '한 줄기에서 세 갈래로', '부채꼴 없이 · 가장 먼 적을 가르는 일검', '검격 → 같은 검로에 지연 낙뢰'], formation: ['가까운 한 적에게 검 부착', '서로 다른 적 · 최대 세 자루', '세 자루의 강화된 위력', '서로 다른 적 · 최대 여덟 자루', '부착 검 + 주변 피해', '부착 대신 반경 끝까지 왕복', '원거리 적 우선 · 거대한 하나의 낙검'], dash: ['도주기 이동 · 무적 없음', '늘어난 경공 거리', '경공 경로에 감전 지대 3초', '감전 지대 + 가까운 적 단일 일격', '더 넓은 감전 지대', '강화된 단일 일격', '경공과 천뢰의 일격 · 무적 없음'] };
+  const mechanics = { sword: ['검 자체의 근접 찌르기 · 붓 검기 없음', '몸 중심 · 75° 부채꼴', '확장된 75° 검격', '부채꼴 + 직선 천뢰 한 줄기', '한 줄기에서 세 갈래로', '부채꼴 없이 · 가장 먼 적을 가르는 일검', '거대한 검격 → 검로를 따라 순차 낙뢰'], formation: ['작은 검 한 자루가 적 몸을 반복해서 찌르기', '서로 다른 적 · 최대 세 자루', '세 자루의 강화된 위력', '서로 다른 적 · 최대 여덟 자루', '적 뒤에서 앞으로 통과하는 베기 · 주변 피해', '적 수와 무관하게 고정 여덟 방향으로 왕복', '원거리 적 우선 · 손잡이까지 지면 관통'], dash: ['도주기 이동 · 무적 없음', '늘어난 경공 거리', '경공 경로에 감전 지대 3초', '감전 지대 + 가까운 적에게 큰 낙뢰', '더 넓은 감전 지대', '강화된 단일 일격', '경공과 하늘에서 떨어지는 큰 천뢰 · 무적 없음'] };
   function update() {
     const p = data.paths[path], rank = ranks[path], mind = data.minds[p.partnerId], m = minds[path], stage = level(p.levels, rank), ml = level(mind.levels, m);
     $('stage-title').textContent = p.name; $('stage-rank').textContent = `${rank === 7 ? '絶世' : rank === 6 ? '化境' : ['一', '二', '三', '四', '五'][rank - 1]} · ${stage.title}`;
@@ -93,9 +93,13 @@
     world.width = Math.ceil(W / 2); world.height = Math.ceil(H / 2);
     cache.clear(); render();
   }
-  function drawGiant(c, x, y, angle, height, alpha) {
+  function drawGiant(c, x, y, angle, height, alpha, options = {}) {
     if (!giant || !giantMetrics) return;
-    c.save(); c.translate(Math.round(x / 2) * 2, Math.round(y / 2) * 2); c.rotate(angle); c.globalAlpha = alpha; c.imageSmoothingEnabled = false;
+    c.save();
+    // Clip in battlefield coordinates before the blade rotates and sinks: even its
+    // guard and hilt pass below the same ground line instead of fading in midair.
+    if (Number.isFinite(options.groundY)) { c.beginPath(); c.rect(-100000, -100000, 200000, 100000 + options.groundY); c.clip(); }
+    c.translate(Math.round(x / 2) * 2, Math.round(y / 2) * 2); c.rotate(angle); c.globalAlpha = alpha; c.imageSmoothingEnabled = false;
     // Its middle blade face, rather than the guard's bounding box, determines width.
     c.drawImage(giant, -giantMetrics.tip.x * 2, -giantMetrics.tip.y * 2, giant.width * 2, giant.height * 2); c.restore();
   }
@@ -127,9 +131,27 @@
     render();
   };
   image.src = 'assets/namgung/imperial-jian-v2.png';
+  function drawFan(c, x, y, angle, radius, progress, alpha) {
+    renderer.ctx = c;
+    c.save(); c.translate(x, y);
+    renderer.drawBodyFan(radius, angle, progress, alpha, FX.palette.body,
+      [FX.palette.dark, FX.palette.body, FX.palette.light, FX.palette.ink]);
+    c.restore();
+  }
+  function drawRibbon(c, x, y, angle, length, width, progress, alpha) {
+    renderer.ctx = c;
+    const reach = Math.max(1, Math.round(Math.max(0, Math.min(1, progress)) * 8)) / 8;
+    const rgb = hex => { const n = parseInt(hex.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+    c.save(); c.translate(x, y);
+    renderer.drawPixelRibbon(Math.cos(angle) * length * reach / 2, Math.sin(angle) * length * reach / 2,
+      angle, length, width, reach, .02, alpha, length + width * 2,
+      [FX.palette.dark, FX.palette.light, FX.palette.white].map(rgb));
+    c.restore();
+  }
   function actorPose(hero, t, instances) {
     const latest = instances.filter(c => c.path === 'sword' && t - c.at < .58).at(-1), rank = 2;
-    const state = { player: hero, time: t, skills: { plum_sword: path === 'sword' ? rank : 0 }, effects: [], attackTimer: path === 'sword' && t < .75 ? .75 - t : 1 };
+    const nextAttack = t < .75 ? .75 : .75 + Math.floor(t - .75) + 1;
+    const state = { player: hero, time: t, skills: { plum_sword: path === 'sword' ? rank : 0 }, effects: [], attackTimer: path === 'sword' ? nextAttack - t : 1 };
     const attack = latest ? { type: 'slash', rank, id: latest.seed, angle: latest.angle, age: t - latest.at, duration: .58 } : null;
     return { state, pose: window.CheonCombatAnimation.poseFor(state, t, { attack, moving: walking || keys.size > 0 || hero.dashRemaining > 0, walkDistance: t * 88, locomotionX: hero.faceX, locomotionY: hero.faceY }) };
   }
@@ -154,7 +176,7 @@
     renderer.drawEnemy(enemy);
     if (mark) { ctx.save(); ctx.globalAlpha = .65; ctx.strokeStyle = FX.palette.light; ctx.lineWidth = 2; ctx.strokeRect(target.x - 14, target.y + 1, 28, 30); ctx.restore(); }
     if (target.ranged) { ctx.globalAlpha = 1; ctx.fillStyle = '#a1bdbb'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('遠', target.x, target.y - 10); }
-    if (direct && minds[path] >= 6) FX.lightning(ctx, target.x, target.y - 65, Math.PI / 2, 65, (t - .75) % 1 - .1, target.id, 7);
+    if (direct && minds[path] >= 6) FX.skyLightning(ctx, target.x, target.y + 32, (t - .75) % 1 - .1, target.id, 7, 120);
   }
   function render() {
     ctx.setTransform(.5, 0, 0, .5, 0, 0); ctx.imageSmoothingEnabled = false; ctx.globalAlpha = 1;
@@ -162,10 +184,13 @@
     if ($('range').checked) { ctx.save(); ctx.strokeStyle = '#6b8585'; ctx.setLineDash([3, 10]); ctx.lineWidth = 2; ctx.globalAlpha = .5; ctx.beginPath(); ctx.arc(hero.x, hero.y - 38, path === 'sword' && ranks[path] === 2 ? 122 : 285, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
     FX.field(ctx, instances.filter(c => c.rank >= 3), time);
     if (resourceEvent?.burst) { const age = time - resourceEvent.at; if (age >= 0 && age < .7) FX.ring(ctx, hero.x, hero.y + 3, 20 + age * 135, (1 - age / .7) * .8, 14, 10); }
-    for (const cast of instances) FX.draw(ctx, cast, time, { targets: visible ? enemies : [], layer: 'back', giant: giant ? drawGiant : null });
-    const actors = visible ? enemies.map(target => ({ y: target.y + 32, target })) : []; actors.push({ y: hero.y, hero: true }); actors.sort((a, b) => a.y - b.y);
-    for (const a of actors) a.hero ? drawHero(hero, time, instances) : drawTarget(a.target, time, instances);
-    for (const cast of instances) FX.draw(ctx, cast, time, { targets: visible ? enemies : [], layer: 'front', giant: giant ? drawGiant : null });
+    const effects = { targets: visible ? enemies : [], giant: giant ? drawGiant : null, fan: drawFan, ribbon: drawRibbon };
+    for (const cast of instances) FX.draw(ctx, cast, time, { ...effects, layer: 'back' });
+    if (visible) for (const target of enemies.slice().sort((a, b) => a.y - b.y)) drawTarget(target, time, instances);
+    for (const cast of instances) FX.draw(ctx, cast, time, { ...effects, layer: 'front' });
+    // Shared brush cuts cross every enemy, but never cover the player's sprite.
+    for (const cast of instances) FX.draw(ctx, cast, time, { ...effects, layer: 'between' });
+    drawHero(hero, time, instances);
     if (path === 'dash' && ranks[path] >= 4 && minds[path] >= 6 && time > .96 && time < 3.9 && sampleHeld === 0 && visible) {
       const end = { x: W / 2 + Math.cos(directions.indexOf(direction) * Math.PI / 4) * 180, y: H / 2 - 38 + Math.sin(directions.indexOf(direction) * Math.PI / 4) * 180 };
       const target = enemies.slice().sort((a, b) => Math.hypot(a.x - end.x, a.y - end.y) - Math.hypot(b.x - end.x, b.y - end.y))[0];

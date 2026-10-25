@@ -8,26 +8,18 @@
   const point = (x, y, a, r) => ({ x: x + Math.cos(a) * r, y: y + Math.sin(a) * r });
   const delta = a => Math.atan2(Math.sin(a), Math.cos(a));
   function cell(ctx, x, y, color, alpha = 1, size = 2) { ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.fillRect(Math.round(x / 2) * 2, Math.round(y / 2) * 2, size, size); }
-  function line(ctx, x, y, a, length, width, alpha = 1, seed = 0, progress = 1) {
-    const end = length * clamp(progress), ca = Math.cos(a), sa = Math.sin(a);
-    for (let t = 0; t < end; t += 2) for (let q = -width / 2; q <= width / 2; q += 2) {
-      const edge = Math.abs(q) / (width / 2), n = hash(t / 2, q / 2, seed);
-      if (edge > .75 && n < .34 || t > end - 10 && n < .28) continue;
-      const color = Math.abs(q) < width * .13 ? P.white : q < 0 ? P.light : edge > .74 ? P.dark : P.body;
-      cell(ctx, x + ca * t - sa * q, y + sa * t + ca * q, color, alpha * (.7 + n * .3));
-    }
-  }
   function fan(ctx, x, y, a, radius, progress, alpha, seed) {
     const span = 75 * Math.PI / 180, start = a - span / 2, end = start + span * clamp(progress);
     for (let yy = -radius; yy <= radius; yy += 2) for (let xx = -radius; xx <= radius; xx += 2) {
       const r = Math.hypot(xx, yy), angle = delta(Math.atan2(yy, xx) - start);
-      if (r > radius || r < 16 || angle < 0 || angle > end - start) continue;
+      if (r > radius || r < radius * .79 || angle < 0 || angle > end - start) continue;
       const n = hash(xx, yy, seed), outer = r / radius, leading = end - start - angle;
-      if (outer < .56 && n > .13 || outer > .94 && n < .28) continue;
+      if (outer < .83 && n < .65 || outer > .94 && n < .28) continue;
       const color = leading < .035 || outer > .91 && n > .45 ? P.white : outer > .78 ? P.light : outer > .64 ? P.body : P.dark;
       cell(ctx, x + xx, y + yy, color, alpha * (outer < .65 ? .22 : .8 + n * .2));
     }
   }
+  const lightningWidthAt = (width, progress) => width * Math.min(1, Math.max(0, (1 - progress) / .22));
   function lightning(ctx, x, y, a, length, age, seed, width = 13) {
     if (age < 0 || age > .52) return;
     const reveal = clamp(age / .10), fade = clamp((.52 - age) / .25), ca = Math.cos(a), sa = Math.sin(a);
@@ -35,8 +27,34 @@
     for (let n = 1; n <= 12; n++) { const t = n / 12 * length, q = n === 12 ? 0 : (hash(n, 3, seed) - .5) * 24; points.push({ x: x + ca * t - sa * q, y: y + sa * t + ca * q }); }
     for (let i = 1; i < points.length && i / 12 <= reveal + .1; i++) {
       const from = points[i - 1], to = points[i], angle = Math.atan2(to.y - from.y, to.x - from.x), len = Math.hypot(to.x - from.x, to.y - from.y);
-      line(ctx, from.x, from.y, angle, len, width, fade, seed + i);
-      if (i % 4 === 2) line(ctx, from.x, from.y, a + (i % 2 ? -.6 : .6), 35, 4, fade * .65, seed);
+      // Rasterize the final segments as one taper. Every fork ends in a point,
+      // rather than exposing the rectangular cap of a thick line segment.
+      for (let d = 0; d < len; d += 2) {
+        const u = (i - 1 + d / len) / 12, localWidth = lightningWidthAt(width, u);
+        for (let q = -localWidth / 2; q <= localWidth / 2; q += 2) cell(ctx, from.x + Math.cos(angle) * d - Math.sin(angle) * q, from.y + Math.sin(angle) * d + Math.cos(angle) * q, Math.abs(q) < Math.max(1, localWidth * .15) ? P.white : q < 0 ? P.light : P.body, fade);
+      }
+      if (i % 4 === 2) {
+        const branchAngle = a + (i % 2 ? -.6 : .6);
+        for (let d = 0; d < 35; d += 2) {
+          const branchWidth = lightningWidthAt(6, d / 35);
+          for (let q = -branchWidth / 2; q <= branchWidth / 2; q += 2) cell(ctx, from.x + Math.cos(branchAngle) * d - Math.sin(branchAngle) * q, from.y + Math.sin(branchAngle) * d + Math.cos(branchAngle) * q, Math.abs(q) < 1 ? P.white : P.light, fade * .65);
+        }
+      }
+    }
+  }
+  function skyLightning(ctx, x, groundY, age, seed = 1, width = 28, height = 460) {
+    if (age < 0 || age > .62) return;
+    lightning(ctx, x, groundY - height, Math.PI / 2, height, age, seed, width);
+  }
+  function ribbon(ctx, x, y, a, length, width, progress, alpha, seed) {
+    const reach = length * clamp(progress), ca = Math.cos(a), sa = Math.sin(a);
+    for (let d = 0; d < reach; d += 2) {
+      const u = d / length, half = width * .5 * Math.sin(Math.PI * u) ** .7;
+      for (let q = -half; q <= half; q += 2) {
+        const n = hash(d, q, seed), edge = Math.abs(q) / Math.max(1, half);
+        if (edge > .74 && n < .4) continue;
+        cell(ctx, x + ca * d - sa * q, y + sa * d + ca * q, Math.abs(q) < width * .09 ? P.white : q < 0 ? P.light : P.body, alpha * (.72 + n * .28));
+      }
     }
   }
   function ring(ctx, x, y, radius, alpha, seed = 0, width = 8) {
@@ -56,18 +74,26 @@
     ctx.fillStyle = P.body; ctx.beginPath(); ctx.moveTo(4, 0); ctx.lineTo(68, 0); ctx.lineTo(56, 4); ctx.lineTo(4, 5); ctx.closePath(); ctx.fill();
     ctx.fillStyle = P.light; ctx.fillRect(6, 0, 49, 2); ctx.restore();
   }
-  function motes(ctx, x, y, age, seed, radius = 72, count = 23) {
-    if (age < 0 || age > .65) return;
-    for (let i = 0; i < count; i++) { const a = hash(i, 1, seed) * TAU, r = age * radius * (1 + hash(i, 3, seed)); cell(ctx, x + Math.cos(a) * r, y + Math.sin(a) * r * .65, i % 3 ? P.light : P.white, clamp((.65 - age) / .4), i % 5 ? 2 : 4); }
+  function castDuration(path, rank) { return path === 'formation' ? rank < 6 ? 4.5 : rank === 6 ? 1.8 : 1.9 : path === 'dash' ? 3.5 : rank === 7 ? 1.65 : .78; }
+  function swordGeometry(cast) {
+    return { radius: cast.rank === 2 ? 122 : 186, length: (cast.length || 330) * 2, width: cast.rank === 7 ? 128 : 96 };
   }
-  function castDuration(path, rank) { return path === 'formation' ? rank < 6 ? 4.5 : rank === 6 ? 1.8 : 1.65 : path === 'dash' ? 3.5 : rank === 7 ? 1.05 : .78; }
-  function sword(ctx, cast, age) {
+  function sword(ctx, cast, age, options) {
     const { x, y, angle: a, rank, seed = 1 } = cast;
     if (age < 0 || age > castDuration('sword', rank)) return;
-    const fade = clamp((.6 - age) / .28), sweep = clamp(age / .22);
-    if (rank === 1) { const reach = 68 * Math.sin(clamp(age / .22) * Math.PI / 2); line(ctx, x + Math.cos(a) * 20, y + Math.sin(a) * 20, a, reach, 9, fade, seed); }
-    else if (rank <= 5) { fan(ctx, x, y, a, rank === 2 ? 122 : 186, sweep, fade, seed); if (rank === 4) lightning(ctx, x, y, a, 252, age - .16, seed); if (rank === 5) for (const offset of [-.34, 0, .34]) lightning(ctx, x, y, a + offset, 274, age - .16, seed + offset * 30); }
-    else { line(ctx, x + Math.cos(a) * 12, y + Math.sin(a) * 12, a, cast.length || 330, rank === 7 ? 42 : 32, clamp((.64 - age) / .3), seed, clamp(age / .15)); if (rank === 7) lightning(ctx, x, y, a, cast.length || 330, age - .38, seed, 28); }
+    const fade = clamp((.6 - age) / .28), sweep = clamp(age / .13), geometry = swordGeometry(cast);
+    if (rank === 1) return; // The hero's steel blade carries the close thrust.
+    if (rank <= 5) {
+      (options.fan || fan)(ctx, x, y, a, geometry.radius, sweep, fade, seed);
+      if (rank === 4) lightning(ctx, x, y, a, 252, age - .16, seed);
+      if (rank === 5) for (const offset of [-.34, 0, .34]) lightning(ctx, x, y, a + offset, 274, age - .16, seed + offset * 30);
+    } else {
+      (options.ribbon || ribbon)(ctx, x + Math.cos(a) * 12, y + Math.sin(a) * 12, a, geometry.length, geometry.width, clamp(age / .15), clamp((.68 - age) / .3), seed);
+      if (rank === 7) for (let i = 0; i < 7; i++) {
+        const p = point(x, y, a, 24 + (geometry.length - 24) * i / 6);
+        skyLightning(ctx, p.x, p.y, age - .28 - i * .10, seed + i, 30, 480);
+      }
+    }
     ctx.globalAlpha = 1;
   }
   function allocateTargets(cast, targets) {
@@ -76,25 +102,54 @@
     living.sort((a, b) => rank === 7 && a.ranged !== b.ranged ? Number(b.ranged) - Number(a.ranged) : Math.hypot(a.x - cast.x, a.y - cast.y) - Math.hypot(b.x - cast.x, b.y - cast.y));
     return living.slice(0, count).map(t => t.id);
   }
+  function attachedSwordPose(cast, age, target, index = 0) {
+    const phase = (age * 2.6 + index * .17) % 1;
+    const length = cast.rank === 5 ? 60 : cast.rank >= 3 ? 30 : 24.5;
+    const alpha = clamp(age / .15) * clamp((4.5 - age) / .45);
+    if (cast.rank === 5) {
+      // Each cut travels through the torso: its first half is occluded by the
+      // enemy; the blade emerges in front during the follow-through.
+      const sweep = phase * phase * (3 - 2 * phase), a = -1.8 + sweep * 2.65;
+      return { x: target.x - Math.cos(a) * 23 + sweep * 12 - 6, y: target.y + 14 - Math.sin(a) * 23 + sweep * 12 - 6, angle: a, length, alpha, layer: phase < .48 ? 'back' : 'front' };
+    }
+    const penetration = Math.sin(phase * Math.PI) * 26, a = .22;
+    return { x: target.x - length - 13 + penetration, y: target.y + 14 - Math.sin(a) * length, angle: a, length, alpha, layer: phase < .23 || phase > .82 ? 'back' : 'front' };
+  }
+  function returningSwordPoses(cast, age) {
+    const t = clamp(age / 1.55), radius = Math.sin(t * Math.PI) * 285;
+    return Array.from({ length: 8 }, (_, i) => {
+      const a = i * Math.PI / 4, p = point(cast.x, cast.y, a, radius);
+      return { ...p, angle: t < .5 ? a : a + Math.PI, length: 75, alpha: clamp((1.8 - age) / .25) };
+    });
+  }
+  function giantSwordPose(cast, age, target) {
+    const contact = .73, angle = .24, approach = clamp(age / contact), groundY = target.y + 33;
+    const burial = clamp((age - contact) / .78) * (giantSwordGeometry.height + 100);
+    return { x: target.x + 115 * (1 - approach) ** 2 - Math.sin(angle) * burial,
+      y: groundY - 600 * (1 - approach) ** 2 + Math.cos(angle) * burial,
+      angle, height: giantSwordGeometry.height, groundY, burial, contact, alpha: 1 };
+  }
   function formation(ctx, cast, age, targets, layer, giant) {
-    const { rank, x, y, angle, seed = 1 } = cast;
+    const { rank } = cast;
     if (age < 0 || age > castDuration('formation', rank)) return;
     const ids = cast.targetIds || allocateTargets(cast, targets);
     const assigned = ids.map(id => targets.find(t => t.id === id)).filter(t => t && (t.hp == null || t.hp > 0));
     if (rank < 6) {
       assigned.forEach((target, i) => {
-        const t = (age * 2.6 + i * .17) % 1, a = -.85 + .35 * Math.sin(age * 5 + i), jab = Math.sin(t * Math.PI) * 16;
-        if (layer === 'back' && rank >= 5) ring(ctx, target.x, target.y + 28, 40 + t * 13, (1 - t) * .45, i, 5);
-        if (layer === 'front') { jian(ctx, target.x - 27 + jab, target.y - 18 - jab, a, rank >= 3 ? 60 : 49, clamp(age / .15) * clamp((4.5 - age) / .45)); if (t < .22) motes(ctx, target.x, target.y, t, i, 70, 7); }
+        const p = attachedSwordPose(cast, age, target, i);
+        if (layer === p.layer) jian(ctx, p.x, p.y, p.angle, p.length, p.alpha);
       });
     } else if (rank === 6 && layer === 'front') {
-      const t = clamp(age / 1.55), r = Math.sin(t * Math.PI) * 285;
-      for (let i = 0; i < assigned.length; i++) { const a = Math.atan2(assigned[i].y - y, assigned[i].x - x), p = point(x, y, a, r); line(ctx, p.x - Math.cos(a) * 25, p.y - Math.sin(a) * 25, a, 25, 7, .5, i); jian(ctx, p.x, p.y, t < .5 ? a : a + Math.PI, 75, clamp((1.8 - age) / .25)); }
+      for (const p of returningSwordPoses(cast, age)) jian(ctx, p.x, p.y, p.angle, p.length, p.alpha);
     } else if (rank === 7 && layer === 'back') {
       const target = assigned[0]; if (!target) return;
-      const contact = .73, t = clamp(age / contact), bx = target.x + 115 * (1 - t) ** 2, by = target.y + 33 - 600 * (1 - t) ** 2;
-      if (age < contact + .18) { line(ctx, bx + Math.sin(.24) * (giantSwordGeometry.height - 40), by - Math.cos(.24) * (giantSwordGeometry.height - 40), -Math.PI / 2 + .24, 190, 24, .22, seed); if (giant) giant(ctx, bx, by, .24, giantSwordGeometry.height, clamp((.94 - age) / .2)); else { ctx.save(); ctx.translate(bx, by); ctx.rotate(.24); ctx.scale(giantSwordGeometry.bladeWidth / 12, giantSwordGeometry.height / 68); jian(ctx, 0, -68, Math.PI / 2, 68, clamp((.94 - age) / .2)); ctx.restore(); } }
-      if (age >= contact) { const after = age - contact; ring(ctx, target.x, target.y + 30, 25 + after * 260, clamp((.8 - after) / .65), seed, 17); motes(ctx, target.x, target.y + 20, after, seed, 180, 55); for (let i = 0; i < 6; i++) lightning(ctx, target.x, target.y + 15, i / 6 * TAU, 90, after, seed + i, 8); }
+      const p = giantSwordPose(cast, age, target);
+      if (giant) giant(ctx, p.x, p.y, p.angle, p.height, p.alpha, { groundY: p.groundY });
+      else {
+        ctx.save(); ctx.beginPath(); ctx.rect(-10000, -10000, 20000, 10000 + p.groundY); ctx.clip();
+        ctx.translate(p.x, p.y); ctx.rotate(p.angle); ctx.scale(giantSwordGeometry.bladeWidth / 12, giantSwordGeometry.height / 68);
+        jian(ctx, 0, -68, Math.PI / 2, 68, 1); ctx.restore();
+      }
     }
     ctx.globalAlpha = 1;
   }
@@ -121,11 +176,11 @@
     if (age < 0 || age > 3.5 || layer !== 'back') return;
     const end = point(cast.x, cast.y, cast.angle, 180);
     if (age < .55) { ring(ctx, end.x, end.y + 34, 18 + age * 145, clamp((.55 - age) / .4), cast.seed, 10); }
-    if (cast.rank >= 4) { const target = targets.filter(t => t.hp == null || t.hp > 0).sort((a, b) => Math.hypot(a.x - end.x, a.y - end.y) - Math.hypot(b.x - end.x, b.y - end.y))[0]; if (target) lightning(ctx, end.x, end.y, Math.atan2(target.y - end.y, target.x - end.x), Math.hypot(target.x - end.x, target.y - end.y), age - .15, cast.seed, cast.rank === 7 ? 22 : 12); }
+    if (cast.rank >= 4) { const target = targets.filter(t => t.hp == null || t.hp > 0).sort((a, b) => Math.hypot(a.x - end.x, a.y - end.y) - Math.hypot(b.x - end.x, b.y - end.y))[0]; if (target) skyLightning(ctx, target.x, target.y + 25, age - .15, cast.seed, cast.rank === 7 ? 36 : 28, cast.rank === 7 ? 520 : 460); }
   }
   function draw(ctx, cast, time, options = {}) {
     const age = time - cast.at, layer = options.layer || 'front'; ctx.save();
-    if (cast.path === 'sword' && layer === 'front') sword(ctx, cast, age);
+    if (cast.path === 'sword' && layer === 'between') sword(ctx, cast, age, options);
     if (cast.path === 'formation') formation(ctx, cast, age, options.targets || [], layer, options.giant);
     if (cast.path === 'dash') dash(ctx, cast, age, layer, options.targets || []);
     ctx.restore();
@@ -135,6 +190,6 @@
     const count = Math.min(8, rank);
     for (let i = 0; i < count; i++) { const a = time * 1.3 + i / count * TAU, front = Math.sin(a) >= 0; if (front !== (layer === 'front')) continue; const x = hero.x + Math.cos(a) * 35, y = hero.y - 29 + Math.sin(a) * 12; jian(ctx, x, y, a + Math.PI / 2, 25, .8); }
   }
-  window.CheonNamgungEffects = Object.freeze({ palette: P, giantSwordGeometry, castDuration, allocateTargets, fieldCells, draw, drawQi, field, jian, lightning, ring, hash, clamp });
+  window.CheonNamgungEffects = Object.freeze({ palette: P, giantSwordGeometry, castDuration, swordGeometry, attachedSwordPose, returningSwordPoses, giantSwordPose, lightningWidthAt, allocateTargets, fieldCells, draw, drawQi, field, jian, lightning, skyLightning, ring, hash, clamp });
 })();
 

@@ -301,7 +301,12 @@
       const heroMarker = { ...player, isPlayer: true };
       actors.push(heroMarker);
       actors.sort((a, b) => finite(a.y) - finite(b.y));
-      for (const actor of actors) actor.isPlayer ? this.drawHero(player) : this.drawEnemy(actor);
+      if (this.pose.rank === 2 && this.pose.attack && finite(this.pose.attack.age) < .35) {
+        // The fan crosses enemies, while the swordsman's body stays in front of it.
+        for (const actor of actors) if (!actor.isPlayer) this.drawEnemy(actor);
+        this.drawSwordChoreography(this.pose);
+        this.drawHero(player, { skipChoreography: true });
+      } else for (const actor of actors) actor.isPlayer ? this.drawHero(player) : this.drawEnemy(actor);
       this.drawRainCasts('front');
       for (const projectile of (state.projectiles || [])) if (this.inView(projectile, 40)) this.drawProjectile(projectile);
       for (const effect of (state.effects || [])) {
@@ -776,14 +781,14 @@
       ctx.restore();
     }
 
-    drawHero(player) {
+    drawHero(player, options = {}) {
       const ctx = this.ctx;
       const pose = this.pose;
       const invincible = finite(player.invulnerableUntil) > this.time;
       ctx.save(); ctx.translate(player.x, player.y);
       ctx.fillStyle = 'rgba(4,17,16,.40)'; ctx.beginPath(); ctx.ellipse(0, 5, 20, 8, 0, 0, TAU); ctx.fill();
       ctx.restore();
-      if (pose.rank < 5) this.drawSwordChoreography(pose);
+      if (pose.rank < 5 && !options.skipChoreography) this.drawSwordChoreography(pose);
       this.drawPetals(player, 'back');
       const sourceReady = this.heroFrameReady(pose);
       if (sourceReady && !pose.bakedWeapon && pose.bladeBehind) this.drawHeldBlade(pose);
@@ -888,9 +893,9 @@
       ctx.restore();
     }
 
-    drawBodyFan(radius, angle, progress, alpha, color) {
+    drawBodyFan(radius, angle, progress, alpha, color, palette) {
       const span = 75 * Math.PI / 180;
-      this.drawInkCut(radius, angle - span / 2, span * clamp(progress), alpha);
+      this.drawInkCut(radius, angle - span / 2, span * clamp(progress), alpha, palette);
     }
 
     drawFilledPlumMotif(radius, progress, alpha = 1, options = {}) {
@@ -990,12 +995,12 @@
       }
     }
 
-    inkCutRaster(radius, start, span) {
+    inkCutRaster(radius, start, span, colors = Object.values(INK)) {
       if (!this.inkCutRasters) this.inkCutRasters = new Map();
-      const key = `${radius}:${start.toFixed(5)}:${span.toFixed(5)}`; let stamp = this.inkCutRasters.get(key);
+      const key = `${radius}:${start.toFixed(5)}:${span.toFixed(5)}:${colors.join(',')}`; let stamp = this.inkCutRasters.get(key);
       if (!stamp) {
         const half = Math.ceil(radius / 2) + 1, width = half * 2 + 1, data = new Uint8ClampedArray(width * width * 4);
-        const palette = Object.values(INK).map(hex => { const n = parseInt(hex.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; });
+        const palette = colors.map(hex => { const n = parseInt(hex.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; });
         for (let y = 0; y < width; y++) for (let x = 0; x < width; x++) {
           const xx = (x - half) * 2 + 1, yy = (y - half) * 2 + 1, r = Math.hypot(xx, yy), a = Math.atan2(yy, xx);
           const offset = ((a - start) % TAU + TAU) % TAU;
@@ -1013,9 +1018,9 @@
       return stamp;
     }
 
-    drawInkCut(radius, start, span, alpha = 1) {
+    drawInkCut(radius, start, span, alpha = 1, palette) {
       if (span <= 0 || alpha <= 0) return;
-      const stamp = this.inkCutRaster(radius, start, span);
+      const stamp = this.inkCutRaster(radius, start, span, palette);
       this.drawPixelStamp(stamp.canvas, -stamp.center * 2, -stamp.center * 2, alpha);
     }
 
@@ -1246,10 +1251,10 @@
       }
     }
 
-    drawPixelRibbon(x, y, heading, length, thickness, reach, curve, alpha, radius) {
+    drawPixelRibbon(x, y, heading, length, thickness, reach, curve, alpha, radius, palette = [[169, 71, 136], [250, 155, 200], [255, 240, 232]]) {
       if (!this.ribbonRasters) this.ribbonRasters = new Map();
       const phase = Math.max(1, Math.round(reach * 8)), clippedReach = phase / 8;
-      const key = [heading.toFixed(4), Math.round(length), Math.round(thickness), phase, curve, Math.round(radius), Math.round(x), Math.round(y)].join(':');
+      const key = [heading.toFixed(4), Math.round(length), Math.round(thickness), phase, curve, Math.round(radius), Math.round(x), Math.round(y), palette.flat().join(',')].join(':');
       let stamp = this.ribbonRasters.get(key);
       if (!stamp) {
         const cos = Math.cos(heading), sin = Math.sin(heading), span = length * clippedReach;
@@ -1257,7 +1262,7 @@
         const halfY = Math.abs(sin) * span / 2 + Math.abs(cos) * pad;
         const left = Math.floor((x - halfX) / 2) * 2, top = Math.floor((y - halfY) / 2) * 2;
         const width = Math.max(1, Math.ceil(halfX)), height = Math.max(1, Math.ceil(halfY));
-        const data = new Uint8ClampedArray(width * height * 4), palette = [[169, 71, 136], [250, 155, 200], [255, 240, 232]];
+        const data = new Uint8ClampedArray(width * height * 4);
         const bands = new Float32Array(257), bends = new Float32Array(257);
         for (let i = 1; i < 256; i++) {
           const wave = Math.sin(i / 256 * Math.PI);

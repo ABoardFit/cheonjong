@@ -33,6 +33,7 @@
     const speedUps = Number(k.dark_fragrance >= 1) + Number(k.dark_fragrance >= 2) + Number(k.five_elements >= 1) + Number(k.five_elements >= 3);
     const rank = k.plum_sword;
     let attackRadius = B.player.attackRadius + Math.max(0, Math.min(6, rank) - 1) * B.player.attackRankRadius;
+    if (rank === 2) attackRadius = B.player.swordFanRadius;
     if (rank === 3 || rank === 4) attackRadius += B.player.circleCenterCorrection;
     if (rank >= 5) attackRadius *= B.player.flowerRadiusMultiplier;
     if (rank === 7) attackRadius *= B.player.fusedRadiusMultiplier;
