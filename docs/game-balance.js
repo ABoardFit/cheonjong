@@ -28,6 +28,9 @@
       speedPerUpgrade: 0.08, rushDamage: 27, landingDamage: 38,
       landingRadius: 85, knockbackDistance: 80, invulnerability: 0.3,
       pickupLock: 3, reduction: 0.3, reductionAfter: 1, trailSpacing: 26 },
+    // 내력(마나): 초식 발동에 쓰고 초당 regen 씩 찬다. 비용 = 기본 + 단계가 하나 오를 때마다 perRank.
+    // 검법(1~7단계)은 내력이 들지 않는다. 검우·경공만 쓴다.
+    mana: { max: 100, regen: 12, rain: 10, dash: 20, perRank: 1 },
     field: { duration: 3, tick: 0.3, swordDamage: 11, rainDamage: 9,
       trailDamage: 10, trailRadius: 25, wideTrailRadius: 43 },
     enemy: { spawnStart: 0.7, spawnEnd: 0.22, maximum: 115,

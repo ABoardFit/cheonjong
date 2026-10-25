@@ -28,8 +28,28 @@
     s.damageTexts.push({ id: id(s), x, y, text: String(text), age: 0, duration: 0.65, color: color || '#fff2cc' });
     if (s.damageTexts.length > B.limits.damageTexts) s.damageTexts.shift();
   }
+  // 출전 전에 정해지는 영구 강화(폐관동 등)의 합. 공력(damage)·이동(speed)·범위(area)는 비율, 피해 감소·치명타 확률은 0~1.
+  // 내력(innerForce)은 최대 내력(마나)에 더해진다. 주세력 특수(화산): petalCapacity = 꽃잎 최대 보유 +n, petalArmor = 꽃잎 갑옷 고정 감소 비율.
+  const BONUS_KEYS = ['hp', 'damage', 'speed', 'reduction', 'critChance', 'critDamage', 'area', 'innerForce', 'petalCapacity', 'petalArmor'];
+  function normalizeBonuses(value = {}) {
+    const out = Object.fromEntries(BONUS_KEYS.map(key => [key, Math.max(0, Number(value[key]) || 0)]));
+    out.reduction = Math.min(out.reduction, 0.6);
+    out.critChance = Math.min(out.critChance, 0.6);
+    return out;
+  }
+  // 내력: 검우·경공을 쓸 때 든다(검법은 들지 않음). 단계가 오를수록 perRank 씩 더 든다.
+  function manaCost(s, kind) {
+    const rank = kind === 'rain' ? s.skills.plum_rain : s.skills.dark_fragrance;
+    return B.mana[kind] + Math.max(0, rank - 1) * B.mana.perRank;
+  }
+  function spendMana(s, kind) {
+    const cost = manaCost(s, kind);
+    if (s.player.mana < cost) return false;
+    s.player.mana -= cost;
+    return true;
+  }
   function getStats(s) {
-    const k = s.skills, d = B.dash, p = B.petal;
+    const k = s.skills, d = B.dash, p = B.petal, b = s.bonuses || normalizeBonuses();
     const speedUps = Number(k.dark_fragrance >= 1) + Number(k.dark_fragrance >= 2) + Number(k.five_elements >= 1) + Number(k.five_elements >= 3);
     const rank = k.plum_sword;
     let attackRadius = B.player.attackRadius + Math.max(0, Math.min(6, rank) - 1) * B.player.attackRankRadius;
@@ -37,20 +57,23 @@
     if (rank === 3 || rank === 4) attackRadius += B.player.circleCenterCorrection;
     if (rank >= 5) attackRadius *= B.player.flowerRadiusMultiplier;
     if (rank === 7) attackRadius *= B.player.fusedRadiusMultiplier;
+    attackRadius *= 1 + b.area;
     const bloomRadius = attackRadius * (rank >= 5 && rank < 7 ? B.player.bloomScatterMultiplier : 1);
+    const dashReduction = k.dark_fragrance >= 4 && (s.player.dashRemaining > 0 || s.time < s.player.reductionUntil) ? d.reduction : 0;
     return {
       maxHp: s.player.maxHp, hp: s.player.hp,
       attackSpeed: B.player.attackSpeed, attackDamage: B.player.attackDamage * (1 + Math.max(0, k.plum_sword - 1) * B.player.attackRankDamage) * (k.zixia >= 4 ? 1 + s.player.petals * p.damagePerHeld : 1),
       attackRadius, bloomRadius, fieldRadius: rank === 6 ? bloomRadius : attackRadius,
       swordSectorHalfAngle: B.player.swordSectorHalfAngle,
-      maxPetals: p.baseCapacity + p.capacityPerUpgrade * (Number(k.zixia >= 2) + Number(k.liuhe >= 1) + Number(k.liuhe >= 3)),
+      maxPetals: p.baseCapacity + p.capacityPerUpgrade * (Number(k.zixia >= 2) + Number(k.liuhe >= 1) + Number(k.liuhe >= 3)) + Math.floor(b.petalCapacity),
       petalConsumption: p.baseConsumption + p.consumptionPerUpgrade * (Number(k.zixia >= 3) + Number(k.liuhe >= 4)),
-      petalFlatReduction: p.flatReduction + (k.liuhe >= 2 ? p.liuheFlatBonus : 0),
-      damageReduction: k.dark_fragrance >= 4 && (s.player.dashRemaining > 0 || s.time < s.player.reductionUntil) ? d.reduction : 0,
-      moveSpeed: B.player.speed * (1 + speedUps * d.speedPerUpgrade),
+      petalFlatReduction: (p.flatReduction + (k.liuhe >= 2 ? p.liuheFlatBonus : 0)) * (1 + b.petalArmor),
+      damageReduction: 1 - (1 - dashReduction) * (1 - b.reduction),
+      moveSpeed: B.player.speed * (1 + speedUps * d.speedPerUpgrade) * (1 + b.speed),
       rainCooldown: B.rain.cooldown, dashCooldown: d.cooldown,
       dashDistance: d.distance + (k.five_elements >= 2 ? d.distanceBonus : 0),
-      critChance: B.player.critChance, critMultiplier: B.player.critMultiplier,
+      critChance: B.player.critChance + b.critChance, critMultiplier: B.player.critMultiplier + b.critDamage, damageMultiplier: 1 + b.damage,
+      mana: s.player.mana, maxMana: s.player.maxMana, rainManaCost: manaCost(s, 'rain'), dashManaCost: manaCost(s, 'dash'),
       fieldDuration: B.field.duration, auraRadius: s.player.radius * 5,
       flowerRainDamageRadius: rank === 7 ? attackRadius : 0
     };
@@ -64,7 +87,7 @@
   function createRun(options = {}) {
     const s = {
       version: 1, mode: options.mode || 'normal', rng: options.seed || 247617,
-      stage: options.stage || 'hwasan', difficulty: normalizeDifficulty(options.difficulty),
+      stage: options.stage || 'hwasan', difficulty: normalizeDifficulty(options.difficulty), bonuses: normalizeBonuses(options.bonuses),
       width: options.width || 1000, height: options.height || 650, serial: 0,
       status: 'running', time: 0, level: 1, xp: 0, nextXp: B.progression.firstXp,
       kills: 0, bossSpawned: false, bossDefeated: false,
@@ -81,6 +104,8 @@
         armorKnockbacks: 0, landingKnockbacks: 0, dashes: 0, fusions: 0 }
     };
     s.skills.plum_sword = 1; s.skills.zixia = 1;
+    s.player.maxHp = s.player.hp = B.player.hp + s.bonuses.hp;
+    s.player.maxMana = s.player.mana = B.mana.max + s.bonuses.innerForce;
     return s;
   }
   // Independent, testable mitigation: fixed reduction is applied BEFORE percentage.
@@ -137,9 +162,10 @@
   function damageEnemy(s, enemy, amount, source = 'sword', options = {}) {
     if (!enemy || enemy.hp <= 0) return 0;
     const direct = ['sword', 'rain', 'dash', 'landing'].includes(source);
-    const crit = options.crit !== false && direct && rng(s) < B.player.critChance;
+    const b = s.bonuses || normalizeBonuses();
+    const crit = options.crit !== false && direct && rng(s) < B.player.critChance + b.critChance;
     const heldMultiplier = s.skills.zixia >= 4 ? 1 + s.player.petals * B.petal.damagePerHeld : 1;
-    const dealt = Math.max(0, amount * (options.scaled ? 1 : heldMultiplier) * (crit ? B.player.critMultiplier : 1));
+    const dealt = Math.max(0, amount * (options.scaled ? 1 : heldMultiplier) * (crit ? B.player.critMultiplier + b.critDamage : 1) * (1 + b.damage));
     enemy.hp -= dealt;
     if (direct) enemy.flashUntil = s.time + 0.1;
     s.metrics.damageDealt += dealt;
@@ -216,6 +242,7 @@
     const targets = s.enemies.filter(e => !e.dead && e.hp > 0 && onScreen(s, e))
       .sort((a, b) => distance(a, s.player) - distance(b, s.player));
     if (!targets.length) return;
+    if (!spendMana(s, 'rain')) return 'mana';
     const count = Math.min(B.rain.counts[rank], targets.length);
     for (let i = 0; i < count; i++) {
       const kind = rank === 7 ? (rng(s) < 0.5 ? 'sword' : 'petal') : rank < 5 ? 'sword' : 'petal';
@@ -261,10 +288,11 @@
     const p = s.player; if (p.dashCooldown > 0 || p.dashRemaining > 0) return false;
     const fused = s.skills.dark_fragrance === 7 && s.skills.five_elements === 7;
     if (fused && p.petals < 1) { floatText(s, p.x, p.y - 26, '꽃잎 필요', '#efb6d4'); return false; }
+    if (!spendMana(s, 'dash')) { floatText(s, p.x, p.y - 26, '내력 부족', '#9fc6e8'); return false; }
     const moving = Math.hypot(input.moveX || 0, input.moveY || 0) > 0;
     const v = moving ? vector(input.moveX || 0, input.moveY || 0) : vector(p.faceX, p.faceY);
     p.dashX = v.x; p.dashY = v.y; p.faceX = v.x; p.faceY = v.y;
-    p.dashCooldown = B.dash.cooldown; p.dashRemaining = B.dash.duration;
+    p.dashCooldown = getStats(s).dashCooldown; p.dashRemaining = B.dash.duration;
     p.dashHitIds = []; p.dashDropIds = []; p.dashSerial++;
     s.metrics.dashes++;
     if (fused) {
@@ -466,10 +494,12 @@
     }
     s.camera.x = p.x; s.camera.y = p.y;
     p.hp = Math.min(p.maxHp, p.hp + B.player.regeneration * dt);
+    p.mana = Math.min(p.maxMana, p.mana + B.mana.regen * dt);
     s.attackTimer -= dt;
     if (s.attackTimer <= 0) { s.attackTimer += 1 / st.attackSpeed; swordAttack(s); }
     s.rainTimer -= dt;
-    if (s.rainTimer <= 0) { s.rainTimer += B.rain.cooldown; rainAttack(s); }
+    // 내력이 모자라 못 쓴 검우는 잠시 뒤 다시 시도한다.
+    if (s.rainTimer <= 0) s.rainTimer = rainAttack(s) === 'mana' ? 0.25 : s.rainTimer + B.rain.cooldown;
     s.spawnTimer -= dt;
     if (s.spawnTimer <= 0) {
       const count = s.difficulty?.count ?? 1;
@@ -544,7 +574,7 @@
     checkLevel(s);
     if (s.time >= B.progression.maxTime && s.status === 'running') { s.status = 'lost'; s.resultReason = '해 뜨기 전 혈영객을 쓰러뜨리지 못했습니다.'; }
   }
-  root.CheonGameCore = { createRun, normalizeDifficulty, step, getChoices, choose, getStats, getCombatCenter,
+  root.CheonGameCore = { createRun, normalizeDifficulty, normalizeBonuses, step, getChoices, choose, getStats, getCombatCenter,
     mitigateDamage, pickupPetal, damagePlayer, damageEnemy, addField,
     syncAttachments, startDash, spawnEnemy, fieldTick, skillIds, balance: B };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -85,7 +85,9 @@
     clearInput();
     modal.hidden = true;
     modalKind = '';
-    run = core.createRun({ ...runOptions, seed: Date.now() >>> 0, width: screen.clientWidth, height: screen.clientHeight });
+    // 시설(폐관동 등)의 영구 강화는 출전할 때마다 새로 읽는다.
+    const bonuses = runOptions.bonuses || window.CheonFacilities?.bonuses();
+    run = core.createRun({ ...runOptions, bonuses, seed: Date.now() >>> 0, width: screen.clientWidth, height: screen.clientHeight });
     run.reported = false;
     lastSkillSignature = '';
     nextHud = 0;
@@ -97,7 +99,7 @@
       announce('화산 수련을 시작합니다.');
     }
   }
-  // options: { stage, difficulty: { count, attack, health } } from the hub's stage select.
+  // options: { stage, difficulty: { count, attack, health }, bonuses? } from the hub's stage select.
   function startBattle(options = {}) {
     runOptions = options;
     if (!core || !window.CheonGameRenderer) {
@@ -179,6 +181,22 @@
     openModal('result', `<p class="dialog-eyebrow">${won ? '華山 · 시련 돌파' : '다시 피어날 매화를 위하여'}</p><h2 id="battle-dialog-title">${won ? '매화, 시련을 넘다' : '이번 수련을 마칩니다'}</h2><p class="dialog-lead">${won ? '공세와 보스의 시련을 이겨냈습니다. 다른 무공 조합으로 다시 수련해 보세요.' : '배운 무공과 적의 예고를 기억하세요. 다음 수련에서 새로운 길을 택할 수 있습니다.'}</p><div class="battle-result-numbers"><div><span>수련 시간</span><strong>${clock(run.time)}</strong></div><div><span>격파</span><strong>${run.kills}</strong></div><div><span>도달 레벨</span><strong>${run.level}</strong></div><div><span>완성한 절세신공</span><strong>${fusions.length}</strong></div></div>${fusions.length ? `<p class="dialog-lead">${esc(fusions.join(' · '))}</p>` : ''}${ownedMarkup()}<div class="dialog-footer"><button data-action="title">메인으로</button><button class="dialog-primary" data-action="retry">다시 수련 →</button></div>`);
     announce(won ? '시련 돌파. 수련 결과를 확인하세요.' : '수련 종료. 다시 도전할 수 있습니다.');
   }
+  // 내력(마나) 줄: 생명 줄 바로 아래에 한 번만 만든다(index.html 은 건드리지 않음).
+  function ensureManaRow() {
+    if ($('battle-mana-fill')) return;
+    const hp = document.querySelector('.battle-hp-row');
+    if (!hp) return;
+    const row = document.createElement('div'), label = document.createElement('span'), meter = document.createElement('div');
+    const fill = document.createElement('i'), value = document.createElement('strong');
+    row.className = 'battle-hp-row battle-mana-row';
+    label.textContent = '내력';
+    meter.className = 'battle-meter mana';
+    fill.id = 'battle-mana-fill';
+    value.id = 'battle-mana';
+    meter.append(fill);
+    row.append(label, meter, value);
+    hp.after(row);
+  }
   function updateHud() {
     if (!run) return;
     const s = core.getStats(run);
@@ -186,6 +204,11 @@
     $('battle-level').textContent = `Lv. ${run.level}`;
     $('battle-hp').textContent = `${Math.max(0, Math.ceil(run.player.hp))} / ${run.player.maxHp}`;
     $('battle-hp-fill').style.width = `${Math.max(0, run.player.hp / run.player.maxHp) * 100}%`;
+    ensureManaRow();
+    if ($('battle-mana')) {
+      $('battle-mana').textContent = `${Math.floor(run.player.mana)} / ${run.player.maxMana}`;
+      $('battle-mana-fill').style.width = `${Math.max(0, run.player.mana / run.player.maxMana) * 100}%`;
+    }
     $('battle-xp').textContent = `${Math.floor(run.xp)} / ${Math.ceil(run.nextXp)}`;
     $('battle-xp-fill').style.width = `${Math.min(1, run.xp / run.nextXp) * 100}%`;
     $('battle-petals').textContent = `${run.player.petals} / ${s.maxPetals}`;
