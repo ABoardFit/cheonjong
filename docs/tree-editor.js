@@ -104,6 +104,8 @@
 
   // ---- 화면 ----
   let editing = false, selection = [], pendingRegion = null, toastTimer = 0;
+  // 중심 노드(Alt+클릭으로 강조): "연결"을 누르면 고른 노드가 모두 이 노드와 이어진다.
+  let keyNode = null;
   const toggle = h('button', { type: 'button', class: 'te-toggle', onclick: () => setEditing(!editing) }, '✎ 무공록 수정');
   T.tools.prepend(toggle);
   const panel = h('aside', { class: 'te-panel', hidden: true, 'aria-label': '무공록 수정' });
@@ -148,7 +150,11 @@
 
   // 고른 노드 표시, 영역 메모 테두리.
   function paint() {
-    for (const group of T.nodeLayer.querySelectorAll('[data-node]')) group.classList.toggle('is-picked', editing && selection.includes(group.dataset.node));
+    if (keyNode && !selection.includes(keyNode)) keyNode = null;
+    for (const group of T.nodeLayer.querySelectorAll('[data-node]')) {
+      group.classList.toggle('is-picked', editing && selection.includes(group.dataset.node));
+      group.classList.toggle('is-key', editing && group.dataset.node === keyNode);
+    }
     T.overlayLayer.replaceChildren();
     if (!editing) return;
     const ns = 'http://www.w3.org/2000/svg';
@@ -180,26 +186,38 @@
     T.rebuild();
     say(`돌아갈 길이 없어 연결을 끊었습니다: ${blocked.map(([a, b]) => `${nameOf(a)}–${nameOf(b)}`).join(', ')}`);
   }
-  function connectToggle() {
-    if (selection.length !== 2) return;
-    const [a, b] = selection, key = edgeKey(a, b);
+  // 연결할 짝: 중심 노드(Alt+클릭)가 있으면 나머지 모두 ↔ 중심, 없으면 고른 두 노드끼리.
+  const linkPairs = () => (keyNode ? selection.filter(id => id !== keyNode).map(id => [keyNode, id]) : selection.length === 2 ? [selection] : []);
+  const hasEdge = (a, b) => T.model.edges.some(([x, y]) => edgeKey(x, y) === edgeKey(a, b));
+  // 끊을 줄: 중심 노드가 있으면 중심과 이어진 줄, 없으면 고른 노드끼리 이어진 줄 전부.
+  const unlinkEdges = () => T.model.edges.filter(([a, b]) => (keyNode
+    ? (a === keyNode && selection.includes(b)) || (b === keyNode && selection.includes(a))
+    : selection.includes(a) && selection.includes(b)));
+  function connect() {
+    const todo = linkPairs().filter(([a, b]) => !hasEdge(a, b));
+    if (!todo.length) return;
     mark();
-    if (T.model.edges.some(([x, y]) => edgeKey(x, y) === key)) {
-      const kept = T.model.edges.filter(([x, y]) => edgeKey(x, y) !== key);
-      T.model.edges.length = 0;
-      T.model.edges.push(...kept);
-      say(`${nameOf(a)}–${nameOf(b)} 연결을 끊었습니다.`);
-    } else if (!T.route(a, b).ok) {
-      undoStack.pop();
-      say('사이에 원이 막고 있어 돌아갈 길이 없습니다. 노드를 옮긴 뒤 다시 연결하세요.');
-      return;
-    } else {
-      T.model.edges.push([a, b]);
-      say(`${nameOf(a)}–${nameOf(b)}를 연결했습니다.`);
+    const made = [], stuck = [];
+    for (const [a, b] of todo) {
+      if (T.route(a, b).ok) { T.model.edges.push([a, b]); made.push([a, b]); } else stuck.push([a, b]);
     }
+    if (!made.length) undoStack.pop();
+    else { T.rebuild(); paint(); changed(); }
+    const names = list => list.map(([a, b]) => `${nameOf(a)}–${nameOf(b)}`).join(', ');
+    say([made.length ? `연결했습니다: ${names(made)}` : '', stuck.length ? `사이에 원이 막아 잇지 못했습니다: ${names(stuck)}` : ''].filter(Boolean).join(' / '));
+  }
+  function disconnect() {
+    const gone = unlinkEdges();
+    if (!gone.length) return;
+    mark();
+    const keys = new Set(gone.map(([a, b]) => edgeKey(a, b)));
+    const kept = T.model.edges.filter(([a, b]) => !keys.has(edgeKey(a, b)));
+    T.model.edges.length = 0;
+    T.model.edges.push(...kept);
     T.rebuild();
     paint();
     changed();
+    say(`연결 ${gone.length}개를 끊었습니다: ${gone.map(([a, b]) => `${nameOf(a)}–${nameOf(b)}`).join(', ')}`);
   }
   // 고른 노드가 있으면 그 근처(여럿이면 그 가운데)에 만들어 고른 노드 모두와 잇는다. 없으면 화면 가운데.
   function addNode() {
@@ -267,15 +285,16 @@
   // ---- 패널 ----
   const undoButton = h('button', { type: 'button', title: 'Ctrl+Z', onclick: () => travel(undoStack, redoStack) }, '↶');
   const redoButton = h('button', { type: 'button', title: 'Ctrl+Shift+Z', onclick: () => travel(redoStack, undoStack) }, '↷');
-  const linkButton = h('button', { type: 'button', onclick: connectToggle }, '연결');
+  const linkButton = h('button', { type: 'button', onclick: connect }, '연결');
+  const unlinkButton = h('button', { type: 'button', onclick: disconnect }, '연결 해제');
   const requestButton = h('button', { type: 'button', onclick: () => window.UIE?.copyDialog('무공록 수정 요청서', requestText()) });
   const body = h('div', { class: 'te-body' });
   panel.append(
     h('header', {}, h('strong', {}, '무공록 수정'), h('button', { type: 'button', class: 'te-done', onclick: () => setEditing(false) }, '끝내기')),
     h('div', { class: 'te-tools' }, undoButton, redoButton,
-      h('button', { type: 'button', onclick: addNode }, '+ 노드'), linkButton,
+      h('button', { type: 'button', onclick: addNode }, '+ 노드'), linkButton, unlinkButton,
       h('button', { type: 'button', class: 'te-danger', onclick: removeSelected }, '지우기'), requestButton),
-    h('p', { class: 'te-hint' }, '노드 누르기(Shift: 여러 개) · 끌어서 이동 · 빈 곳 끌기 = 영역 선택 · Space+끌기나 오른쪽 버튼 끌기 = 화면 이동 · 휠 = 확대'),
+    h('p', { class: 'te-hint' }, '노드 누르기(Shift: 여러 개, Alt: 중심 노드) · 끌어서 이동 · 빈 곳 끌기 = 영역 선택 · Space+끌기나 오른쪽 버튼 끌기 = 화면 이동 · 휠 = 확대'),
     body);
 
   const put = (...parts) => body.append(...parts.filter(part => part !== null && part !== undefined && part !== false));
@@ -286,10 +305,11 @@
     undoButton.disabled = !undoStack.length;
     redoButton.disabled = !redoStack.length;
     requestButton.textContent = `요청서 복사 (${memoCount()})`;
-    const pair = selection.length === 2;
-    const linked = pair && T.model.edges.some(([x, y]) => edgeKey(x, y) === edgeKey(...selection));
-    linkButton.disabled = !pair;
-    linkButton.textContent = linked ? '연결 해제' : '연결';
+    const toLink = linkPairs().filter(([a, b]) => !hasEdge(a, b)).length, toCut = unlinkEdges().length;
+    linkButton.disabled = !toLink;
+    linkButton.textContent = keyNode ? `중심에 연결${toLink ? ` (${toLink})` : ''}` : '연결';
+    unlinkButton.disabled = !toCut;
+    unlinkButton.textContent = `연결 해제${toCut > 1 ? ` (${toCut})` : ''}`;
     if (!editing) return;
     body.replaceChildren();
     if (selection.length === 1 && T.nodes.has(selection[0])) {
@@ -308,7 +328,9 @@
         T.neighbors(id).length ? h('p', { class: 'te-links' }, `이어진 노드: ${T.neighbors(id).map(nameOf).join(', ')}`) : null);
     } else if (selection.length > 1) {
       put(h('p', { class: 'te-kind' }, `${selection.length}개 선택`), h('p', { class: 'te-links' }, selection.map(nameOf).join(', ')),
-        pair ? h('p', { class: 'te-hint' }, linked ? '두 노드는 이어져 있습니다. 위의 "연결 해제"로 끊습니다.' : '위의 "연결"로 두 노드를 잇습니다. 사이에 원이 있으면 돌아서 갑니다.') : null);
+        h('p', { class: 'te-hint' }, keyNode
+          ? `중심: ${nameOf(keyNode)}. "중심에 연결"은 나머지를 모두 중심과 잇고, "연결 해제"는 중심과의 줄을 끊습니다. 중심을 다시 Alt+클릭하면 풀립니다.`
+          : `"연결 해제"는 고른 노드끼리 이어진 줄을 모두 끊습니다. 두 개면 "연결"로 잇고, 여러 개를 한 노드에 이으려면 그 노드를 Alt+클릭해 중심으로 정하세요.`));
     }
     if (pendingRegion) {
       const area = h('textarea', { rows: 3, placeholder: '예: 이 영역은 화산 군집을 더 넓게, 꽃잎 모양으로 펼치고 싶다.' });
@@ -343,6 +365,14 @@
     try { T.svg.setPointerCapture(event.pointerId); } catch {}
     const id = event.target.closest('[data-node]')?.dataset.node;
     if (spaceHeld) { drag = { mode: 'pan', x: event.clientX, y: event.clientY }; return; }
+    if (id && event.altKey) {
+      // Alt+클릭: 중심 노드로 강조(고른 것에 없으면 더한다). 다시 누르면 풀린다.
+      if (keyNode === id) keyNode = null;
+      else { if (!selection.includes(id)) selection = [...selection, id]; keyNode = id; }
+      pendingRegion = null;
+      render();
+      return;
+    }
     if (id) {
       if (event.shiftKey) selection = selection.includes(id) ? selection.filter(other => other !== id) : [...selection, id];
       else if (!selection.includes(id)) selection = [id];

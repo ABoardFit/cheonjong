@@ -43,6 +43,9 @@
 .tree-node.is-picked .tree-dot { stroke: #2f6f8f; stroke-width: 4; }
 .tree-node.is-picked .tree-hit { fill: #2f6f8f22; }
 .tree-screen.is-editing .tree-node { cursor: move; }
+/* 중심 노드(Alt+클릭) */
+.tree-node.is-key .tree-dot { stroke: #d39a00; stroke-width: 5; }
+.tree-node.is-key .tree-glow { fill: none; stroke: #f0b400; stroke-width: 3; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 6px #f0b400); }
 .te-region { fill: #2f6f8f12; stroke: #2f6f8f; stroke-width: 1.5; stroke-dasharray: 6 5; vector-effect: non-scaling-stroke; pointer-events: none; }
 .te-region.is-pending { fill: #b0344a10; stroke: #b0344a; }
 .te-region-label { fill: #2f6f8f; font: 600 22px system-ui, sans-serif; pointer-events: none; }
