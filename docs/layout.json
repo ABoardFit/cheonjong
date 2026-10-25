@@ -1,7 +1,21 @@
 {
   "version": 3,
   "wide": {
-    "parts": {},
+    "parts": {
+      "#tree-ui > aside:nth-of-type(2) > div:nth-of-type(2) > label:nth-of-type(4) > textarea": {
+        "dx": 1,
+        "dy": 7
+      },
+      "#title-screen .hub-emblem": {
+        "z": 1
+      },
+      "#hub-character": {
+        "z": 2
+      },
+      "#title-screen .title-seal": {
+        "z": 2
+      }
+    },
     "added": [],
     "seq": 0
   },
@@ -9,5 +23,6 @@
     "parts": {},
     "added": [],
     "seq": 0
-  }
+  },
+  "savedAt": "2026-10-25T18:21:32.896Z"
 }
