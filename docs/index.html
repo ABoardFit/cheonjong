@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ede9df">
+  <title>천종지자 · 화산의 시련</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="game.css">
+  <link rel="stylesheet" href="dojo.css">
+  <script src="data.js" defer></script>
+  <script src="game-balance.js" defer></script>
+  <script src="game-core.js" defer></script>
+  <script src="assets/hero-atlas.js" defer></script>
+  <script src="combat-animation.js" defer></script>
+  <script src="game-renderer.js" defer></script>
+  <script src="effect-preview.js" defer></script>
+  <script src="app.js" defer></script>
+  <script src="game-controller.js" defer></script>
+  <script src="dojo.js" defer></script>
+</head>
+<body>
+  <div class="paper-grain" aria-hidden="true"></div>
+  <main id="app">
+    <section id="title-screen" class="title-screen" aria-labelledby="game-title">
+      <div class="title-copy">
+        <p class="eyebrow">하나의 몸, 무한한 무학</p>
+        <h1 id="game-title">천종지자</h1>
+        <p class="title-description">어느 문파의 길을 걸을 것인가.<br>모든 무학의 시작은, 그대에게 있다.</p>
+        <button id="start-battle" class="primary-button">화산 출전 <span aria-hidden="true">→</span></button>
+        <button id="open-martial" class="title-codex-button">무공록 <span aria-hidden="true">↗</span></button>
+        <button id="open-dojo" class="title-codex-button">연무장 · 동작 비교 <span aria-hidden="true">↗</span></button>
+        <p class="prototype-caption">화산 전투 시제품 · 매화를 피우고 절세신공에 도달하세요</p>
+      </div>
+      <div class="title-art" aria-hidden="true">
+        <div class="ink-circle"></div>
+        <img src="assets/hero.png" alt="" class="hero-art" onerror="this.hidden=true">
+        <span class="title-seal">무학무애<br>武學無涯</span>
+      </div>
+      <div class="title-bottom"><span>천종지자</span><span>第一卷 · 무공의 길</span></div>
+    </section>
+
+    <section id="martial-screen" class="martial-screen" aria-labelledby="martial-title" hidden>
+      <header class="topbar">
+        <button id="back-main" class="back-button"><span aria-hidden="true">←</span> 메인으로</button>
+        <span class="brand">천종지자</span>
+        <span class="context-badge">무공 UI 시제품</span>
+      </header>
+      <div class="page-heading">
+        <div><p class="eyebrow">第一卷 · 무학의 계보</p><h1 id="martial-title">무공록</h1></div>
+        <p>하나의 몸에, 천 갈래 무학을.<br><span>세력을 선택하여 무공의 길을 살펴보세요.</span></p>
+      </div>
+      <section class="lineage-map" aria-label="정파, 사파, 새외무림의 무공 계보">
+        <svg class="lineage-lines" viewBox="0 0 1200 510" preserveAspectRatio="none" aria-hidden="true">
+          <path data-line="righteous" d="M 580 255 C 460 255 460 245 350 245"></path>
+          <path data-line="heterodox" d="M 630 240 C 770 240 700 140 850 140"></path>
+          <path data-line="outer" d="M 630 280 C 770 280 700 395 850 395"></path>
+        </svg>
+        <div class="map-character">
+          <div class="character-ring" aria-hidden="true"></div>
+          <span class="character-fallback" aria-hidden="true">武</span>
+          <img src="assets/hero.png" alt="검을 든 천종지자 주인공의 콘셉트 이미지" onerror="this.hidden=true">
+          <div class="character-label"><span>천종지자</span><small>모든 무학의 시작</small></div>
+        </div>
+        <div id="category-clusters"></div>
+        <div class="map-legend"><span><i class="priority-dot"></i> 우선 개발 6개 세력</span><span>전체 18개 세력</span></div>
+      </section>
+      <section id="school-panel" class="school-panel" aria-live="polite" aria-atomic="false"></section>
+      <footer class="page-footer"><span>천종지자 · 무공록</span><span>단계 열람, 실제 습득 아님</span></footer>
+    </section>
+    <section id="game-screen" aria-label="천종지자 화산 전투" hidden>
+      <canvas id="game-canvas" tabindex="0" aria-label="화산 전장. WASD 또는 방향키로 이동, 스페이스바로 경공. 무공은 자동 공격합니다."></canvas>
+      <header class="battle-top">
+        <div class="battle-identity"><span class="battle-seal">華山</span><div><strong>매화의 길</strong><small>화산 전투 시제품</small></div></div>
+        <div class="battle-time"><span id="battle-time">00:00</span><small id="battle-goal">공세에서 살아남으세요</small></div>
+        <div class="battle-top-actions"><button id="battle-codex" title="보유 무공록">무공록</button><button id="battle-stats" title="능력치 (Tab)">능력치 <kbd>Tab</kbd></button><button id="battle-pause" aria-label="일시정지 (Esc)">Ⅱ</button></div>
+      </header>
+      <div class="battle-meters" aria-label="현재 상태">
+        <div class="battle-hp-row"><span>생명</span><div class="battle-meter hp"><i id="battle-hp-fill"></i></div><strong id="battle-hp">100 / 100</strong></div>
+        <div class="battle-xp-row"><span id="battle-level">Lv. 1</span><div class="battle-meter xp"><i id="battle-xp-fill"></i></div><strong id="battle-xp">0 / 10</strong></div>
+      </div>
+      <div id="battle-boss" class="battle-boss" hidden><span id="battle-boss-name">화산의 시련</span><div class="battle-meter boss"><i id="battle-boss-fill"></i></div></div>
+      <div class="battle-petal-row"><span class="petal-mark" aria-hidden="true">✿</span><strong id="battle-petals">0 / 1</strong><span id="battle-petal-lock"></span><span class="battle-kills">격파 <strong id="battle-kills">0</strong></span></div>
+      <footer class="battle-bottom">
+        <div class="battle-loadout"><div class="battle-loadout-label">현재 무공 <span>1~6 누적 · 짝과 함께 화경 시 조합</span></div><div id="battle-skills"></div></div>
+        <div class="battle-controls"><p><kbd>W A S D</kbd> 이동 <span>·</span> <kbd>Space</kbd> 경공 <span>·</span> 자동 공격</p><button id="battle-dash"><span>경공</span><small id="battle-dash-cooldown">Space · 준비</small></button></div>
+      </footer>
+      <div id="battle-stick" aria-hidden="true" hidden><i></i></div>
+      <div id="battle-modal" class="battle-modal" hidden><section id="battle-dialog" class="battle-dialog" role="dialog" aria-modal="true" aria-labelledby="battle-dialog-title"></section></div>
+      <div id="battle-announcer" class="battle-sr-only" role="status" aria-live="polite"></div>
+    </section>
+    <section id="dojo-screen" aria-labelledby="dojo-title" hidden>
+      <canvas id="dojo-canvas" aria-label="선택한 단계의 캐릭터 동작과 화산 무공을 반복 재생하는 연무장"></canvas>
+      <header class="dojo-header">
+        <button id="dojo-back" type="button">← 메인으로</button>
+        <div><p>演武場 · 華山</p><h1 id="dojo-title">한 자루에서, 만리의 향으로</h1><small>연출 비교 · 실제 전투와 별도</small></div>
+        <button id="dojo-pause" type="button" aria-pressed="false">일시정지</button>
+      </header>
+      <aside class="dojo-note"><span id="dojo-rank-tag">初 · 1단계</span><h2 id="dojo-form-name">매화노방</h2><p id="dojo-description"></p><span id="dojo-live" class="battle-sr-only" role="status" aria-live="polite"></span></aside>
+      <footer class="dojo-controls">
+        <div class="dojo-categories" role="group" aria-label="무공 갈래">
+          <button type="button" data-dojo-category="sword" aria-pressed="true">검법 <small>매화만리향</small></button>
+          <button type="button" data-dojo-category="rain" aria-pressed="false">검우 <small>매향침골</small></button>
+          <button type="button" data-dojo-category="dash" aria-pressed="false">경공 <small>매인설한</small></button>
+        </div>
+        <div class="dojo-rank-row"><span>강화 단계</span><div class="dojo-ranks" role="group" aria-label="강화 단계 선택">
+          <button type="button" data-dojo-rank="1" aria-pressed="true" aria-label="1단계">1</button><button type="button" data-dojo-rank="2" aria-pressed="false" aria-label="2단계">2</button><button type="button" data-dojo-rank="3" aria-pressed="false" aria-label="3단계">3</button><button type="button" data-dojo-rank="4" aria-pressed="false" aria-label="4단계">4</button><button type="button" data-dojo-rank="5" aria-pressed="false" aria-label="5단계">5</button><button type="button" data-dojo-rank="6" aria-pressed="false" aria-label="6단계 화경">6</button><button type="button" data-dojo-rank="7" aria-pressed="false" aria-label="7단계 절세신공">7 <small>절세</small></button>
+        </div></div>
+        <div class="dojo-partner-row"><span id="dojo-partner-label">자하신공</span><div id="dojo-partner-levels" class="dojo-partner-levels" role="group" aria-label="자하신공 단계 선택"><button type="button" data-dojo-partner="0" aria-pressed="true" aria-label="자하신공 없음, 0성">0 <small>없음</small></button><button type="button" data-dojo-partner="1" aria-pressed="false" aria-label="자하신공 1성">1</button><button type="button" data-dojo-partner="2" aria-pressed="false" aria-label="자하신공 2성">2</button><button type="button" data-dojo-partner="3" aria-pressed="false" aria-label="자하신공 3성">3</button><button type="button" data-dojo-partner="4" aria-pressed="false" aria-label="자하신공 4성">4</button><button type="button" data-dojo-partner="5" aria-pressed="false" aria-label="자하신공 5성">5</button><button type="button" data-dojo-partner="6" aria-pressed="false" aria-label="자하신공 6성">6</button></div></div>
+        <div class="dojo-directions" role="group" aria-label="공격 방향 선택"><span>공격 방향</span><button type="button" data-dojo-direction="nw" aria-label="왼쪽 위로 공격" aria-pressed="false">↖</button><button type="button" data-dojo-direction="n" aria-label="위로 공격" aria-pressed="false">↑</button><button type="button" data-dojo-direction="ne" aria-label="오른쪽 위로 공격" aria-pressed="false">↗</button><button type="button" data-dojo-direction="w" aria-label="왼쪽으로 공격" aria-pressed="false">←</button><button type="button" data-dojo-direction="e" aria-label="오른쪽으로 공격" aria-pressed="true">→</button><button type="button" data-dojo-direction="sw" aria-label="왼쪽 아래로 공격" aria-pressed="false">↙</button><button type="button" data-dojo-direction="s" aria-label="아래로 공격" aria-pressed="false">↓</button><button type="button" data-dojo-direction="se" aria-label="오른쪽 아래로 공격" aria-pressed="false">↘</button></div>
+        <div class="dojo-secondary"><button id="dojo-walk" type="button" aria-pressed="false">걷기 켜기</button><button id="dojo-restart" type="button">처음부터 재생 ↺</button><button id="dojo-step" type="button">한 프레임 진행</button><output id="dojo-time" aria-label="재생 시간">0.00초</output><p><kbd>1–7</kbd> 단계 변경 <span>·</span> <kbd>Space</kbd> 재생/정지 <span>·</span> <kbd>Esc</kbd> 메인</p></div>
+      </footer>
+    </section>
+  </main>
+</body>
+</html>
