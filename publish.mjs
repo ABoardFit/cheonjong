@@ -1,7 +1,7 @@
 // Copies the playable web build (prototype/dist at the game repo's HEAD) into docs/, which GitHub Pages serves.
 // Only committed files go out, so work in progress in the game folder is never published.
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -27,6 +27,13 @@ for (const path of git('ls-tree', '-r', '-z', '--full-tree', '--name-only', 'HEA
   writeFileSync(target, git('cat-file', 'blob', `HEAD:${path}`));
   count++;
 }
+// The main-screen edit tool lives in this repo (editor/) and is added to the game's page here.
+for (const file of ['ui-editor.js', 'ui-editor.css']) {
+  writeFileSync(join(docs, file), readFileSync(new URL(`./editor/${file}`, import.meta.url)));
+}
+const index = join(docs, 'index.html');
+writeFileSync(index, readFileSync(index, 'utf8').replace('</head>', () =>
+  '  <link rel="stylesheet" href="ui-editor.css">\n  <script src="ui-editor.js" defer></script>\n</head>'));
 // Serve the files as they are instead of running them through Jekyll.
 writeFileSync(join(docs, '.nojekyll'), '');
 console.log(`docs/ <- ${count} files from game commit ${commit}`);
