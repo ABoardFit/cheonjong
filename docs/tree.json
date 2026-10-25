@@ -1566,54 +1566,9 @@
       ]
     },
     {
-      "id": "custom:ng_grip_0",
-      "x": -1800,
-      "y": -855,
-      "category": "righteous",
-      "faction": "namgung",
-      "custom": true,
-      "kind": "minor",
-      "glyph": "合",
-      "name": "육합 검기",
-      "desc": "육합공의 기운이 호신 검기를 맺는다.",
-      "effects": [
-        "육합공이 호신 검기를 드랍"
-      ]
-    },
-    {
-      "id": "custom:ng_grip_1",
-      "x": -1800,
-      "y": -705,
-      "category": "righteous",
-      "faction": "namgung",
-      "custom": true,
-      "kind": "minor",
-      "glyph": "力",
-      "name": "검병 단련",
-      "desc": "검을 쥐는 손을 단련한다.",
-      "effects": [
-        "공격력 +1"
-      ]
-    },
-    {
-      "id": "custom:ng_grip_2",
-      "x": -1800,
-      "y": -555,
-      "category": "righteous",
-      "faction": "namgung",
-      "custom": true,
-      "kind": "minor",
-      "glyph": "體",
-      "name": "검병 단련",
-      "desc": "검을 쥐는 손을 단련한다.",
-      "effects": [
-        "체력 +5"
-      ]
-    },
-    {
       "id": "custom:ng_pommel",
       "x": -1800,
-      "y": -380,
+      "y": -360,
       "category": "righteous",
       "faction": "namgung",
       "custom": true,
@@ -1626,24 +1581,144 @@
       ]
     },
     {
-      "id": "custom:ng_stem_0",
-      "x": -1518,
-      "y": -227,
+      "id": "custom:ng_grip_l0",
+      "x": -1865,
+      "y": -860,
       "category": "righteous",
       "faction": "namgung",
       "custom": true,
       "kind": "minor",
-      "glyph": "輕",
-      "name": "경신 수련",
+      "glyph": "柄",
+      "name": "검병 수련",
+      "desc": "검자루를 감아 쥐는 손이 검법을 단단히 받친다.",
+      "effects": [
+        "검법 피해 +6%"
+      ]
+    },
+    {
+      "id": "custom:ng_grip_l1",
+      "x": -1865,
+      "y": -735,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "柄",
+      "name": "검병 수련",
+      "desc": "검자루를 감아 쥐는 손이 검법을 단단히 받친다.",
+      "effects": [
+        "검법 피해 +6%"
+      ]
+    },
+    {
+      "id": "custom:ng_grip_l2",
+      "x": -1865,
+      "y": -610,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "柄",
+      "name": "검병 수련",
+      "desc": "검자루를 감아 쥐는 손이 검법을 단단히 받친다.",
+      "effects": [
+        "검법 피해 +6%"
+      ]
+    },
+    {
+      "id": "custom:ng_grip_l3",
+      "x": -1865,
+      "y": -485,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "柄",
+      "name": "검병 수련",
+      "desc": "검자루를 감아 쥐는 손이 검법을 단단히 받친다.",
+      "effects": [
+        "검법 피해 +6%"
+      ]
+    },
+    {
+      "id": "custom:ng_grip_r0",
+      "x": -1735,
+      "y": -860,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "柄",
+      "name": "검병 수련",
+      "desc": "검자루를 감아 쥐는 손이 검법을 단단히 받친다.",
+      "effects": [
+        "검법 피해 +6%"
+      ]
+    },
+    {
+      "id": "custom:ng_grip_r1",
+      "x": -1735,
+      "y": -735,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "柄",
+      "name": "검병 수련",
+      "desc": "검자루를 감아 쥐는 손이 검법을 단단히 받친다.",
+      "effects": [
+        "검법 피해 +6%"
+      ]
+    },
+    {
+      "id": "custom:ng_grip_r2",
+      "x": -1735,
+      "y": -610,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "柄",
+      "name": "검병 수련",
+      "desc": "검자루를 감아 쥐는 손이 검법을 단단히 받친다.",
+      "effects": [
+        "검법 피해 +6%"
+      ]
+    },
+    {
+      "id": "custom:ng_grip_r3",
+      "x": -1735,
+      "y": -485,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "柄",
+      "name": "검병 수련",
+      "desc": "검자루를 감아 쥐는 손이 검법을 단단히 받친다.",
+      "effects": [
+        "검법 피해 +6%"
+      ]
+    },
+    {
+      "id": "custom:ng_stem_0",
+      "x": -1519,
+      "y": -207,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "合",
+      "name": "육합 검기",
       "desc": "남궁으로 가는 수련의 길.",
       "effects": [
-        "이동 속도 +1%"
+        "육합공이 호신 검기를 드랍"
       ]
     },
     {
       "id": "custom:ng_stem_1",
       "x": -1208,
-      "y": -184,
+      "y": -170,
       "category": "righteous",
       "faction": "namgung",
       "custom": true,
@@ -1657,8 +1732,8 @@
     },
     {
       "id": "custom:ng_stem_2",
-      "x": -888,
-      "y": -175,
+      "x": -887,
+      "y": -170,
       "category": "righteous",
       "faction": "namgung",
       "custom": true,
@@ -2126,18 +2201,42 @@
       ],
       [
         "custom:ng_heart",
-        "custom:ng_grip_0"
+        "custom:ng_grip_l0"
       ],
       [
-        "custom:ng_grip_0",
-        "custom:ng_grip_1"
+        "custom:ng_grip_l0",
+        "custom:ng_grip_l1"
       ],
       [
-        "custom:ng_grip_1",
-        "custom:ng_grip_2"
+        "custom:ng_grip_l1",
+        "custom:ng_grip_l2"
       ],
       [
-        "custom:ng_grip_2",
+        "custom:ng_grip_l2",
+        "custom:ng_grip_l3"
+      ],
+      [
+        "custom:ng_grip_l3",
+        "custom:ng_pommel"
+      ],
+      [
+        "custom:ng_heart",
+        "custom:ng_grip_r0"
+      ],
+      [
+        "custom:ng_grip_r0",
+        "custom:ng_grip_r1"
+      ],
+      [
+        "custom:ng_grip_r1",
+        "custom:ng_grip_r2"
+      ],
+      [
+        "custom:ng_grip_r2",
+        "custom:ng_grip_r3"
+      ],
+      [
+        "custom:ng_grip_r3",
         "custom:ng_pommel"
       ],
       [
@@ -2236,5 +2335,5 @@
       ]
     ]
   },
-  "savedAt": "2026-10-25T17:53:48.053Z"
+  "savedAt": "2026-10-25T17:56:16.499Z"
 }
