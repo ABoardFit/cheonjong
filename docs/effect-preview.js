@@ -202,7 +202,7 @@
     const length=balance.distance+(partnerRank>=2?balance.distanceBonus:0), from=240-length/2;
     const landingAt=startAt+balance.duration, shift=clamp((elapsed-startAt)/balance.duration);
     return {combined,activeRank,partnerRank,elapsed,startAt,landingAt,shift,length,from,x:from+length*shift,y:150,
-      landingX:from+length,waveProgress:(elapsed-landingAt)/.42,waveEnabled:activeRank>=3||partnerRank>=1};
+      landingX:from+length,waveProgress:(elapsed-landingAt)/.42,waveEnabled:activeRank>=3||partnerRank>=5};
   }
   function dodgeScene(t, passive = false) {
     const timing=dodgeTimeline(t,passive), {combined,elapsed,startAt,landingAt,shift,length,from,x,y}=timing;

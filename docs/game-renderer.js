@@ -830,8 +830,8 @@
       } else if (this.lastHeroSourceFrame?.image.complete && this.lastHeroSourceFrame.image.naturalWidth > 0) {
         ({ image, pose: framePose } = this.lastHeroSourceFrame);
       }
-      // The fast drawing broadens the measured steel itself, beneath the authored
-      // body and its narrow bright blade. The grip and full-body PNG stay intact.
+      // A dragged blade follows its earlier measured tip positions, beneath the
+      // authored body and current steel. The grip and full-body PNG stay intact.
       if (image && framePose === pose) this.drawBladeSmear(framePose);
       ctx.save(); ctx.scale(framePose.face, 1); ctx.imageSmoothingEnabled = false;
       if (image) {
@@ -859,28 +859,68 @@
       if (!origin || !tip || !body) return null;
       const length = Math.hypot(tip.x - origin.x, tip.y - origin.y);
       if (length < 9 || !Number.isFinite(length)) return null;
-      const dx = (tip.x - origin.x) / length, dy = (tip.y - origin.y) / length;
-      const turn = pose.face < 0 && pose.action !== 'spin' ? -1 : 1;
-      const start = Math.min(7, length * .20), reach = length * (1 + strength * .14);
-      const breadth = Math.min(27, length * .52) * strength;
-      // A swept, tapered blade surface, rather than an annulus around the actor.
-      // The far end converges to one point; no detached line reaches a target.
-      const strip = (leading, trailing) => {
+      const animation = window.CheonCombatAnimation;
+      if (!animation?.poseFor) return null;
+      const strike = finite(pose.timeline?.strike, .18), elapsed = progress * strike;
+      const windup = finite(pose.timeline?.windup, .20), lookback = strike * (pose.action === 'spin' ? .38 : .72);
+      const startAt = Math.max(pose.action === 'spin' ? 0 : -windup * .8, elapsed - lookback);
+      const angle = finite(pose.attack?.angle, Math.atan2(tip.y - origin.y, tip.x - origin.x));
+      const samples = [];
+      // Resampling the same public action timer makes paused frames, backward
+      // seeking and a moving actor deterministic; no previous render is needed.
+      for (let i = 0; i <= 16; i++) {
+        const age = startAt + (elapsed - startAt) * i / 16;
+        const state = { player: { x: body.x, y: body.y, faceX: Math.cos(angle), faceY: Math.sin(angle) },
+          skills: { plum_sword: pose.rank }, effects: [], attackTimer: age < 0 ? -age : Infinity };
+        const attack = age < 0 ? null : { ...pose.attack, angle, rank: pose.rank, age, duration: strike + .5 };
+        const sampled = i === 16 ? pose : animation.poseFor(state, age, { action: pose.action, attack });
+        if (!sampled.tipVisible || sampled.socketOccluded || sampled.bakedWeapon && !sampled.hasCalibratedTip) continue;
+        const point = { x: sampled.tip.x - body.x, y: sampled.tip.y - body.y,
+          ox: sampled.bladeOrigin.x - body.x, oy: sampled.bladeOrigin.y - body.y };
+        point.length = Math.hypot(point.x - point.ox, point.y - point.oy);
+        point.angle = Math.atan2(point.y - point.oy, point.x - point.ox);
+        if (samples.length) {
+          const previous = samples.at(-1).angle;
+          point.angle = previous + Math.atan2(Math.sin(point.angle - previous), Math.cos(point.angle - previous));
+        }
+        if (!samples.length || Math.hypot(point.x - samples.at(-1).x, point.y - samples.at(-1).y) > .25) samples.push(point);
+      }
+      if (samples.length < 2) return null;
+      const spine = [];
+      // Interpolate the measured trajectory, not a shape extruded along the
+      // current straight sword. Both ends remain their real source positions.
+      for (let i = 0; i < samples.length - 1; i++) {
+        const a = samples[Math.max(0, i - 1)], b = samples[i], c = samples[i + 1], d = samples[Math.min(samples.length - 1, i + 2)];
+        for (let j = 0; j < 6; j++) {
+          const t = j / 6, t2 = t * t, t3 = t2 * t;
+          const value = key => .5 * (2 * b[key] + (-a[key] + c[key]) * t +
+            (2 * a[key] - 5 * b[key] + 4 * c[key] - d[key]) * t2 + (-a[key] + 3 * b[key] - 3 * c[key] + d[key]) * t3);
+          // A rotating blade follows an arc around its measured moving grip;
+          // Cartesian tip interpolation would cut straight across this arc.
+          const angle = value('angle'), length = Math.max(1, value('length'));
+          spine.push({ x: value('ox') + Math.cos(angle) * length, y: value('oy') + Math.sin(angle) * length });
+        }
+      }
+      spine.push(samples.at(-1));
+      const breadth = Math.min(18, length * .34) * strength;
+      const strip = (left, right) => {
         const front = [], back = [];
-        for (let i = 0; i <= 16; i++) {
-          const t = i / 16, distance = start + (reach - start) * t;
-          const width = Math.pow(Math.sin(Math.PI * t), .75) * breadth;
-          const point = offset => ({ x: origin.x - body.x + dx * distance - dy * offset * turn,
-            y: origin.y - body.y + dy * distance + dx * offset * turn });
-          front.push(point(width * leading)); back.push(point(-width * trailing));
+        for (let i = 0; i < spine.length; i++) {
+          const t = i / (spine.length - 1), point = spine[i];
+          const before = spine[Math.max(0, i - 1)], after = spine[Math.min(spine.length - 1, i + 1)];
+          const distance = Math.hypot(after.x - before.x, after.y - before.y) || 1;
+          const nx = -(after.y - before.y) / distance, ny = (after.x - before.x) / distance;
+          const width = Math.pow(Math.sin(Math.PI * t), .85) * breadth;
+          front.push({ x: point.x + nx * width * left, y: point.y + ny * width * left });
+          back.push({ x: point.x - nx * width * right, y: point.y - ny * width * right });
         }
         return front.concat(back.reverse());
       };
       return { origin: { x: origin.x - body.x, y: origin.y - body.y },
-        tip: { x: tip.x - body.x, y: tip.y - body.y }, length, reach, breadth, strength,
-        layers: [{ color: '#899faf', points: strip(.13, 1) },
-          { color: '#c5d1d6', points: strip(.10, .72) },
-          { color: '#f5eed9', points: strip(.07, .26) }] };
+        tip: { x: tip.x - body.x, y: tip.y - body.y }, length, breadth, strength, samples, spine,
+        layers: [{ color: '#899faf', points: strip(.38, .62) },
+          { color: '#d0d9de', points: strip(.30, .45) },
+          { color: '#fff2d9', points: strip(.22, .19) }] };
     }
 
     drawBladeSmear(pose) {

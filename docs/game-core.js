@@ -266,9 +266,9 @@
     const visual = { dashSerial: p.dashSerial, landedAt: s.time,
       activeRank: s.skills.dark_fragrance, partnerRank: s.skills.five_elements,
       hasLandingDamage: s.skills.dark_fragrance >= 3 };
-    // Both skills modify this same dodge. One presentation event belongs to
-    // its actual landing point, regardless of which skill enabled the wave.
-    if (s.skills.dark_fragrance >= 3 || s.skills.five_elements >= 1) {
+    // Only the active landing strike creates a burst. The partner's first
+    // four ranks improve movement/contact, without adding a landing wave.
+    if (s.skills.dark_fragrance >= 3) {
       effect(s, 'burst', p.x, p.y, B.dash.landingRadius, 0.42,
         { color: '#f9a3cc', source: 'landing', ...visual });
     }

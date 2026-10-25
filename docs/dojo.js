@@ -8,7 +8,7 @@
   const paths = {
     sword: { active: 'plum_sword', partner: 'zixia', title: '매화만리향', summary: '손끝에서 이어지는 검로. 화경의 개화와 절세신공의 한 번에 압축된 매화 베기를 비교하세요.' },
     rain: { active: 'plum_rain', partner: 'liuhe', title: '매향침골', summary: '가까운 서로 다른 적에게 최대 수량만큼 외날 도를 내립니다. 절세신공은 표적마다 도 또는 꽃잎 하나를 무작위로 내리며, 도는 남아 있는 원거리 적을 먼저 노립니다.' },
-    dash: { active: 'dark_fragrance', partner: 'five_elements', title: '매인설한', summary: '암향표와 오행매화보는 같은 도주기를 강화합니다. 한 번 이동하고 같은 착지 지점에서 하나의 먹빛 파문을 펼칩니다. 절세신공은 꽃잎을 모두 소모해 0.3초 무적을 얻습니다.' }
+    dash: { active: 'dark_fragrance', partner: 'five_elements', title: '매인설한', summary: '암향표와 오행매화보는 같은 도주기를 강화합니다. 매화낙섬의 착지 공격과 오행매화보 5성의 착지 넉백은 같은 지점에서 하나의 먹빛 파문으로 펼칩니다. 절세신공은 꽃잎을 모두 소모해 0.3초 무적을 얻습니다.' }
   };
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let renderer, run, active = false, paused = false, walking = false;

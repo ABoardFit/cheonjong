@@ -104,7 +104,7 @@ window.CHEONJONG_DATA = {
         {
           id: 'five_elements', name: '오행매화보', type: '보법', partnerId: 'dark_fragrance', evolutionName: '매인설한',
           levels: [
-            { rank: 1, form: null, title: '1성', meaning: '', description: '이동속도 증가. 암향표와 같은 도주기를 강화하며, 착지 지점에서 매화낙섬과 같은 먹빛 파문을 한 번 펼친다. 이 파문 자체는 추가 피해를 주지 않는다.' },
+            { rank: 1, form: null, title: '1성', meaning: '', description: '이동속도 증가.' },
             { rank: 2, form: null, title: '2성', meaning: '', description: '도주기 이동 거리 증가.' },
             { rank: 3, form: null, title: '3성', meaning: '', description: '이동속도 증가.' },
             { rank: 4, form: null, title: '4성', meaning: '', description: '도주기에 돌진 데미지 계수 추가.' },
