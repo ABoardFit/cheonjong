@@ -1,6 +1,7 @@
 // Copies the playable web build (prototype/dist at the game repo's HEAD) into docs/, which GitHub Pages serves.
 // Only committed files go out, so work in progress in the game folder is never published.
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,9 +39,16 @@ for (const file of ['ui-editor.js', 'ui-editor.css']) {
 }
 writeFileSync(layoutFile, layout || `${JSON.stringify({ version: 3, wide: { parts: {}, added: [], seq: 0 }, narrow: { parts: {}, added: [], seq: 0 } }, null, 2)}\n`);
 const index = join(docs, 'index.html');
-writeFileSync(index, readFileSync(index, 'utf8').replace('</head>', () =>
+let html = readFileSync(index, 'utf8').replace('</head>', () =>
   '  <script>document.documentElement.classList.add(\'uie-loading\')</script>\n' +
-  '  <link rel="stylesheet" href="ui-editor.css">\n  <script src="ui-editor.js" defer></script>\n</head>'));
+  '  <link rel="stylesheet" href="ui-editor.css">\n  <script src="ui-editor.js" defer></script>\n</head>');
+// GitHub Pages lets browsers keep files for 10 minutes. Each script and stylesheet address carries a hash of
+// its content, so a new deploy is fetched fresh and never mixed with old cached files.
+html = html.replace(/(href|src)="([^":?#]+\.(?:css|js))"/g, (match, attr, file) => {
+  const version = createHash('sha256').update(readFileSync(join(docs, file))).digest('hex').slice(0, 10);
+  return `${attr}="${file}?v=${version}"`;
+});
+writeFileSync(index, html);
 // Serve the files as they are instead of running them through Jekyll.
 writeFileSync(join(docs, '.nojekyll'), '');
 console.log(`docs/ <- ${count} files from game commit ${commit}`);
