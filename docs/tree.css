@@ -1,0 +1,120 @@
+/* 무공록 스킬 트리(tree.js)와 허브가 밀려나는 전환. */
+
+/* 허브: 무공록을 열면 캐릭터·먹 원·도장만 남고 나머지는 위·왼쪽·아래로 밀려난다. */
+.title-screen.hub .hub-brand, .title-screen.hub .hub-factions, .title-screen.hub .hub-devlink, .title-screen.hub .hub-side,
+.title-screen.hub .hub-nameplate, .title-screen.hub .hub-actions, .title-screen.hub .hub-center .prototype-caption,
+.title-screen.hub .hub-stats, .title-screen.hub .title-bottom {
+  transition: transform .6s cubic-bezier(.2, .8, .2, 1), opacity .5s ease-out;
+}
+.hub--tree .hub-brand, .hub--tree .hub-factions, .hub--tree .hub-devlink,
+.hub--tree .hub-side, .hub--tree .hub-nameplate, .hub--tree .hub-actions, .hub--tree .hub-center .prototype-caption,
+.hub--tree .hub-stats, .hub--tree .title-bottom {
+  transition: transform .55s cubic-bezier(.6, 0, .8, .3), opacity .45s ease-in;
+  opacity: 0;
+}
+.hub--tree .hub-brand, .hub--tree .hub-factions, .hub--tree .hub-devlink { transform: translateY(-120vh); }
+.hub--tree .hub-side { transform: translateX(-110vw); }
+.hub--tree .hub-nameplate, .hub--tree .hub-actions, .hub--tree .hub-center .prototype-caption,
+.hub--tree .hub-stats, .hub--tree .title-bottom { transform: translateY(120vh); }
+/* 남은 초상은 트리 위에서 트리 중심을 따라 움직인다(위치·크기는 tree.js). 끌기는 트리로 통과시킨다. */
+.hub--tree .hub-portrait { z-index: 11; pointer-events: none; transform-origin: 50% 50%; }
+body.tree-open { overflow: hidden; }
+
+/* 트리 화면 */
+.tree-screen {
+  position: fixed; inset: 0; z-index: 10; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none;
+  background: radial-gradient(circle at 50% 52%, #f6f2e8 0%, var(--paper) 55%, #e2dccd 100%);
+}
+.tree-svg { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; }
+/* 상단 바·범례·정보 창: 트리(10)와 캐릭터 초상(11) 위. 빈 곳은 트리로 통과시킨다. */
+.tree-ui { position: fixed; inset: 0; z-index: 12; pointer-events: none; }
+.tree-ui > * { pointer-events: auto; }
+.tree-shell[hidden] { display: none; }
+.tree-svg:active { cursor: grabbing; }
+
+.tree-edges line { stroke: #cdc9bb; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.tree-edges line.is-reach { stroke: var(--accent); stroke-dasharray: 5 6; opacity: .65; }
+.tree-edges line.is-on { stroke: var(--accent); stroke-width: 4; }
+
+.tree-node { cursor: pointer; outline: none; }
+.tree-hit { fill: transparent; }
+.tree-dot { fill: var(--paper-light); stroke: #9ea094; stroke-width: 2; vector-effect: non-scaling-stroke; transition: fill .2s, stroke .2s; }
+.tree-glyph { fill: #6f7268; font-family: var(--serif); pointer-events: none; }
+.tree-name {
+  fill: #5c625a; font-family: var(--serif); pointer-events: none;
+  paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round;
+}
+.tree-node.is-notable .tree-dot { stroke-width: 2.5; }
+.tree-node.is-open .tree-dot { stroke: var(--accent); stroke-width: 3; animation: tree-breathe 1.8s ease-in-out infinite; }
+.tree-node.is-open .tree-glyph { fill: var(--accent); }
+.tree-node.is-on .tree-dot { fill: var(--accent); stroke: #6f2c40; }
+.tree-node.is-on .tree-glyph { fill: var(--paper-light); }
+.tree-node.is-on .tree-name { fill: var(--ink); }
+.tree-node.is-locked .tree-dot { fill: transparent; stroke-dasharray: 3 4; stroke: #a9aa9f; }
+.tree-node.is-locked .tree-glyph, .tree-node.is-locked .tree-name { fill: #a3a59b; }
+.tree-node.is-selected .tree-dot { stroke: var(--ink); stroke-width: 4; }
+.tree-node:hover .tree-dot, .tree-node:focus-visible .tree-dot { stroke: var(--ink); }
+@keyframes tree-breathe { 50% { stroke-opacity: .35; } }
+
+.tree-label { font-family: var(--serif); pointer-events: none; paint-order: stroke; stroke: var(--paper); stroke-width: 6px; }
+.tree-label.is-branch { fill: var(--ink); letter-spacing: .2em; }
+.tree-label.is-faction { fill: #4d524b; letter-spacing: .1em; }
+.tree-screen.is-far .tree-name { display: none; }
+
+.tree-top {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2; display: flex; align-items: center; gap: 18px;
+  padding: 12px 20px; background: #f8f5edd9; border-bottom: 1px solid var(--line); backdrop-filter: blur(4px);
+}
+.tree-top button {
+  min-width: 0; margin: 0; padding: 7px 12px; display: inline-flex; border: 1px solid var(--line); background: var(--paper-light);
+  color: var(--ink); font-size: 12px; letter-spacing: .08em;
+}
+.tree-top button:hover { border-color: var(--ink); }
+.tree-title { display: grid; }
+.tree-title strong { font-family: var(--serif); font-size: 20px; font-weight: 500; letter-spacing: .1em; }
+.tree-title small { font-size: 10px; color: var(--muted); }
+.tree-points { margin-left: auto; display: flex; gap: 12px; align-items: baseline; font-family: var(--serif); }
+.tree-points span { color: var(--muted); font-size: 13px; }
+.tree-points strong { color: var(--accent); font-size: 16px; font-weight: 500; }
+.tree-tools { display: flex; gap: 6px; }
+
+.tree-legend {
+  position: absolute; left: 16px; bottom: 14px; display: flex; gap: 14px; font-size: 11px; color: var(--muted);
+  padding: 6px 10px; background: #f8f5edcc; border: 1px solid var(--line);
+}
+.tree-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.tree-legend span::before { content: ''; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #9ea094; background: var(--paper-light); }
+.tree-legend .is-on::before { background: var(--accent); border-color: #6f2c40; }
+.tree-legend .is-open::before { border-color: var(--accent); }
+.tree-legend .is-locked::before { border-style: dashed; background: transparent; }
+
+.tree-info {
+  position: absolute; right: 16px; bottom: 16px; z-index: 2; width: 320px; display: grid; gap: 8px;
+  padding: 18px 18px 16px; background: var(--paper-light); border: 1px solid var(--ink); box-shadow: 0 12px 34px #292e2c33;
+}
+.tree-info h2 { margin: 0; font-family: var(--serif); font-weight: 500; font-size: 21px; }
+.tree-info p { margin: 0; font-size: 12px; line-height: 1.7; color: #565c55; }
+.tree-info .tree-info-kind { font-size: 11px; letter-spacing: .14em; color: var(--accent); }
+.tree-info .tree-info-status { color: var(--ink); }
+.tree-info button {
+  min-width: 0; margin: 4px 0 0; padding: 10px 14px; justify-content: center; border: 1px solid var(--ink); background: transparent;
+  color: var(--ink); letter-spacing: .15em;
+}
+.tree-info button.is-primary { background: var(--ink); color: var(--paper-light); }
+.tree-info button:disabled { opacity: .5; cursor: default; }
+.tree-info .tree-info-close { position: absolute; top: 6px; right: 8px; margin: 0; padding: 2px 8px; border: 0; font-size: 20px; letter-spacing: 0; }
+
+@media (max-width: 960px) {
+  .tree-top { flex-wrap: wrap; gap: 8px 12px; padding: 10px 12px; }
+  .tree-title small { display: none; }
+  .tree-points { margin-left: 0; order: 3; width: 100%; }
+  .tree-tools { margin-left: auto; }
+  .tree-legend { display: none; }
+  .tree-info { left: 10px; right: 10px; bottom: 10px; width: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .title-screen.hub .hub-brand, .title-screen.hub .hub-factions, .title-screen.hub .hub-devlink, .title-screen.hub .hub-side,
+  .title-screen.hub .hub-nameplate, .title-screen.hub .hub-actions, .title-screen.hub .hub-center .prototype-caption,
+  .title-screen.hub .hub-stats, .title-screen.hub .title-bottom { transition: none; }
+  .tree-node.is-open .tree-dot { animation: none; }
+}

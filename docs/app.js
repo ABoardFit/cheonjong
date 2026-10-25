@@ -120,7 +120,8 @@
     window.scrollTo(0, 0);
     document.querySelector('#open-martial').focus({ preventScroll: true });
   }
-  document.querySelector('#open-martial').addEventListener('click', showMartial);
+  // 무공록 버튼은 이제 스킬 트리(tree.js)를 연다. 이 세력 계보 화면은 보류 중이며 MartialLineage.show()로만 연다.
+  window.MartialLineage = { show: showMartial };
   document.querySelector('#back-main').addEventListener('click', showMain);
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && !screen.hidden) showMain(); });
   document.querySelector('#category-clusters').addEventListener('click', event => {

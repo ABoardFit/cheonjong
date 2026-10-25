@@ -58,6 +58,7 @@
     factions: { righteous: 0, heterodox: 0, outer: 0 }, mainSchool: 'hwasan',
     runs: 0, clears: {}, best: { kills: 0, hardClear: 0 },
     difficulty: { count: 1, attack: 1, health: 1 }, equipment: {}, lastReward: null,
+    tree: { allocated: [] },
   });
   function load() {
     const base = fresh();
@@ -65,7 +66,8 @@
       const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
       if (saved && saved.version === 1) {
         return { ...base, ...saved, factions: { ...base.factions, ...saved.factions }, best: { ...base.best, ...saved.best },
-          difficulty: { ...base.difficulty, ...saved.difficulty }, clears: { ...saved.clears }, equipment: { ...saved.equipment } };
+          difficulty: { ...base.difficulty, ...saved.difficulty }, clears: { ...saved.clears }, equipment: { ...saved.equipment },
+          tree: { allocated: Array.isArray(saved.tree?.allocated) ? [...saved.tree.allocated] : [] } };
       }
     } catch {}
     return base;
@@ -310,4 +312,13 @@
   $('hub-character').addEventListener('click', () => $('open-martial').click());
   document.querySelectorAll('[data-facility]').forEach(button => button.addEventListener('click', () => openFacility(button.dataset.facility)));
   render();
+
+  // 무공록 스킬 트리(tree.js)가 저장 데이터·경지를 읽고 세력 칸을 갱신하는 창구.
+  window.CheonHub = {
+    get state() { return state; },
+    save,
+    render,
+    realm: () => ({ index: realmIndex(), name: REALMS[realmIndex()][1], next: REALMS[realmIndex() + 1] || null }),
+    schools: Object.keys(SCHOOLS),
+  };
 })();
