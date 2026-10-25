@@ -5,3 +5,6 @@
 @media(max-width:760px){.battle-identity small{display:none}#game-screen .battle-top-actions button{white-space:nowrap;padding:8px 6px}.battle-time{top:64px;left:auto;right:14px;transform:none;text-align:right}.battle-time>small{display:none}.battle-meters{top:64px}.battle-petal-row{top:112px}}
 /* 내력 줄이 생겨 꽃잎 줄을 한 줄 아래로(생명·내력·경험치 3줄 밑) */
 .battle-petal-row{margin-top:52px}
+/* 연무장 새로고침 버튼(레벨업 창) */
+.battle-reroll{display:block;margin:12px auto 0;padding:8px 16px;border:1px solid #c28aa166;background:none;color:inherit}
+.battle-reroll:hover{border-color:currentColor}

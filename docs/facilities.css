@@ -29,3 +29,18 @@
   .fac-row > .fac-value, .fac-special > .fac-value { grid-area: v; justify-self: end; }
   .fac-row > .fac-buy, .fac-special > .fac-buy { grid-area: b; }
 }
+/* 연무장: 맹약 켜기 · 폐공 무공 고르기 */
+.fac-dialog h3 { margin: 6px 0 0; }
+.fac-pact { grid-template-columns: 32px minmax(0, 1fr) 128px 112px; }
+.fac-toggle { margin: 0; min-width: 0; padding: 6px 10px; border: 1px solid var(--line); background: none; color: var(--ink); white-space: nowrap; }
+.fac-toggle.is-on { border-color: var(--accent); background: var(--accent); color: var(--paper-light); }
+.fac-bans { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; }
+.fac-ban { margin: 0; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); background: var(--paper-light); color: var(--ink); text-align: left; }
+.fac-ban.is-on { border-color: var(--accent); color: var(--accent); }
+.fac-ban:disabled { opacity: .45; cursor: default; }
+@media (max-width: 760px) {
+  .fac-pact { grid-template-columns: 32px minmax(0, 1fr) auto; grid-template-areas: 'g n b' 'g v v'; }
+  .fac-pact > .fac-glyph { grid-area: g; } .fac-pact > .fac-name { grid-area: n; }
+  .fac-pact > .fac-value { grid-area: v; justify-self: start; } .fac-pact > .fac-toggle { grid-area: b; }
+  .fac-pact .fac-name small { white-space: normal; }
+}

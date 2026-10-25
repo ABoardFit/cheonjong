@@ -30,13 +30,18 @@
   }
   // 출전 전에 정해지는 영구 강화(폐관동 등)의 합. 공력(damage)·이동(speed)·범위(area)는 비율, 피해 감소·치명타 확률은 0~1.
   // 내력(innerForce)은 최대 내력(마나)에 더해진다. 주세력 특수(화산): petalCapacity = 꽃잎 최대 보유 +n, petalArmor = 꽃잎 갑옷 고정 감소 비율.
-  const BONUS_KEYS = ['hp', 'damage', 'speed', 'reduction', 'critChance', 'critDamage', 'area', 'innerForce', 'petalCapacity', 'petalArmor'];
+  const BONUS_KEYS = ['hp', 'damage', 'speed', 'reduction', 'critChance', 'critDamage', 'area', 'innerForce', 'petalCapacity', 'petalArmor', 'rerolls', 'revives'];
   function normalizeBonuses(value = {}) {
     const out = Object.fromEntries(BONUS_KEYS.map(key => [key, Math.max(0, Number(value[key]) || 0)]));
     out.reduction = Math.min(out.reduction, 0.6);
     out.critChance = Math.min(out.critChance, 0.6);
+    out.rerolls = Math.floor(out.rerolls); out.revives = Math.floor(out.revives);
     return out;
   }
+  // 연무장: 맹약(blood·solo·swift)과 폐공(이번 판 선택지에 안 나올 무공).
+  const normalizePacts = value => (Array.isArray(value) ? [...new Set(value)].filter(id => B.pacts[id]) : []);
+  const normalizeBanned = value => (Array.isArray(value) ? [...new Set(value)].filter(id => skillIds.includes(id)) : []);
+  const hasPact = (s, id) => (s.pacts || []).includes(id);
   // 내력: 검우·경공을 쓸 때 든다(검법은 들지 않음). 단계가 오를수록 perRank 씩 더 든다.
   function manaCost(s, kind) {
     const rank = kind === 'rain' ? s.skills.plum_rain : s.skills.dark_fragrance;
@@ -88,6 +93,7 @@
     const s = {
       version: 1, mode: options.mode || 'normal', rng: options.seed || 247617,
       stage: options.stage || 'hwasan', difficulty: normalizeDifficulty(options.difficulty), bonuses: normalizeBonuses(options.bonuses),
+      pacts: normalizePacts(options.pacts), banned: normalizeBanned(options.banned), rerollExclude: null,
       width: options.width || 1000, height: options.height || 650, serial: 0,
       status: 'running', time: 0, level: 1, xp: 0, nextXp: B.progression.firstXp,
       kills: 0, bossSpawned: false, bossDefeated: false,
@@ -106,6 +112,9 @@
     s.skills.plum_sword = 1; s.skills.zixia = 1;
     s.player.maxHp = s.player.hp = B.player.hp + s.bonuses.hp;
     s.player.maxMana = s.player.mana = B.mana.max + s.bonuses.innerForce;
+    s.rerollsLeft = s.bonuses.rerolls; s.revivesLeft = s.bonuses.revives;
+    s.maxTime = hasPact(s, 'swift') ? B.pacts.swift.maxTime : B.progression.maxTime;
+    s.bossAt = hasPact(s, 'swift') ? B.pacts.swift.bossAt : B.progression.bossAt;
     return s;
   }
   // Independent, testable mitigation: fixed reduction is applied BEFORE percentage.
@@ -145,7 +154,7 @@
   function damagePlayer(s, incoming, source) {
     if (s.status !== 'running' || s.time < s.player.invulnerableUntil || s.time < s.player.hurtUntil) return { damage: 0, consumed: 0, ignored: true };
     const st = getStats(s), p = s.player;
-    const hit = mitigateDamage({ damage: incoming * (s.difficulty?.attack ?? 1), petals: p.petals, consumption: st.petalConsumption, flatReduction: st.petalFlatReduction, percentReduction: st.damageReduction });
+    const hit = mitigateDamage({ damage: incoming * (s.difficulty?.attack ?? 1) * (hasPact(s, 'blood') ? B.pacts.blood.taken : 1), petals: p.petals, consumption: st.petalConsumption, flatReduction: st.petalFlatReduction, percentReduction: st.damageReduction });
     p.petals -= hit.consumed;
     syncAttachments(s);
     p.hp = Math.max(0, p.hp - hit.damage); s.metrics.damageTaken += hit.damage;
@@ -156,7 +165,12 @@
       s.metrics.armorKnockbacks++;
       knockback(s, p.x, p.y, B.petal.armorKnockbackRadius, B.petal.armorKnockbackDistance, 'armor');
     }
-    if (p.hp <= 0) { s.status = 'lost'; s.resultReason = source || '강호의 공세'; }
+    if (p.hp <= 0 && s.revivesLeft > 0) {
+      // 연무장 부활: 쓰러지는 대신 생명 절반으로 일어나 잠시 무적.
+      s.revivesLeft--; p.hp = p.maxHp * B.revive.hp; p.invulnerableUntil = s.time + B.revive.invulnerable;
+      floatText(s, p.x, p.y - 34, '기사회생', '#ffe6a7');
+      effect(s, 'aura', p.x, p.y, 90, 0.8, { color: '#ffe6a7', source: 'revive' });
+    } else if (p.hp <= 0) { s.status = 'lost'; s.resultReason = source || '강호의 공세'; }
     return hit;
   }
   function damageEnemy(s, enemy, amount, source = 'sword', options = {}) {
@@ -165,7 +179,7 @@
     const b = s.bonuses || normalizeBonuses();
     const crit = options.crit !== false && direct && rng(s) < B.player.critChance + b.critChance;
     const heldMultiplier = s.skills.zixia >= 4 ? 1 + s.player.petals * B.petal.damagePerHeld : 1;
-    const dealt = Math.max(0, amount * (options.scaled ? 1 : heldMultiplier) * (crit ? B.player.critMultiplier + b.critDamage : 1) * (1 + b.damage));
+    const dealt = Math.max(0, amount * (options.scaled ? 1 : heldMultiplier) * (crit ? B.player.critMultiplier + b.critDamage : 1) * (1 + b.damage) * (hasPact(s, 'blood') ? B.pacts.blood.dealt : 1));
     enemy.hp -= dealt;
     if (direct) enemy.flashUntil = s.time + 0.1;
     s.metrics.damageDealt += dealt;
@@ -398,7 +412,7 @@
   function getChoices(s) {
     if (s.status !== 'levelup') return [];
     if (s.choiceList) return s.choiceList;
-    const available = skillIds.filter(k => s.skills[k] < 6);
+    const available = skillIds.filter(k => s.skills[k] < 6 && !s.banned?.includes(k));
     const choices = [];
     for (const [a, b, title] of pairs) if (s.skills[a] === 6 && s.skills[b] === 6) choices.push({ id: 'fusion:' + a, type: 'fusion', title, description: '두 무공의 모든 성장을 계승하고 절세신공을 완성합니다.', skillId: a, partnerId: b, rank: 7 });
     // Offer the existing path and its partner, then rotate a third branch.
@@ -407,11 +421,17 @@
       const priority = (key, pair) => (s.skills[key] > 0 ? 3 : 0) + (pair && s.skills[pair[0] === key ? pair[1] : pair[0]] >= 3 ? 2 : 0);
       return priority(b, pb) - priority(a, pa) || skillIds.indexOf(a) - skillIds.indexOf(b);
     });
-    const chosen = [];
-    if (order.length) chosen.push(order[0]);
-    if (order.length > 1) chosen.push(order[1]);
-    const rest = order.filter(k => !chosen.includes(k));
-    if (rest.length) chosen.push(rest[(s.level - 2 + rest.length) % rest.length]);
+    let chosen = [];
+    if (s.rerollExclude) {
+      // 다시 뽑기: 방금 나온 무공을 뒤로 미루고 다른 무공부터 내놓는다.
+      const fresh = order.filter(k => !s.rerollExclude.includes(k));
+      chosen = [...fresh, ...order.filter(k => s.rerollExclude.includes(k))].slice(0, 3);
+    } else {
+      if (order.length) chosen.push(order[0]);
+      if (order.length > 1) chosen.push(order[1]);
+      const rest = order.filter(k => !chosen.includes(k));
+      if (rest.length) chosen.push(rest[(s.level - 2 + rest.length) % rest.length]);
+    }
     // Once a fusion is offered, keep one exploration slot and one existing path.
     for (const key of chosen) {
       if (choices.length >= 3) break;
@@ -423,6 +443,12 @@
     if (!choices.length) choices.push({ id: 'heal', type: 'heal', title: '운기조식', description: '체력을 45 회복합니다.' });
     s.choiceList = choices;
     return choices;
+  }
+  // 연무장 새로고침: 레벨업 선택지를 다시 뽑는다(판당 횟수 제한).
+  function reroll(s) {
+    if (s.status !== 'levelup' || !(s.rerollsLeft > 0)) return null;
+    s.rerollsLeft--; s.rerollExclude = getChoices(s).map(c => c.skillId).filter(Boolean); s.choiceList = null;
+    return getChoices(s);
   }
   function checkLevel(s) {
     if (s.status !== 'running' || s.xp < s.nextXp) return;
@@ -441,9 +467,9 @@
       s.skills[choice.skillId] = 7; s.skills[choice.partnerId] = 7; s.metrics.fusions++;
       floatText(s, s.player.x, s.player.y - 40, choice.title, '#ffe6a7');
       effect(s, 'flower', s.player.x, s.player.y, 160, 1.1, { rank: 7, fused: true, color: '#f5acd5' });
-    } else s.player.hp = Math.min(s.player.maxHp, s.player.hp + 45);
-    s.player.hp = Math.min(s.player.maxHp, s.player.hp + 3);
-    s.status = 'running'; s.choiceList = null; syncAttachments(s); checkLevel(s);
+    } else if (!hasPact(s, 'solo')) s.player.hp = Math.min(s.player.maxHp, s.player.hp + 45);
+    if (!hasPact(s, 'solo')) s.player.hp = Math.min(s.player.maxHp, s.player.hp + 3);
+    s.status = 'running'; s.choiceList = null; s.rerollExclude = null; syncAttachments(s); checkLevel(s);
     return true;
   }
   function step(s, dt, input = {}) {
@@ -493,7 +519,7 @@
       p.trailDistance = (carried + moved) % spacing;
     }
     s.camera.x = p.x; s.camera.y = p.y;
-    p.hp = Math.min(p.maxHp, p.hp + B.player.regeneration * dt);
+    if (!hasPact(s, 'solo')) p.hp = Math.min(p.maxHp, p.hp + B.player.regeneration * dt);
     p.mana = Math.min(p.maxMana, p.mana + B.mana.regen * dt);
     s.attackTimer -= dt;
     if (s.attackTimer <= 0) { s.attackTimer += 1 / st.attackSpeed; swordAttack(s); }
@@ -503,13 +529,13 @@
     s.spawnTimer -= dt;
     if (s.spawnTimer <= 0) {
       const count = s.difficulty?.count ?? 1;
-      s.spawnTimer += (B.enemy.spawnStart + (B.enemy.spawnEnd - B.enemy.spawnStart) * clamp(s.time / B.progression.bossAt, 0, 1)) / count;
+      s.spawnTimer += (B.enemy.spawnStart + (B.enemy.spawnEnd - B.enemy.spawnStart) * clamp(s.time / (s.bossAt || B.progression.bossAt), 0, 1)) / count;
       if (s.enemies.filter(e => e.hp > 0).length < Math.round(B.enemy.maximum * count)) {
         const r = rng(s), type = s.time > 45 && r < 0.16 ? 'charger' : s.time > 24 && r < 0.31 ? 'ranged' : 'melee';
         spawnEnemy(s, type);
       }
     }
-    if (!s.bossSpawned && s.time >= B.progression.bossAt) {
+    if (!s.bossSpawned && s.time >= (s.bossAt || B.progression.bossAt)) {
       s.bossSpawned = true; spawnEnemy(s, 'boss');
       floatText(s, p.x, p.y - 90, '매화곡의 주인 · 혈영객', '#ffc399');
     }
@@ -572,9 +598,9 @@
     for (const t of s.damageTexts) t.age += dt;
     s.damageTexts = s.damageTexts.filter(t => t.age < t.duration);
     checkLevel(s);
-    if (s.time >= B.progression.maxTime && s.status === 'running') { s.status = 'lost'; s.resultReason = '해 뜨기 전 혈영객을 쓰러뜨리지 못했습니다.'; }
+    if (s.time >= (s.maxTime || B.progression.maxTime) && s.status === 'running') { s.status = 'lost'; s.resultReason = '해 뜨기 전 혈영객을 쓰러뜨리지 못했습니다.'; }
   }
-  root.CheonGameCore = { createRun, normalizeDifficulty, normalizeBonuses, step, getChoices, choose, getStats, getCombatCenter,
+  root.CheonGameCore = { createRun, normalizeDifficulty, normalizeBonuses, normalizePacts, reroll, step, getChoices, choose, getStats, getCombatCenter,
     mitigateDamage, pickupPetal, damagePlayer, damageEnemy, addField,
     syncAttachments, startDash, spawnEnemy, fieldTick, skillIds, balance: B };
 })(typeof window !== 'undefined' ? window : globalThis);

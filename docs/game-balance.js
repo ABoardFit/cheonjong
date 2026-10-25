@@ -31,6 +31,13 @@
     // 내력(마나): 초식 발동에 쓰고 초당 regen 씩 찬다. 비용 = 기본 + 단계가 하나 오를 때마다 perRank.
     // 검법(1~7단계)은 내력이 들지 않는다. 검우·경공만 쓴다.
     mana: { max: 100, regen: 12, rain: 10, dash: 20, perRank: 1 },
+    // 연무장 고난도 맹약(출전 전에 거는 조건). reward 는 은자 보상에 더해지는 비율(시설 쪽에서 정산).
+    pacts: {
+      blood: { name: '혈맹', taken: 1.2, dealt: 1.1, reward: 0.15 },
+      solo: { name: '단신', noHealing: true, reward: 0.25 },
+      swift: { name: '속전', maxTime: 180, bossAt: 110, reward: 0.2 },
+    },
+    revive: { hp: 0.5, invulnerable: 2 },
     field: { duration: 3, tick: 0.3, swordDamage: 11, rainDamage: 9,
       trailDamage: 10, trailRadius: 25, wideTrailRadius: 43 },
     enemy: { spawnStart: 0.7, spawnEnd: 0.22, maximum: 115,

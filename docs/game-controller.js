@@ -86,8 +86,9 @@
     modal.hidden = true;
     modalKind = '';
     // 시설(폐관동 등)의 영구 강화는 출전할 때마다 새로 읽는다.
-    const bonuses = runOptions.bonuses || window.CheonFacilities?.bonuses();
-    run = core.createRun({ ...runOptions, bonuses, seed: Date.now() >>> 0, width: screen.clientWidth, height: screen.clientHeight });
+    // 연무장 맹약·폐공·새로고침·부활도 함께(CheonFacilities.runOptions).
+    const facility = window.CheonFacilities?.runOptions?.() || {};
+    run = core.createRun({ ...facility, ...runOptions, seed: Date.now() >>> 0, width: screen.clientWidth, height: screen.clientHeight });
     run.reported = false;
     lastSkillSignature = '';
     nextHud = 0;
@@ -170,6 +171,15 @@
       return `<button class="battle-choice ${choice.rank === 7 ? 'fusion-choice' : ''}" data-choice="${esc(choice.id)}"><span class="choice-type">${type}</span><span class="choice-symbol" aria-hidden="true">${symbols[id] || '修'}</span><strong>${esc(choice.title)}</strong><span class="choice-detail">${choice.formTitle ? `<b>${esc(choice.formTitle)}</b><br>` : ''}${esc(choice.description)}</span><span class="choice-select">이 깨달음을 얻는다 →</span></button>`;
     }).join('')}</div>${ownedMarkup()}`);
     announce(`레벨 ${run.level}. 다음 무공을 선택하세요.`);
+    addRerollButton();
+  }
+  // 연무장 새로고침: 남은 횟수가 있으면 선택창에 "다시 뽑기".
+  function addRerollButton() {
+    if (!(run.rerollsLeft > 0)) return;
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'battle-reroll'; button.dataset.action = 'reroll';
+    button.textContent = `다시 뽑기 · ${run.rerollsLeft}회 남음`;
+    dialog.querySelector('.battle-choice-grid')?.after(button);
   }
   function showResult() {
     const won = run.status === 'won';
@@ -272,6 +282,7 @@
     }
     const button = event.target.closest('[data-action]');
     if (!button) return;
+    if (button.dataset.action === 'reroll') { if (core.reroll(run)) showChoices(); return; }
     if (button.dataset.action === 'resume') closeModal();
     if (button.dataset.action === 'title') returnTitle();
     if (button.dataset.action === 'retry') setupRun(false);
