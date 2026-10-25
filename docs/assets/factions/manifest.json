@@ -1,0 +1,284 @@
+{
+  "title": "천종지자 · 강호문양첩",
+  "transparent": true,
+  "entries": [
+    {
+      "id": "hwasan",
+      "name": "화산",
+      "group": "righteous",
+      "motif": "나선으로 피어난 매화",
+      "palette": [
+        "#6e294a",
+        "#b4577b",
+        "#d181a0",
+        "#8f3b60"
+      ],
+      "width": 272,
+      "height": 272,
+      "file": "hwasan.png"
+    },
+    {
+      "id": "shaolin",
+      "name": "소림",
+      "group": "righteous",
+      "motif": "다섯 잎의 금련",
+      "palette": [
+        "#63502d",
+        "#aa8550",
+        "#c7a873",
+        "#89673c"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "shaolin.png"
+    },
+    {
+      "id": "wudang",
+      "name": "무당",
+      "group": "righteous",
+      "motif": "태극을 감싼 팔괘",
+      "palette": [
+        "#324b55",
+        "#61828a",
+        "#8fa9aa",
+        "#496a75"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "wudang.png"
+    },
+    {
+      "id": "sichuan",
+      "name": "사천",
+      "group": "righteous",
+      "motif": "세 날의 독표",
+      "palette": [
+        "#3c4d37",
+        "#738a57",
+        "#9eac77",
+        "#596c42"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "sichuan.png"
+    },
+    {
+      "id": "namgung",
+      "name": "남궁",
+      "group": "righteous",
+      "motif": "뇌광을 가르는 제왕검",
+      "palette": [
+        "#354d68",
+        "#607eab",
+        "#91a9cb",
+        "#47638d"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "namgung.png"
+    },
+    {
+      "id": "zhuge",
+      "name": "제갈",
+      "group": "righteous",
+      "motif": "칠우선과 삼효",
+      "palette": [
+        "#3d5855",
+        "#6f9690",
+        "#9db8ab",
+        "#537870"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "zhuge.png"
+    },
+    {
+      "id": "murong",
+      "name": "모용",
+      "group": "righteous",
+      "motif": "시위를 당겨 겨눈 활",
+      "palette": [
+        "#514367",
+        "#8a75a6",
+        "#b5a1c8",
+        "#6c598b"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "murong.png"
+    },
+    {
+      "id": "hebei",
+      "name": "하북",
+      "group": "righteous",
+      "motif": "세 줄기 호조 위의 검",
+      "palette": [
+        "#604130",
+        "#a7754d",
+        "#c99b6e",
+        "#855839"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "hebei.png"
+    },
+    {
+      "id": "beggars",
+      "name": "개방",
+      "group": "righteous",
+      "motif": "술호리병과 대나무 장봉",
+      "palette": [
+        "#4a5431",
+        "#8b9560",
+        "#b4b780",
+        "#6b7646"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "beggars.png"
+    },
+    {
+      "id": "heavenly_demon",
+      "name": "천마신교",
+      "group": "heterodox",
+      "motif": "거슬러 타오르는 마염",
+      "palette": [
+        "#482e55",
+        "#86527f",
+        "#ad7c9f",
+        "#673d68"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "heavenly_demon.png"
+    },
+    {
+      "id": "blood_cult",
+      "name": "혈교",
+      "group": "heterodox",
+      "motif": "핏방울과 혈륜",
+      "palette": [
+        "#632d37",
+        "#ad5260",
+        "#cf7d85",
+        "#873b4b"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "blood_cult.png"
+    },
+    {
+      "id": "green_forest",
+      "name": "녹림",
+      "group": "heterodox",
+      "motif": "비스듬히 눌러쓴 삿갓과 안대",
+      "palette": [
+        "#304b3c",
+        "#5d8263",
+        "#8ea488",
+        "#45644b"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "green_forest.png"
+    },
+    {
+      "id": "river_bandits",
+      "name": "장강수로채",
+      "group": "heterodox",
+      "motif": "큰 돛을 펼친 범선",
+      "palette": [
+        "#294f59",
+        "#578d9a",
+        "#89b2b6",
+        "#3c6e7d"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "river_bandits.png"
+    },
+    {
+      "id": "assassins",
+      "name": "살막",
+      "group": "heterodox",
+      "motif": "긴 초승달을 겨눈 비수",
+      "palette": [
+        "#3a3b50",
+        "#74758f",
+        "#a1a0b5",
+        "#555770"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "assassins.png"
+    },
+    {
+      "id": "hao",
+      "name": "하오문",
+      "group": "heterodox",
+      "motif": "밤을 읽는 눈등롱",
+      "palette": [
+        "#604635",
+        "#ad8762",
+        "#d0ae84",
+        "#896747"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "hao.png"
+    },
+    {
+      "id": "haedong",
+      "name": "해동",
+      "group": "outer",
+      "motif": "태극과 건곤감리",
+      "palette": [
+        "#333437",
+        "#525154",
+        "#777477",
+        "#414044",
+        "#6b3438",
+        "#b15b63",
+        "#cf888b",
+        "#90454e",
+        "#314b66",
+        "#5c80a2",
+        "#8ca8bf",
+        "#456681"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "haedong.png"
+    },
+    {
+      "id": "north_sea",
+      "name": "북해",
+      "group": "outer",
+      "motif": "여섯 갈래의 빙정",
+      "palette": [
+        "#3b5969",
+        "#78a4b5",
+        "#accbd1",
+        "#587f96"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "north_sea.png"
+    },
+    {
+      "id": "southern_tribes",
+      "name": "남만",
+      "group": "outer",
+      "motif": "송곳니를 드러낸 맹호의 옆얼굴",
+      "palette": [
+        "#585035",
+        "#a09659",
+        "#c7bc7d",
+        "#7e7443"
+      ],
+      "width": 320,
+      "height": 320,
+      "file": "southern_tribes.png"
+    }
+  ]
+}

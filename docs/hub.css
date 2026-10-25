@@ -22,7 +22,8 @@
 
 /* 캐릭터 원 바로 왼쪽: 재화와 시설 (원 왼쪽 끝 = 가운데에서 180px) */
 .hub-side { position: absolute; right: calc(50% + 180px); top: 54px; display: grid; gap: 12px; justify-items: start; align-content: start; }
-.hub-devlink { grid-area: dojo; justify-self: end; align-self: start; margin: 124px -16px 0 0; min-width: 0; padding: 4px 0; border: 0; border-bottom: 1px solid #b9baaf; background: none; color: var(--muted); font-size: 11px; letter-spacing: .12em; display: flex; gap: 12px; }
+.hub-art-links { grid-area: dojo; justify-self: end; align-self: start; margin: 124px -16px 0 0; display: grid; gap: 10px; }
+.hub-devlink { margin: 0; min-width: 0; padding: 4px 0; border: 0; border-bottom: 1px solid #b9baaf; background: none; color: var(--muted); font-family: inherit; font-size: 11px; letter-spacing: .12em; text-decoration: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .hub-wallet { display: grid; gap: 4px; justify-items: start; font-family: var(--serif); font-size: 15px; }
 .hub-wallet span { display: flex; align-items: center; gap: 8px; }
 .hub-wallet i { font-style: normal; font-size: 11px; width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid var(--accent); color: var(--accent); border-radius: 50%; }
@@ -145,7 +146,7 @@
   .hub-portrait .title-seal { display: block; right: 8%; bottom: 30px; }
   .hub-side { position: static; order: 5; width: 100%; justify-items: stretch; }
   .hub-wallet { grid-auto-flow: column; justify-content: start; gap: 14px; }
-  .hub-devlink { margin: 0; }
+  .hub-art-links { margin: 0; }
   .hub-facilities { width: auto; margin-top: 0; grid-template-columns: repeat(2, 1fr); }
   .hub-stats { grid-template-columns: 1fr; padding: 16px; }
   .hub-realm { grid-row: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 0 0 12px; }
