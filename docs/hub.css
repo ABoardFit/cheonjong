@@ -1,0 +1,158 @@
+/* 메인 허브 화면과 허브 창(스테이지 선택·별호·시설). styles.css의 .title-screen 규칙을 덮어쓴다. */
+.title-screen.hub {
+  display: grid; align-items: start; align-content: start;
+  grid-template-columns: minmax(200px, 1fr) minmax(420px, 560px) minmax(200px, 1fr);
+  grid-template-areas: "brand factions side" ". center side" "stats stats stats";
+  column-gap: 40px; row-gap: 14px; padding: 34px 5% 90px; overflow: hidden;
+}
+.hub-brand { grid-area: brand; }
+.hub-brand .eyebrow { margin-bottom: 8px; }
+.hub-brand h1 { font-family: var(--serif); font-size: clamp(40px, 4.4vw, 60px); line-height: 1.1; font-weight: 500; letter-spacing: -.06em; margin: 0 0 12px; }
+.hub-brand .title-description { font-size: 13px; line-height: 1.9; margin: 0; }
+
+/* 세력 칸: [정파 N] [사파 N] [세외 N] */
+.hub-factions { grid-area: factions; display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); background: #f8f5ed80; }
+.hub-factions > div { display: grid; justify-items: center; gap: 2px; padding: 10px 6px; }
+.hub-factions > div + div { border-left: 1px solid var(--line); }
+.hub-factions span { font-size: 11px; letter-spacing: .25em; color: var(--muted); }
+.hub-factions strong { font-family: var(--serif); font-size: 24px; font-weight: 500; line-height: 1.2; }
+[data-faction-count="righteous"] strong { color: #9a6f2f; }
+[data-faction-count="heterodox"] strong { color: var(--accent); }
+[data-faction-count="outer"] strong { color: #4f6f78; }
+
+/* 오른쪽: 재화와 시설 */
+.hub-side { grid-area: side; display: grid; gap: 12px; justify-items: end; align-content: start; }
+.hub-devlink { min-width: 0; margin: 0; padding: 4px 0; border: 0; border-bottom: 1px solid #b9baaf; background: none; color: var(--muted); font-size: 11px; letter-spacing: .12em; display: flex; gap: 12px; }
+.hub-wallet { display: grid; gap: 4px; justify-items: end; margin-top: 18px; font-family: var(--serif); font-size: 15px; }
+.hub-wallet span { display: flex; align-items: center; gap: 8px; }
+.hub-wallet i { font-style: normal; font-size: 11px; width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid var(--accent); color: var(--accent); border-radius: 50%; }
+.hub-facilities { display: grid; gap: 10px; width: 180px; margin-top: 6px; }
+.hub-facilities button {
+  min-width: 0; margin: 0; padding: 11px 16px; display: flex; justify-content: space-between; align-items: baseline;
+  border: 1px solid var(--ink); background: var(--paper-light); color: var(--ink); font-family: var(--serif); font-size: 15px; letter-spacing: .3em;
+  transition: background .2s, color .2s;
+}
+.hub-facilities button small { font-size: 10px; letter-spacing: .1em; color: var(--muted); }
+.hub-facilities button:hover { background: var(--ink); color: var(--paper-light); }
+.hub-facilities button:hover small { color: #c9c6b9; }
+
+/* 가운데: 문양 · 캐릭터 · 도장 · 별호 · 출전 */
+.hub-center { grid-area: center; display: grid; justify-items: center; gap: 12px; }
+.hub-portrait { position: relative; width: 100%; max-width: 440px; height: 430px; display: grid; place-items: center; }
+.hub-portrait .ink-circle { width: 360px; height: 360px; display: grid; place-items: center; }
+.hub-emblem { width: 74%; height: 74%; object-fit: contain; opacity: .2; }
+.hub-character { position: absolute; inset: 0; min-width: 0; margin: 0; padding: 0; border: 0; background: none; display: block; cursor: pointer; }
+.hub-character .hero-art { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; transition: transform .25s; }
+.hub-character:hover .hero-art, .hub-character:focus-visible .hero-art { transform: translateY(-4px); }
+.hub-character:focus-visible { outline: 1px dashed var(--accent); outline-offset: -6px; }
+.hub-portrait .title-seal { bottom: 46px; right: 34px; white-space: pre-line; text-align: center; pointer-events: none; }
+.hub-nameplate {
+  min-width: 0; width: min(100%, 380px); margin: 0; padding: 10px 18px; display: flex; justify-content: center; gap: 10px; align-items: baseline;
+  border: 1px solid var(--line); border-width: 1px 0; background: none; color: var(--ink); font-family: var(--serif); letter-spacing: .08em;
+}
+.hub-nameplate:hover { background: #f8f5ed99; }
+.hub-title-tag { color: var(--accent); font-size: 13px; }
+.hub-nameplate strong { font-size: 19px; font-weight: 500; }
+.hub-actions { display: flex; gap: 14px; align-items: stretch; }
+.hub-actions .primary-button { margin: 0; min-width: 200px; }
+.hub-secondary {
+  min-width: 140px; margin: 0; padding: 14px 20px; display: flex; justify-content: space-between; gap: 16px; align-items: center;
+  border: 1px solid var(--ink); background: transparent; color: var(--ink); letter-spacing: .2em;
+}
+.hub-secondary:hover { background: var(--paper-light); }
+.hub-center .prototype-caption { max-width: 420px; text-align: center; margin: 0; font-size: 11px; line-height: 1.6; }
+
+/* 아래: 경지 · 능력치 · 장비 */
+.hub-stats {
+  grid-area: stats; justify-self: center; width: min(100%, 820px); display: grid; grid-template-columns: 170px 1fr; gap: 14px 22px;
+  padding: 18px 22px; border: 1px solid var(--line); background: #f8f5ed99;
+}
+.hub-realm { display: grid; align-content: center; gap: 2px; padding-right: 20px; border-right: 1px solid var(--line); grid-row: span 2; }
+.hub-realm span, .hub-stat span, .hub-equipment > span { font-size: 11px; letter-spacing: .2em; color: var(--muted); }
+.hub-realm strong { font-family: var(--serif); font-size: 34px; font-weight: 500; line-height: 1.2; }
+.hub-realm small, .hub-stat small { font-size: 10px; color: var(--muted); line-height: 1.4; }
+.hub-stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.hub-stat { display: grid; gap: 1px; align-content: start; }
+.hub-stat strong { font-family: var(--serif); font-size: 22px; font-weight: 500; line-height: 1.3; }
+.hub-equipment { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hub-equipment > span { margin-right: 6px; }
+.hub-slot { width: 52px; height: 52px; display: grid; place-items: center; align-content: center; border: 1px solid var(--ink); background: var(--paper-light); }
+.hub-slot.is-empty { border-style: dashed; border-color: #a9aa9f; color: #a9aa9f; background: transparent; }
+.hub-slot i { font-family: var(--serif); font-style: normal; font-size: 18px; line-height: 1.1; }
+.hub-slot small { font-size: 9px; }
+
+.hub-toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20; margin: 0; max-width: calc(100vw - 32px);
+  padding: 10px 18px; background: var(--ink); color: var(--paper-light); font-size: 13px; letter-spacing: .04em;
+}
+.hub .title-bottom { bottom: 26px; }
+
+/* 허브 창 */
+.hub-modal { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background: #292e2c66; }
+.hub-dialog {
+  position: relative; width: min(620px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; display: grid; gap: 12px;
+  padding: 28px 30px 24px; background: var(--paper); border: 1px solid var(--ink); box-shadow: 0 18px 50px #292e2c40;
+}
+.hub-dialog h2 { font-family: var(--serif); font-weight: 500; font-size: 26px; margin: 0; letter-spacing: -.02em; }
+.hub-dialog h3 { font-size: 12px; letter-spacing: .2em; color: var(--muted); margin: 8px 0 0; font-weight: 400; }
+.hub-eyebrow { margin: 0; font-size: 11px; letter-spacing: .25em; color: var(--accent); }
+.hub-lead { margin: 0; color: #62695f; }
+.hub-close { position: absolute; top: 10px; right: 12px; min-width: 0; margin: 0; padding: 2px 8px; border: 0; background: none; color: var(--ink); font-size: 22px; line-height: 1; }
+.hub-stage-list { display: grid; gap: 8px; }
+.hub-stage {
+  min-width: 0; margin: 0; padding: 12px 14px; display: grid; grid-template-columns: 44px 1fr auto; grid-template-rows: auto auto; column-gap: 12px; text-align: left; letter-spacing: 0;
+  border: 1px solid var(--line); background: var(--paper-light); color: var(--ink);
+}
+.hub-stage i { grid-row: span 2; align-self: center; font-family: var(--serif); font-style: normal; font-size: 18px; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid currentColor; }
+.hub-stage strong { font-family: var(--serif); font-size: 16px; font-weight: 500; }
+.hub-stage small { grid-column: 2 / 4; font-size: 11px; color: var(--muted); line-height: 1.5; }
+.hub-stage em { font-style: normal; font-size: 11px; color: var(--accent); align-self: center; }
+.hub-stage.is-selected { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.hub-stage.is-locked { opacity: .5; cursor: default; }
+.hub-presets { display: flex; gap: 8px; flex-wrap: wrap; }
+.hub-chip { min-width: 0; margin: 0; padding: 6px 14px; border: 1px solid var(--line); background: none; color: var(--ink); letter-spacing: .1em; font-size: 12px; }
+.hub-chip[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper-light); }
+.hub-slider { display: grid; grid-template-columns: 90px 1fr 54px; gap: 12px; align-items: center; font-size: 13px; }
+.hub-slider input { width: 100%; accent-color: var(--accent); }
+.hub-slider output { font-family: var(--serif); font-size: 15px; text-align: right; }
+.hub-reward { margin: 0; font-size: 11px; color: var(--muted); }
+.hub-dialog-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.hub-dialog-footer .primary-button { margin: 0; min-width: 200px; }
+.hub-field { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.hub-field input { font: 16px var(--serif); padding: 9px 12px; border: 1px solid var(--line); background: var(--paper-light); color: var(--ink); }
+.hub-title-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.hub-title-option {
+  min-width: 0; margin: 0; padding: 10px 12px; display: grid; gap: 2px; text-align: left; letter-spacing: 0;
+  border: 1px solid var(--line); background: var(--paper-light); color: var(--ink);
+}
+.hub-title-option strong { font-family: var(--serif); font-weight: 500; }
+.hub-title-option small { font-size: 11px; color: var(--muted); line-height: 1.4; }
+.hub-title-option.is-selected { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.hub-title-option:disabled { opacity: .55; cursor: default; background: transparent; }
+.hub-plans { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+
+@media (max-width: 960px) {
+  .title-screen.hub {
+    grid-template-columns: 1fr; grid-template-areas: "brand" "factions" "center" "side" "stats";
+    padding: 22px 16px 80px; row-gap: 16px;
+  }
+  .hub-brand h1 { font-size: 40px; margin-bottom: 4px; }
+  .hub-brand .title-description { display: none; }
+  .hub-portrait { height: 360px; }
+  .hub-portrait .ink-circle { width: 290px; height: 290px; }
+  .hub-portrait .title-seal { display: block; right: 8%; bottom: 30px; }
+  .hub-side { justify-items: stretch; grid-template-columns: 1fr auto; align-items: center; }
+  .hub-wallet { grid-area: 1 / 1; margin: 0; justify-items: start; grid-auto-flow: column; gap: 14px; }
+  .hub-devlink { grid-area: 1 / 2; justify-self: end; }
+  .hub-facilities { grid-column: 1 / -1; width: auto; grid-template-columns: repeat(2, 1fr); }
+  .hub-stats { grid-template-columns: 1fr; padding: 16px; }
+  .hub-realm { grid-row: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 0 0 12px; }
+  .hub-stat-grid { grid-template-columns: repeat(3, 1fr); }
+  .hub-equipment { gap: 6px; }
+  .hub-slot { width: 44px; height: 44px; }
+  .hub-actions { width: 100%; }
+  .hub-actions > * { flex: 1; min-width: 0; }
+  .hub-title-list { grid-template-columns: 1fr; }
+  .hub-slider { grid-template-columns: 76px 1fr 46px; }
+  .hub-dialog { padding: 24px 18px 18px; }
+}

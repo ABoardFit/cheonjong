@@ -4,22 +4,33 @@
 (() => {
   const screen = document.getElementById('title-screen');
   if (!screen) return;
-  const STORE = 'cheonjong-ui-edit-v1';
-  // [selector, name, kind, options]
+  // v2: the main screen became a hub, so edits made on the old layout no longer apply.
+  const STORE = 'cheonjong-ui-edit-v2';
+  // [selector, name, kind, options]; dynamic: the game fills its text, so the tool does not reword it.
   const PARTS = [
     ['#title-screen', '메인 화면 전체', '배경 영역', { fixed: true }],
-    ['#title-screen .title-copy', '왼쪽 글 묶음', '영역', { container: true }],
+    ['#title-screen .hub-brand', '제목 묶음', '영역', { container: true }],
     ['#title-screen .eyebrow', '윗줄 문구', '글'],
     ['#game-title', '게임 제목', '글'],
     ['#title-screen .title-description', '소개 문구', '글'],
-    ['#start-battle', '화산 출전 버튼', '버튼'],
-    ['#open-martial', '무공록 버튼', '버튼'],
-    ['#open-dojo', '연무장 버튼', '버튼'],
-    ['#title-screen .prototype-caption', '시제품 안내 문구', '글'],
-    ['#title-screen .title-art', '오른쪽 그림 영역', '영역', { container: true }],
+    ['#title-screen .hub-factions', '세력 칸(정파·사파·세외)', '영역', { dynamic: true }],
+    ['#title-screen .hub-side', '오른쪽 묶음', '영역', { container: true }],
+    ['#open-dojo', '동작 비교 링크', '버튼'],
+    ['#hub-wallet', '은자 · 비급', '글', { dynamic: true }],
+    ['[data-facility="alchemy"]', '연단방 버튼', '버튼'],
+    ['[data-facility="forge"]', '대장간 버튼', '버튼'],
+    ['[data-facility="hall"]', '연무장 버튼', '버튼'],
+    ['[data-facility="seclusion"]', '폐관동 버튼', '버튼'],
+    ['#title-screen .hub-portrait', '캐릭터 영역', '영역', { container: true }],
     ['#title-screen .ink-circle', '먹 원', '장식'],
-    ['#title-screen .hero-art', '주인공 그림', '그림'],
-    ['#title-screen .title-seal', '낙관(도장)', '글'],
+    ['#title-screen .hub-emblem', '세력 문양', '그림'],
+    ['#hub-character', '캐릭터(누르면 무공록)', '버튼'],
+    ['#title-screen .title-seal', '도장', '글', { dynamic: true }],
+    ['#hub-nameplate', '별호 · 이름', '버튼', { dynamic: true }],
+    ['#open-martial', '무공록 버튼', '버튼'],
+    ['#start-battle', '출전 버튼', '버튼'],
+    ['#hub-stage-caption', '현재 시련 설명', '글', { dynamic: true }],
+    ['#hub-stats', '능력치 판', '영역', { container: true, dynamic: true }],
     ['#title-screen .title-bottom', '하단 줄', '영역', { container: true }],
   ];
   const ADD_KIND = { button: '버튼', text: '글', box: '영역' };
@@ -71,7 +82,7 @@
 
   function register(item) {
     item.el.dataset.uie = item.key;
-    item.slot = item.added || item.el.textContent.trim() ? textSlot(item.el) : null;
+    item.slot = !item.dynamic && (item.added || item.el.textContent.trim()) ? textSlot(item.el) : null;
     item.originalText = item.slot ? item.slot.get() : '';
     items.push(item);
     apply(item);

@@ -26,6 +26,7 @@
   let nextHud = 0;
   let lastSkillSignature = '';
   let dashQueued = false;
+  let runOptions = {};
   let drag = null;
   let pointerMove = { x: 0, y: 0 };
   const keys = new Set();
@@ -84,18 +85,21 @@
     clearInput();
     modal.hidden = true;
     modalKind = '';
-    run = core.createRun({ seed: Date.now() >>> 0, width: screen.clientWidth, height: screen.clientHeight });
+    run = core.createRun({ ...runOptions, seed: Date.now() >>> 0, width: screen.clientWidth, height: screen.clientHeight });
+    run.reported = false;
     lastSkillSignature = '';
     nextHud = 0;
     updateHud();
     if (withBrief) {
-      openModal('brief', `<p class="dialog-eyebrow">第一試 · 華山</p><h2 id="battle-dialog-title">매화가 피는 곳</h2><p class="dialog-lead">매화검법과 자하신공으로 시작합니다. 적을 격파하고 기를 모아 무공을 강화하세요.<br>초식 6단계와 짝 심법 6성을 완성하면 절세신공을 선택할 수 있습니다.</p><div class="battle-help"><p><strong>움직이고, 베고, 살아남으세요</strong><kbd>W A S D</kbd> 또는 방향키로 이동 · 자동 공격<br><kbd>Space</kbd> 경공 · <kbd>Esc</kbd> 일시정지 · <kbd>Tab</kbd> 능력치</p><p><strong>터치와 마우스도 사용할 수 있습니다</strong>전장을 누른 채 원하는 방향으로 끌어 이동<br>오른쪽 아래 경공 버튼으로 위험 지역을 벗어나세요.</p></div><p class="dialog-lead">꽃잎은 피격 피해를 막아 주며, 보유량에 따라 적에게 부착됩니다.<br>분홍 표시를 확인하고 적의 공격 예고 영역을 피하세요.</p><div class="dialog-footer"><small>공격 계수와 난이도는 전투 검증용 임시 수치입니다.</small><button class="dialog-primary" data-action="resume">수련 시작 →</button></div>`);
+      openModal('brief', `<p class="dialog-eyebrow">第一試 · 華山</p><h2 id="battle-dialog-title">매화가 피는 곳</h2><p class="dialog-lead">매화검법과 자하신공으로 시작합니다. 적을 격파하고 기를 모아 무공을 강화하세요.<br>초식 6단계와 짝 심법 6성을 완성하면 절세신공을 선택할 수 있습니다.</p><div class="battle-help"><p><strong>움직이고, 베고, 살아남으세요</strong><kbd>W A S D</kbd> 또는 방향키로 이동 · 자동 공격<br><kbd>Space</kbd> 경공 · <kbd>Esc</kbd> 일시정지 · <kbd>Tab</kbd> 능력치</p><p><strong>터치와 마우스도 사용할 수 있습니다</strong>전장을 누른 채 원하는 방향으로 끌어 이동<br>오른쪽 아래 경공 버튼으로 위험 지역을 벗어나세요.</p></div><p class="dialog-lead">꽃잎은 피격 피해를 막아 주며, 보유량에 따라 적에게 부착됩니다.<br>분홍 표시를 확인하고 적의 공격 예고 영역을 피하세요.</p><p class="dialog-difficulty">난이도 · 적 수 ×${run.difficulty.count} · 적 공격력 ×${run.difficulty.attack} · 적 체력 ×${run.difficulty.health}</p><div class="dialog-footer"><small>공격 계수와 난이도는 전투 검증용 임시 수치입니다.</small><button class="dialog-primary" data-action="resume">수련 시작 →</button></div>`);
     } else {
       canvas.focus({ preventScroll: true });
       announce('화산 수련을 시작합니다.');
     }
   }
-  function startBattle() {
+  // options: { stage, difficulty: { count, attack, health } } from the hub's stage select.
+  function startBattle(options = {}) {
+    runOptions = options;
     if (!core || !window.CheonGameRenderer) {
       alert('전투 파일을 불러오지 못했습니다. 페이지를 새로고침해 주세요.');
       return;
@@ -123,6 +127,7 @@
     $('martial-screen').hidden = true;
     $('title-screen').hidden = false;
     $('start-battle').focus();
+    window.dispatchEvent(new CustomEvent('cheon:title'));
   }
   function showPause() {
     if (!active || run.status !== 'running') return;
@@ -167,6 +172,10 @@
   function showResult() {
     const won = run.status === 'won';
     const fusions = pairs.filter(pair => run.skills[pair.active] === 7).map(pair => pair.result);
+    if (!run.reported) {
+      run.reported = true;
+      window.dispatchEvent(new CustomEvent('cheon:run-end', { detail: { won, stage: run.stage, difficulty: { ...run.difficulty }, time: run.time, kills: run.kills, level: run.level } }));
+    }
     openModal('result', `<p class="dialog-eyebrow">${won ? '華山 · 시련 돌파' : '다시 피어날 매화를 위하여'}</p><h2 id="battle-dialog-title">${won ? '매화, 시련을 넘다' : '이번 수련을 마칩니다'}</h2><p class="dialog-lead">${won ? '공세와 보스의 시련을 이겨냈습니다. 다른 무공 조합으로 다시 수련해 보세요.' : '배운 무공과 적의 예고를 기억하세요. 다음 수련에서 새로운 길을 택할 수 있습니다.'}</p><div class="battle-result-numbers"><div><span>수련 시간</span><strong>${clock(run.time)}</strong></div><div><span>격파</span><strong>${run.kills}</strong></div><div><span>도달 레벨</span><strong>${run.level}</strong></div><div><span>완성한 절세신공</span><strong>${fusions.length}</strong></div></div>${fusions.length ? `<p class="dialog-lead">${esc(fusions.join(' · '))}</p>` : ''}${ownedMarkup()}<div class="dialog-footer"><button data-action="title">메인으로</button><button class="dialog-primary" data-action="retry">다시 수련 →</button></div>`);
     announce(won ? '시련 돌파. 수련 결과를 확인하세요.' : '수련 종료. 다시 도전할 수 있습니다.');
   }
@@ -222,7 +231,8 @@
     if (now >= nextHud) { updateHud(); nextHud = now + 100; }
   }
 
-  $('start-battle').addEventListener('click', startBattle);
+  // The hub's stage select calls this; 출전 itself opens that select (hub.js).
+  window.CheonBattle = { start: startBattle };
   $('battle-pause').addEventListener('click', showPause);
   $('battle-stats').addEventListener('click', showStats);
   $('battle-codex').addEventListener('click', showCodex);

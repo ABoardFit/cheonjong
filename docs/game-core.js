@@ -54,9 +54,16 @@
       flowerRainDamageRadius: rank === 7 ? attackRadius : 0
     };
   }
+  // Stage difficulty chosen before a run: enemy count (spawn rate and cap), enemy attack and enemy health multipliers.
+  const DIFFICULTY_RANGE = [0.5, 3];
+  function normalizeDifficulty(value = {}) {
+    const pick = key => clamp(Number.isFinite(Number(value[key])) ? Number(value[key]) : 1, DIFFICULTY_RANGE[0], DIFFICULTY_RANGE[1]);
+    return { count: pick('count'), attack: pick('attack'), health: pick('health') };
+  }
   function createRun(options = {}) {
     const s = {
       version: 1, mode: options.mode || 'normal', rng: options.seed || 247617,
+      stage: options.stage || 'hwasan', difficulty: normalizeDifficulty(options.difficulty),
       width: options.width || 1000, height: options.height || 650, serial: 0,
       status: 'running', time: 0, level: 1, xp: 0, nextXp: B.progression.firstXp,
       kills: 0, bossSpawned: false, bossDefeated: false,
@@ -112,7 +119,7 @@
   function damagePlayer(s, incoming, source) {
     if (s.status !== 'running' || s.time < s.player.invulnerableUntil || s.time < s.player.hurtUntil) return { damage: 0, consumed: 0, ignored: true };
     const st = getStats(s), p = s.player;
-    const hit = mitigateDamage({ damage: incoming, petals: p.petals, consumption: st.petalConsumption, flatReduction: st.petalFlatReduction, percentReduction: st.damageReduction });
+    const hit = mitigateDamage({ damage: incoming * (s.difficulty?.attack ?? 1), petals: p.petals, consumption: st.petalConsumption, flatReduction: st.petalFlatReduction, percentReduction: st.damageReduction });
     p.petals -= hit.consumed;
     syncAttachments(s);
     p.hp = Math.max(0, p.hp - hit.damage); s.metrics.damageTaken += hit.damage;
@@ -275,7 +282,7 @@
     // Spawn outside the visible rectangle, using a ray intersection with its edge.
     const c = Math.cos(a), sn = Math.sin(a), halfW = s.width / 2 + 45, halfH = s.height / 2 + 45;
     const r = Math.min(halfW / Math.max(0.01, Math.abs(c)), halfH / Math.max(0.01, Math.abs(sn)));
-    const hp = type === 'boss' ? B.progression.bossHp : (B.enemy.hp + s.time * B.enemy.hpPerSecond) * (type === 'charger' ? 1.5 : type === 'ranged' ? 0.8 : 1);
+    const hp = (type === 'boss' ? B.progression.bossHp : (B.enemy.hp + s.time * B.enemy.hpPerSecond) * (type === 'charger' ? 1.5 : type === 'ranged' ? 0.8 : 1)) * (s.difficulty?.health ?? 1);
     const e = { id: id(s), type, x: s.player.x + c * r, y: s.player.y + sn * r,
       radius: type === 'boss' ? 30 : type === 'charger' ? 16 : 12, hp, maxHp: hp,
       petalAttached: false, flashUntil: 0, petalHitFlashFrom: 0, petalHitFlashUntil: 0,
@@ -464,8 +471,9 @@
     if (s.rainTimer <= 0) { s.rainTimer += B.rain.cooldown; rainAttack(s); }
     s.spawnTimer -= dt;
     if (s.spawnTimer <= 0) {
-      s.spawnTimer += B.enemy.spawnStart + (B.enemy.spawnEnd - B.enemy.spawnStart) * clamp(s.time / B.progression.bossAt, 0, 1);
-      if (s.enemies.filter(e => e.hp > 0).length < B.enemy.maximum) {
+      const count = s.difficulty?.count ?? 1;
+      s.spawnTimer += (B.enemy.spawnStart + (B.enemy.spawnEnd - B.enemy.spawnStart) * clamp(s.time / B.progression.bossAt, 0, 1)) / count;
+      if (s.enemies.filter(e => e.hp > 0).length < Math.round(B.enemy.maximum * count)) {
         const r = rng(s), type = s.time > 45 && r < 0.16 ? 'charger' : s.time > 24 && r < 0.31 ? 'ranged' : 'melee';
         spawnEnemy(s, type);
       }
@@ -535,7 +543,7 @@
     checkLevel(s);
     if (s.time >= B.progression.maxTime && s.status === 'running') { s.status = 'lost'; s.resultReason = '해 뜨기 전 혈영객을 쓰러뜨리지 못했습니다.'; }
   }
-  root.CheonGameCore = { createRun, step, getChoices, choose, getStats, getCombatCenter,
+  root.CheonGameCore = { createRun, normalizeDifficulty, step, getChoices, choose, getStats, getCombatCenter,
     mitigateDamage, pickupPetal, damagePlayer, damageEnemy, addField,
     syncAttachments, startDash, spawnEnemy, fieldTick, skillIds, balance: B };
 })(typeof window !== 'undefined' ? window : globalThis);

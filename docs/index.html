@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="game.css">
   <link rel="stylesheet" href="dojo.css">
+  <link rel="stylesheet" href="hub.css">
   <script src="data.js" defer></script>
   <script src="game-balance.js" defer></script>
   <script src="game-core.js" defer></script>
@@ -18,27 +19,50 @@
   <script src="app.js" defer></script>
   <script src="game-controller.js" defer></script>
   <script src="dojo.js" defer></script>
+  <script src="hub.js" defer></script>
   <link rel="stylesheet" href="ui-editor.css">
   <script src="ui-editor.js" defer></script>
 </head>
 <body>
   <div class="paper-grain" aria-hidden="true"></div>
   <main id="app">
-    <section id="title-screen" class="title-screen" aria-labelledby="game-title">
-      <div class="title-copy">
+    <section id="title-screen" class="title-screen hub" aria-labelledby="game-title">
+      <header class="hub-brand">
         <p class="eyebrow">하나의 몸, 무한한 무학</p>
         <h1 id="game-title">천종지자</h1>
         <p class="title-description">어느 문파의 길을 걸을 것인가.<br>모든 무학의 시작은, 그대에게 있다.</p>
-        <button id="start-battle" class="primary-button">화산 출전 <span aria-hidden="true">→</span></button>
-        <button id="open-martial" class="title-codex-button">무공록 <span aria-hidden="true">↗</span></button>
-        <button id="open-dojo" class="title-codex-button">연무장 · 동작 비교 <span aria-hidden="true">↗</span></button>
-        <p class="prototype-caption">화산 전투 시제품 · 매화를 피우고 절세신공에 도달하세요</p>
+      </header>
+      <div class="hub-factions" role="group" aria-label="찍은 세력 수 · 무공록에서 쌓입니다">
+        <div data-faction-count="righteous"></div><div data-faction-count="heterodox"></div><div data-faction-count="outer"></div>
       </div>
-      <div class="title-art" aria-hidden="true">
-        <div class="ink-circle"></div>
-        <img src="assets/hero.png" alt="" class="hero-art" onerror="this.hidden=true">
-        <span class="title-seal">무학무애<br>武學無涯</span>
+      <aside class="hub-side" aria-label="재화와 시설">
+        <button id="open-dojo" class="hub-devlink" type="button">동작 비교 <span aria-hidden="true">↗</span></button>
+        <div id="hub-wallet" class="hub-wallet"></div>
+        <nav class="hub-facilities" aria-label="시설">
+          <button type="button" data-facility="alchemy">연단방 <small>煉丹房</small></button>
+          <button type="button" data-facility="forge">대장간 <small>鍛冶場</small></button>
+          <button type="button" data-facility="hall">연무장 <small>演武場</small></button>
+          <button type="button" data-facility="seclusion">폐관동 <small>閉關洞</small></button>
+        </nav>
+      </aside>
+      <div class="hub-center">
+        <div class="hub-portrait">
+          <div class="ink-circle"><img class="hub-emblem" src="assets/hwasan-emblem-v3.png" alt="화산 문양"></div>
+          <button id="hub-character" class="hub-character" type="button" aria-label="캐릭터 · 무공록 열기" title="무공록 열기">
+            <img src="assets/hero.png" alt="" class="hero-art" onerror="this.hidden=true">
+          </button>
+          <span class="title-seal" aria-label="주세력 도장">華山
+梅花</span>
+        </div>
+        <button id="hub-nameplate" class="hub-nameplate" type="button" title="별호와 이름"></button>
+        <div class="hub-actions">
+          <button id="open-martial" class="hub-secondary" type="button">무공록 <span aria-hidden="true">↗</span></button>
+          <button id="start-battle" class="primary-button" type="button">출전 <span aria-hidden="true">→</span></button>
+        </div>
+        <p id="hub-stage-caption" class="prototype-caption"></p>
       </div>
+      <section id="hub-stats" class="hub-stats" aria-label="능력치"></section>
+      <p id="hub-toast" class="hub-toast" role="status" hidden></p>
       <div class="title-bottom"><span>천종지자</span><span>第一卷 · 무공의 길</span></div>
     </section>
 
