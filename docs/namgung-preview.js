@@ -13,7 +13,9 @@
   const arrows = [['nw', '↖'], ['n', '↑'], ['ne', '↗'], ['w', '←'], ['e', '→'], ['sw', '↙'], ['s', '↓'], ['se', '↘']];
   const ranks = { sword: 1, formation: 1, dash: 1 }, minds = { sword: 0, formation: 0, dash: 0 }, keys = new Set(), cache = new Map();
   let sampleHeld = 0, resourceEvent = null;
+  let motionPose = null, motionTime = -1, walkFrameOffset = 0;
   let path = 'sword', direction = 'e', walking = false, paused = false, detail = 'active', time = 0, last = 0, manual = { x: 0, y: 0 }, giant = null, giantMetrics = null, raf;
+  let giantPixels = null, giantThresholds = null, giantEroded = null, giantErodedPixels = null, giantErodedProgress = -1, giantFragments = [];
   const level = (list, rank) => Array.isArray(list) ? list.find(item => Number(item.rank) === rank) : list[rank];
   for (let rank = 1; rank <= 7; rank++) { const b = document.createElement('button'); b.textContent = rank; if (rank === 7) { const label = document.createElement('small'); label.textContent = '절세'; b.append(label); } b.dataset.rank = rank; b.setAttribute('aria-label', rank === 7 ? '절세무공 7단계' : `${rank}단계`); b.onclick = () => { ranks[path] = rank; detail = 'active'; reset(); }; $('rank-buttons').append(b); }
   for (let rank = 0; rank <= 6; rank++) { const b = document.createElement('button'); b.textContent = rank; if (rank === 0) { const label = document.createElement('small'); label.textContent = '없음'; b.append(label); } b.dataset.mind = rank; b.setAttribute('aria-label', rank === 0 ? '심법 없음' : `심법 ${rank}성`); b.onclick = () => { minds[path] = rank; detail = 'mind'; reset(); }; $('mind-buttons').append(b); }
@@ -28,7 +30,7 @@
   $('replay').onclick = () => reset();
   $('step').onclick = () => { paused = true; time = Math.min(7, time + 1 / 60); update(); render(); };
   $('timeline').oninput = e => { time = Number(e.target.value); paused = true; cache.clear(); update(); render(); };
-  const mechanics = { sword: ['검 자체의 근접 찌르기 · 붓 검기 없음', '몸 중심 · 75° 부채꼴', '확장된 75° 검격', '부채꼴 + 직선 천뢰 한 줄기', '한 줄기에서 세 갈래로', '부채꼴 없이 · 가장 먼 적을 가르는 일검', '거대한 검격 → 검로를 따라 순차 낙뢰'], formation: ['작은 검 한 자루가 적 몸을 반복해서 찌르기', '서로 다른 적 · 최대 세 자루', '세 자루의 강화된 위력', '서로 다른 적 · 최대 여덟 자루', '적 뒤에서 앞으로 통과하는 베기 · 주변 피해', '적 수와 무관하게 고정 여덟 방향으로 왕복', '원거리 적 우선 · 손잡이까지 지면 관통'], dash: ['도주기 이동 · 무적 없음', '늘어난 경공 거리', '경공 경로에 감전 지대 3초', '감전 지대 + 가까운 적에게 큰 낙뢰', '더 넓은 감전 지대', '강화된 단일 일격', '경공과 하늘에서 떨어지는 큰 천뢰 · 무적 없음'] };
+  const mechanics = { sword: ['검 자체의 근접 찌르기 · 붓 검기 없음', '몸 중심 · 75° 부채꼴', '확장된 75° 검격', '부채꼴 + 직선 천뢰 한 줄기', '한 줄기에서 세 갈래로', '부채꼴 없이 · 가장 먼 적을 가르는 일검', '거대한 검격 → 검로를 따라 순차 낙뢰'], formation: ['작은 검 한 자루가 적 몸을 반복해서 찌르기', '서로 다른 적 · 최대 세 자루', '세 자루의 강화된 위력', '서로 다른 적 · 최대 여덟 자루', '적 뒤에서 앞으로 통과하는 베기 · 주변 피해', '적 수와 무관하게 고정 여덟 방향으로 왕복', '원거리 적 우선 · 손잡이를 남기고 정지 · 파란 구슬로 소멸'], dash: ['도주기 이동 · 무적 없음', '늘어난 경공 거리', '경공 경로에 감전 지대 3초', '감전 지대 + 가까운 적에게 큰 낙뢰', '더 넓은 감전 지대', '강화된 단일 일격', '경공과 하늘에서 떨어지는 큰 천뢰 · 무적 없음'] };
   function update() {
     const p = data.paths[path], rank = ranks[path], mind = data.minds[p.partnerId], m = minds[path], stage = level(p.levels, rank), ml = level(mind.levels, m);
     $('stage-title').textContent = p.name; $('stage-rank').textContent = `${rank === 7 ? '絶世' : rank === 6 ? '化境' : ['一', '二', '三', '四', '五'][rank - 1]} · ${stage.title}`;
@@ -40,7 +42,7 @@
     $('form-description').textContent = detail === 'mind' ? ml.description : stage.description;
     $('mind-focus').setAttribute('aria-pressed', String(detail === 'mind'));
     $('fusion-note').textContent = rank === 7 && m < 6 ? '연출 비교용 7단계 · 실제 조합 조건: 초식 6 + 심법 6' : '초식 6단계 + 짝 심법 6성에서 절세무공 완성';
-    $('mechanic-note').textContent = mechanics[path][rank - 1] + (path === 'sword' && rank === 1 ? ' · 찌르기 전신 원화 보강 예정' : '');
+    $('mechanic-note').textContent = mechanics[path][rank - 1];
     $('qi-pickup').disabled = path === 'dash' && (m < 6 || rank < 4);
     $('qi-count').textContent = `${sampleHeld} / ${capacity()}`; $('qi-demo').hidden = m === 0; $('qi-note').textContent = path === 'formation' ? '육합공 방어·획득 효과를 위한 자원 시연' : path === 'dash' ? '천뢰기 6성의 직접 명중으로 검기를 드랍' : '처치로 얻은 호신 검기를 가정한 시연';
     document.querySelectorAll('[data-path]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.path === path)));
@@ -50,7 +52,7 @@
     $('walking').textContent = walking ? '걷기 끄기' : '걷기 켜기'; $('walking').setAttribute('aria-pressed', String(walking));
     $('pause').textContent = paused ? '계속 재생' : '일시정지'; $('pause').setAttribute('aria-pressed', String(paused)); $('pause').setAttribute('aria-label', paused ? '계속 재생' : '일시정지');
   }
-  function reset() { time = 0; cache.clear(); resourceEvent = null; sampleHeld = path === 'sword' && minds[path] >= 1 ? 1 : 0; manual = { x: 0, y: 0 }; update(); render(); }
+  function reset() { time = 0; cache.clear(); motionPose = null; motionTime = -1; walkFrameOffset = 0; resourceEvent = null; sampleHeld = path === 'sword' && minds[path] >= 1 ? 1 : 0; manual = { x: 0, y: 0 }; update(); render(); }
   function heroAt(t) {
     const a = directions.indexOf(direction) * Math.PI / 4;
     const dx = walking ? Math.sin(t * 1.55) * 37 : 0, dy = walking ? Math.cos(t * 1.55) * 17 - 17 : 0;
@@ -95,13 +97,53 @@
   }
   function drawGiant(c, x, y, angle, height, alpha, options = {}) {
     if (!giant || !giantMetrics) return;
+    const dissolve = FX.clamp(options.dissolve || 0), scale = height / FX.giantSwordGeometry.height;
+    let material = giant;
+    if (dissolve > 0) {
+      if (giantErodedProgress !== dissolve) {
+        const rgba = giantErodedPixels.data;
+        rgba.set(giantPixels.data);
+        for (let yy = 0; yy < giant.height; yy++) for (let xx = 0; xx < giant.width; xx++) {
+          const i = (yy * giant.width + xx) * 4;
+          if (!rgba[i + 3]) continue;
+          const threshold = giantThresholds[yy * giant.width + xx];
+          if (dissolve >= threshold) rgba[i + 3] = 0;
+          else if (threshold - dissolve < .012) { rgba[i] = 167; rgba[i + 1] = 207; rgba[i + 2] = 223; }
+        }
+        giantEroded.getContext('2d').putImageData(giantErodedPixels, 0, 0); giantErodedProgress = dissolve;
+      }
+      material = giantEroded;
+    }
     c.save();
-    // Clip in battlefield coordinates before the blade rotates and sinks: even its
-    // guard and hilt pass below the same ground line instead of fading in midair.
+    // One fixed ground plane hides buried steel. The descent stops at the guard;
+    // only the advancing tip-to-hilt erosion removes the remaining material.
     if (Number.isFinite(options.groundY)) { c.beginPath(); c.rect(-100000, -100000, 200000, 100000 + options.groundY); c.clip(); }
     c.translate(Math.round(x / 2) * 2, Math.round(y / 2) * 2); c.rotate(angle); c.globalAlpha = alpha; c.imageSmoothingEnabled = false;
-    // Its middle blade face, rather than the guard's bounding box, determines width.
-    c.drawImage(giant, -giantMetrics.tip.x * 2, -giantMetrics.tip.y * 2, giant.width * 2, giant.height * 2); c.restore();
+    c.scale(scale, scale);
+    c.drawImage(material, -giantMetrics.tip.x * 2, -giantMetrics.tip.y * 2, giant.width * 2, giant.height * 2); c.restore();
+    if (dissolve <= 0) return;
+    const ca = Math.cos(angle), sa = Math.sin(angle), duration = options.dissolveDuration || 1.35;
+    for (const fragment of giantFragments) {
+      const age = (dissolve - fragment.threshold) * duration;
+      // At dissolve=1 the final fragment still needs its own lifetime; the
+      // unbounded clock is passed separately by the cast after erosion finishes.
+      const tailAge = age + Math.max(0, (options.dissolveElapsed || 0) - duration);
+      if (tailAge < 0 || tailAge > .62) continue;
+      const localX = (fragment.x - giantMetrics.tip.x) * 2 * scale, localY = (fragment.y - giantMetrics.tip.y) * 2 * scale;
+      const materialX = x + ca * localX - sa * localY, materialY = y + sa * localX + ca * localY;
+      const originY = Number.isFinite(options.groundY) ? Math.min(options.groundY - fragment.radius - 2, materialY) : materialY;
+      const px = Math.round((materialX + fragment.vx * tailAge) / 2) * 2;
+      const py = Math.round((originY - fragment.rise * tailAge - 25 * tailAge * tailAge) / 2) * 2;
+      const radius = fragment.radius, fade = (1 - tailAge / .62) * alpha;
+      c.globalAlpha = fade;
+      for (let yy = -radius; yy < radius; yy += 2) for (let xx = -radius; xx < radius; xx += 2) {
+        const distance = (xx + 1) ** 2 + (yy + 1) ** 2;
+        if (distance > radius * radius) continue;
+        c.fillStyle = distance < radius * radius * .34 ? '#a7cfdf' : FX.palette.body;
+        c.fillRect(px + xx, py + yy, 2, 2);
+      }
+    }
+    c.globalAlpha = 1;
   }
   const image = new Image();
   image.onload = () => {
@@ -119,7 +161,14 @@
     bladeSpans.sort((a, b) => a - b); const sourceBladeWidth = bladeSpans[Math.floor(bladeSpans.length / 2)] || sourceWidth;
     const worldWidth = geometry.bladeWidth / sourceBladeWidth * sourceWidth;
     giant = document.createElement('canvas'); giant.width = Math.round(worldWidth / geometry.pixelStep); giant.height = Math.round(geometry.height / geometry.pixelStep);
-    const g = giant.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(image, x0, y0, sourceWidth, sourceHeight, 0, 0, giant.width, giant.height);
+    const g = giant.getContext('2d'); g.imageSmoothingEnabled = false;
+    // Lengthen the actual blade and grip independently. The guard keeps its
+    // previous thickness, while its wide silhouette and every painted detail stay.
+    const sourceHandle = Math.round(sourceHeight * geometry.sourceHandleEnd), sourceGuard = Math.round(sourceHeight * geometry.sourceGuardEnd);
+    const nativeHandle = geometry.handleLength / 2, nativeGuard = geometry.guardLength / 2;
+    g.drawImage(image, x0, y0, sourceWidth, sourceHandle, 0, 0, giant.width, nativeHandle);
+    g.drawImage(image, x0, y0 + sourceHandle, sourceWidth, sourceGuard - sourceHandle, 0, nativeHandle, giant.width, nativeGuard);
+    g.drawImage(image, x0, y0 + sourceGuard, sourceWidth, sourceHeight - sourceGuard, 0, nativeHandle + nativeGuard, giant.width, geometry.bladeLength / 2);
     const px = g.getImageData(0, 0, giant.width, giant.height);
     for (let i = 0; i < px.data.length; i += 4) px.data[i + 3] = px.data[i + 3] < 127 ? 0 : 255;
     g.putImageData(px, 0, 0);
@@ -127,7 +176,21 @@
     for (; bottom >= 0; bottom--) { for (let x = 0; x < giant.width; x++) if (px.data[(bottom * giant.width + x) * 4 + 3]) tipXs.push(x + .5); if (tipXs.length) break; }
     giantMetrics = { sourceBounds: { x: x0, y: y0, width: sourceWidth, height: sourceHeight }, sourceBladeRow: bladeRow, sourceBladeWidth,
       worldBladeWidth: sourceBladeWidth / sourceWidth * giant.width * 2, worldWidth: giant.width * 2, worldHeight: giant.height * 2,
+      bladeLength: geometry.bladeLength, handleLength: geometry.handleLength, guardLength: geometry.guardLength,
+      sourceSections: { handleEnd: y0 + sourceHandle, guardEnd: y0 + sourceGuard },
       nativeWidth: giant.width, nativeHeight: giant.height, tip: { x: tipXs.reduce((a, b) => a + b, 0) / tipXs.length, y: bottom + 1 } };
+    giantPixels = g.getImageData(0, 0, giant.width, giant.height);
+    giantThresholds = new Float32Array(giant.width * giant.height);
+    for (let yy = 0; yy < giant.height; yy++) for (let xx = 0; xx < giant.width; xx++) giantThresholds[yy * giant.width + xx] = FX.giantErosionThreshold(xx, yy, giant.width, giant.height);
+    giantEroded = document.createElement('canvas'); giantEroded.width = giant.width; giantEroded.height = giant.height;
+    giantErodedPixels = giantEroded.getContext('2d').createImageData(giant.width, giant.height);
+    giantFragments = [];
+    for (let yy = 0; yy < giant.height - 8; yy += 8) for (let xx = 0; xx < giant.width - 8; xx += 8) {
+      const sampleX = xx + Math.floor(FX.hash(xx, yy, 89) * 8), sampleY = yy + Math.floor(FX.hash(xx, yy, 90) * 8);
+      if (!giantPixels.data[(sampleY * giant.width + sampleX) * 4 + 3]) continue;
+      const random = FX.hash(xx, yy, 91);
+      giantFragments.push({ x: sampleX + .5, y: sampleY + .5, threshold: FX.giantErosionThreshold(sampleX, sampleY, giant.width, giant.height), vx: (random - .5) * 66, rise: 35 + FX.hash(xx, yy, 97) * 65, radius: random > .82 ? 6 : 4 });
+    }
     render();
   };
   image.src = 'assets/namgung/imperial-jian-v2.png';
@@ -149,22 +212,26 @@
     c.restore();
   }
   function actorPose(hero, t, instances) {
-    const latest = instances.filter(c => c.path === 'sword' && t - c.at < .58).at(-1), rank = 2;
+    const latest = instances.filter(c => c.path === 'sword' && t - c.at < .58).at(-1);
+    const rank = ranks.sword === 1 ? 1 : 2, action = rank === 1 ? 'stab' : 'sweep';
     const nextAttack = t < .75 ? .75 : .75 + Math.floor(t - .75) + 1;
     const state = { player: hero, time: t, skills: { plum_sword: path === 'sword' ? rank : 0 }, effects: [], attackTimer: path === 'sword' ? nextAttack - t : 1 };
-    const attack = latest ? { type: 'slash', rank, id: latest.seed, angle: latest.angle, age: t - latest.at, duration: .58 } : null;
-    return { state, pose: window.CheonCombatAnimation.poseFor(state, t, { attack, moving: walking || keys.size > 0 || hero.dashRemaining > 0, walkDistance: t * 88, locomotionX: hero.faceX, locomotionY: hero.faceY }) };
+    const attack = latest ? { type: 'slash', action, rank, id: latest.seed, angle: latest.angle, age: t - latest.at, duration: .58 } : null;
+    return { state, pose: window.CheonCombatAnimation.poseFor(state, t, { attack, action, moving: walking || keys.size > 0 || hero.dashRemaining > 0, walkDistance: t * 88, walkFrameOffset, locomotionX: hero.faceX, locomotionY: hero.faceY }) };
   }
   function drawHero(hero, t, instances) {
-    const { state, pose } = actorPose(hero, t, instances); renderer.ctx = ctx; renderer.state = state; renderer.time = t; renderer.reduced = false;
+    if (t < motionTime) { motionPose = null; walkFrameOffset = 0; }
+    let { state, pose } = actorPose(hero, t, instances);
+    if (pose.action === 'walk' && motionPose && motionPose.phase !== 'idle') {
+      walkFrameOffset = window.CheonCombatAnimation.walkPhaseOffsetFor(motionPose, {
+        walkDistance: t * 88, currentOffset: walkFrameOffset, direction: pose.direction, face: pose.face, player: hero });
+      ({ state, pose } = actorPose(hero, t, instances));
+    }
+    renderer.ctx = ctx; renderer.state = state; renderer.time = t; renderer.reduced = false;
     ctx.save(); ctx.translate(hero.x, hero.y); ctx.fillStyle = '#102529'; ctx.beginPath(); ctx.ellipse(0, 4, 21, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     FX.drawQi(ctx, hero, t, sampleHeld, 'back');
-    const gait = (walking || keys.size > 0) && pose.phase !== 'idle';
-    if (gait) {
-      const walk = window.CheonCombatAnimation.poseFor({ ...state, skills: { plum_sword: 0 }, attackTimer: 1 }, t, { attack: null, moving: true, walkDistance: t * 88, locomotionX: hero.faceX, locomotionY: hero.faceY });
-      ctx.save(); ctx.beginPath(); ctx.rect(hero.x - 90, hero.y - 29, 180, 55); ctx.clip(); ctx.translate(hero.x, hero.y); renderer.drawHeroFrame(walk); ctx.restore();
-      ctx.save(); ctx.beginPath(); ctx.rect(hero.x - 110, hero.y - 145, 220, 116); ctx.clip(); ctx.translate(hero.x, hero.y); renderer.drawHeroFrame(pose); ctx.restore();
-    } else { ctx.save(); ctx.translate(hero.x, hero.y); renderer.drawHeroFrame(pose); ctx.restore(); }
+    ctx.save(); ctx.translate(hero.x, hero.y); renderer.drawHeroFrame(pose); ctx.restore();
+    motionPose = renderer.lastRenderedHeroPose || pose; motionTime = t;
     if (!pose.bakedWeapon && renderer.heroFrameReady(pose)) renderer.drawHeldBlade(pose);
     FX.drawQi(ctx, hero, t, sampleHeld, 'front');
   }

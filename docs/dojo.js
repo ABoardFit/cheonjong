@@ -122,7 +122,13 @@
         if (rank === 7 && partnerRanks[category] > 0 && run.player.petals === 0 && run.time >= run.player.pickupLockedUntil) run.player.petals = core.getStats(run).maxPetals;
         nextDash = run.time + core.getStats(run).dashCooldown + .15;
       }
+      const previousX = run.player.x, previousY = run.player.y;
       core.step(run, dt, input);
+      if (category === 'sword' && walking) {
+        // Keep the selected rehearsal direction while the whole-body gait moves.
+        const dx = run.player.x - previousX, dy = run.player.y - previousY;
+        for (const e of run.enemies) { e.x += dx; e.y += dy; }
+      }
       for (const e of run.enemies) { e.hp = e.maxHp; e.stunnedUntil = Infinity; }
       run.player.hp = run.player.maxHp;
   }

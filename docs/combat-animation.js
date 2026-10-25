@@ -121,7 +121,10 @@
       && Math.hypot(options.locomotionX, options.locomotionY) > 0.001;
     const aim = travel ? Math.atan2(options.locomotionY, options.locomotionX) : aimFor(state, timeline);
     const direction = directionFor(aim);
-    const action = attacking ? (rank >= 3 && timeline.phase === 'active' && atlas.animations?.spin ? 'spin' : profile.action) : dashing || options.moving ? 'walk' : 'idle';
+    // An authored action applies to preparation, contact and recovery alike.
+    // Namgung's thrust must never borrow Hwasan's downward cleave or turn cycle.
+    const authoredAction = options.action || attack?.action;
+    const action = attacking ? (authoredAction || (rank >= 3 && timeline.phase === 'active' && atlas.animations?.spin ? 'spin' : profile.action)) : dashing || options.moving ? 'walk' : 'idle';
     const directional = directionalEntry(atlas, action, direction);
     const entry = directional?.entry;
     const animation = entry || atlas.animations?.[action] || { row: ['idle', 'walk', 'cleave', 'sweep'].indexOf(action), frames: 4, fps: action === 'walk' ? 10 : 6 };
@@ -156,7 +159,7 @@
     const frameRect = animation.frameLayout?.[frame] || atlas.frameLayout?.[action]?.[frame] || { x: frame * fw, y: (animation.row || 0) * fh, w: fw, h: fh };
     const pose = { action, frame, row: animation.row || 0, face, hand, bladeOrigin, tip, sourceBladeAngle, bladeAngle, bladeLength,
       imageSrc: animation.src || atlas.src, direction, sourceDirection: animation.frameDirections?.[frame] || directional?.sourceDirection || 'e',
-      bakedWeapon: Boolean(animation.bakedWeapon), cycleStartFrame, cycleFrameOffset,
+      bakedWeapon: Boolean(animation.bakedWeapon), fullBodyGait: Boolean(animation.fullBodyGait), contactSmear: Boolean(animation.contactSmearFrames?.includes(frame)), cycleStartFrame, cycleFrameOffset,
       socketOccluded, hasCalibratedTip, tipVisible: animation.bakedWeapon ? hasCalibratedTip : !socketOccluded,
       bodyOrigin: { x: p.x, y: p.y }, contactPoints: sourceContacts(animation, frame, face, p, atlas),
       bladeBehind: Boolean(entry?.bladeBehind?.[frame] ?? atlas.bladeBehind?.[action]?.[frame]),

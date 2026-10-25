@@ -880,7 +880,7 @@
       const radius = Math.max(1, finite(pose.attack.radius, 58));
       ctx.save(); ctx.lineCap = 'butt'; ctx.lineJoin = 'bevel'; ctx.translate(centre.x, centre.y);
       switch (rank) {
-        case 2: this.drawBodyFan(radius, finite(pose.attack.angle), clamp(age / 0.13), alpha, color); break;
+        case 2: this.drawBodyFan(radius, finite(pose.attack.angle), finite(pose.strokeProgress, clamp(age / 0.18)), alpha, color); break;
         case 3: this.drawCircleCut(radius, finite(pose.strokeProgress, clamp(age / finite(pose.timeline?.strike, 0.18))), alpha, color, finite(pose.attack.angle)); break;
         case 4:
           this.drawFilledPlumMotif(radius, clamp(age / 0.24), age < 0.26 ? 1 : clamp((0.35 - age) / 0.09), { angle: finite(pose.attack.angle), circleProgress: finite(pose.strokeProgress, clamp(age / finite(pose.timeline?.strike, 0.18))) });
@@ -894,8 +894,11 @@
     }
 
     drawBodyFan(radius, angle, progress, alpha, color, palette) {
-      const span = 75 * Math.PI / 180;
-      this.drawInkCut(radius, angle - span / 2, span * clamp(progress), alpha, palette);
+      const span = 75 * Math.PI / 180, reveal = span * clamp(progress);
+      // Western views mirror the authored whole-body swing, including its arc order.
+      const direction = ((Math.round(angle / (Math.PI / 4)) % 8) + 8) % 8;
+      const start = direction >= 3 && direction <= 5 ? angle + span / 2 - reveal : angle - span / 2;
+      this.drawInkCut(radius, start, reveal, alpha, palette);
     }
 
     drawFilledPlumMotif(radius, progress, alpha = 1, options = {}) {
