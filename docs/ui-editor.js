@@ -5,7 +5,11 @@
 // Request memos stay in this browser and go out only through "요청서 복사".
 (() => {
   const SCREENS = ['title-screen', 'martial-screen', 'game-screen', 'dojo-screen'];
-  const SCREEN_NAMES = { 'title-screen': '메인', 'martial-screen': '무공록', 'game-screen': '전투', 'dojo-screen': '동작 비교' };
+  const SCREEN_NAMES = { 'title-screen': '메인', 'martial-screen': '무공록', 'game-screen': '전투', 'dojo-screen': '동작 비교', 'tree-ui': '무공록' };
+  // While the 무공록 tree is open the main screen's parts are pushed off screen; this tool then works on the
+  // tree's own panels (top bar, effect totals, search, legend). The tree itself belongs to the 무공록 tool.
+  const tree = window.CheonTree;
+  if (tree?.ui && !tree.ui.id) tree.ui.id = 'tree-ui';
   const DRAFT = 'cheonjong-ui-draft-v3', MEMOS = 'cheonjong-ui-memo-v3', TOKEN = 'cheonjong-ui-token';
   const REPO = 'ABoardFit/cheonjong', LAYOUT_PATH = 'docs/layout.json';
   // Phone layout (the hub's own breakpoint) keeps its own edits.
@@ -121,7 +125,7 @@
   const carriers = new Map();      // part → the box its stacking order is set on
 
   const screenEl = id => document.getElementById(id);
-  const activeScreen = () => SCREENS.map(screenEl).find(el => el && !el.hidden) || null;
+  const activeScreen = () => (tree?.isOpen && screenEl('tree-ui')) || SCREENS.map(screenEl).find(el => el && !el.hidden) || null;
   const movable = item => !item.fixed;
   const single = () => (selection.length === 1 ? selection[0] : null);
   const edit = item => item.added || layout().parts[item.key] || (layout().parts[item.key] = {});
@@ -179,7 +183,7 @@
     items.push(item);
     return item;
   }
-  const screenOf = el => SCREENS.find(id => screenEl(id)?.contains(el)) || null;
+  const screenOf = el => ['tree-ui', ...SCREENS].find(id => screenEl(id)?.contains(el)) || null;
 
   function createAdded(added) {
     const root = screenEl(added.screen || 'title-screen');
@@ -269,7 +273,7 @@
       const el = document.querySelector(selector);
       if (el) register({ key: selector, el, defaultName, kind: `메인 · ${kind}`, selector, screen: 'title-screen', ...options });
     }
-    for (const id of SCREENS) {
+    for (const id of [...SCREENS, 'tree-ui']) {
       const root = screenEl(id);
       if (root) register({ key: `#${id}`, el: root, defaultName: `${SCREEN_NAMES[id]} 화면 전체`, kind: '배경 영역', selector: `#${id}`, screen: id, fixed: true });
     }
@@ -624,7 +628,7 @@
     layer.hidden = !active;
     const shown = new Set();
     for (const item of items) {
-      if (!active || !active.contains(item.el) || ungrouped(item) || !showTags) continue;
+      if (!active || !active.contains(item.el) || ungrouped(item) || !showTags || item.el.closest('[inert]')) continue;
       const rect = item.el.getBoundingClientRect();
       if (!(rect.width > 0 && rect.height > 0)) continue;
       let tag = tags.get(item.key);
@@ -910,6 +914,7 @@
       rebuild();
     }).observe(root, { attributes: true, attributeFilter: ['hidden'] });
   }
+  for (const name of ['open', 'close']) tree?.on?.(name, () => { setSelection([]); rebuild(); });
   addEventListener('resize', () => {
     const next = innerWidth > NARROW ? 'wide' : 'narrow';
     if (next === mode) return;
