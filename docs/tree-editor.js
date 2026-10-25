@@ -201,17 +201,47 @@
     paint();
     changed();
   }
+  // 고른 노드가 있으면 그 근처(여럿이면 그 가운데)에 만들어 고른 노드 모두와 잇는다. 없으면 화면 가운데.
   function addNode() {
+    const anchors = selection.filter(other => T.nodes.has(other)).map(other => T.nodes.get(other));
     mark();
-    const v = T.view, rect = T.screen.getBoundingClientRect();
-    const at = T.toWorld(rect.left + rect.width / 2, rect.top + rect.height / 2 + 20);
     const id = `custom:${Date.now().toString(36)}`;
-    T.nodes.set(id, { id, kind: 'minor', category: '', x: Math.round(at.x + 40 / v.k), y: Math.round(at.y), glyph: '', name: '새 노드', desc: '', effects: [], custom: true });
+    const shared = key => (anchors.length && anchors.every(n => n[key] === anchors[0][key]) ? anchors[0][key] : undefined);
+    const fresh = { id, kind: 'minor', category: shared('category') || '', faction: shared('faction'), x: 0, y: 0, glyph: '', name: '새 노드', desc: '', effects: [], custom: true };
+    T.nodes.set(id, fresh);
+    const spot = anchors.length ? freeSpot(fresh, anchors) : (() => {
+      const rect = T.screen.getBoundingClientRect();
+      const at = T.toWorld(rect.left + rect.width / 2, rect.top + rect.height / 2 + 20);
+      return { x: Math.round(at.x + 40 / T.view.k), y: Math.round(at.y) };
+    })();
+    Object.assign(fresh, spot);
+    for (const anchor of anchors) T.model.edges.push([anchor.id, id]);
     T.rebuild();
     dropBlocked();
     selection = [id];
     paint();
     changed();
+    if (anchors.length) say(`새 노드를 ${anchors.map(n => n.name).join(', ')}에 이어 만들었습니다.`);
+  }
+  // 다른 원과 겹치지 않고, 고른 노드 모두에게 줄이 돌아서라도 닿는 가까운 자리.
+  function freeSpot(fresh, anchors) {
+    const r = T.radiusOf(fresh);
+    const center = { x: anchors.reduce((sum, n) => sum + n.x, 0) / anchors.length, y: anchors.reduce((sum, n) => sum + n.y, 0) / anchors.length };
+    // 하나면 트리 바깥쪽(시작점에서 멀어지는 쪽)을 먼저 본다.
+    const away = anchors.length === 1 && (center.x || center.y) ? Math.atan2(center.y, center.x) : -Math.PI / 2;
+    const roomy = spot => [...T.nodes.values()].every(n => n.id === fresh.id || Math.hypot(n.x - spot.x, n.y - spot.y) > T.radiusOf(n) + r + 14);
+    const reaches = spot => {
+      Object.assign(fresh, spot);
+      return anchors.every(anchor => T.route(anchor.id, fresh.id).ok);
+    };
+    const tries = anchors.length > 1 ? [{ d: 0, a: 0 }] : [];
+    for (const d of [70, 100, 135, 175, 220, 280]) for (const a of [0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180]) tries.push({ d, a });
+    for (const { d, a } of tries) {
+      const angle = away + a * Math.PI / 180;
+      const spot = { x: Math.round(center.x + Math.cos(angle) * d), y: Math.round(center.y + Math.sin(angle) * d) };
+      if (roomy(spot) && reaches(spot)) return spot;
+    }
+    return { x: Math.round(center.x + Math.cos(away) * 70), y: Math.round(center.y + Math.sin(away) * 70) };
   }
   function removeSelected() {
     const ids = selection.filter(id => id !== 'origin');
