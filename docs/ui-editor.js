@@ -100,6 +100,10 @@
     style.width = e.w ? `${e.w}px` : '';
     style.height = e.h ? `${e.h}px` : '';
     style.fontSize = e.fs ? `${e.fs}px` : '';
+    // Stacking order: z-index needs a positioned box, so a static part becomes relative (no visual shift).
+    style.zIndex = Number.isFinite(e.z) ? String(e.z) : '';
+    style.position = '';
+    if (Number.isFinite(e.z) && getComputedStyle(item.el).position === 'static') style.position = 'relative';
     item.el.classList.toggle('uie-gone', Boolean(e.hidden));
     if (item.slot) item.slot.set(typeof e.text === 'string' ? e.text : item.originalText);
   }
@@ -138,7 +142,10 @@
   ];
   const alignButtons = ALIGN.map(([mode, label]) => h('button', { type: 'button', onclick: () => align(mode) }, label));
   const alignRef = h('span', { class: 'uie-ref' });
-  const alignRow = h('div', { class: 'uie-align' }, h('strong', {}, '정렬'), ...alignButtons, alignRef);
+  const ORDER = [['front', '맨 앞으로'], ['forward', '앞으로'], ['backward', '뒤로'], ['back', '맨 뒤로']];
+  const orderButtons = ORDER.map(([mode, label]) => h('button', { type: 'button', onclick: () => restack(mode) }, label));
+  const alignRow = h('div', { class: 'uie-align' }, h('strong', {}, '정렬'), ...alignButtons,
+    h('strong', { class: 'uie-gap' }, '순서'), ...orderButtons, alignRef);
   const bar = h('div', { class: 'uie-bar', role: 'toolbar', 'aria-label': '메인 화면 수정 도구' },
     h('div', { class: 'uie-row' }, toggle, tools), alignRow);
   const layer = h('div', { class: 'uie-layer', 'aria-hidden': 'true' });
@@ -248,9 +255,25 @@
     syncPanelNumbers();
   }
 
+  // ---- stacking order: a higher number draws over lower ones; below 0 goes behind ordinary parts ----
+  function restack(mode) {
+    const chosen = selection.filter(movable);
+    if (!chosen.length) return;
+    const zOf = item => (Number.isFinite(edit(item).z) ? edit(item).z : 0);
+    const others = items.filter(item => movable(item) && !chosen.includes(item)).map(zOf);
+    for (const item of chosen) {
+      const z = zOf(item);
+      const next = mode === 'forward' ? z + 1 : mode === 'backward' ? z - 1
+        : mode === 'front' ? Math.max(0, ...others) + 1 : Math.min(0, ...others) - 1;
+      set(item, 'z', next === 0 ? '' : next);
+    }
+    syncPanelNumbers();
+  }
+
   function renderAlign() {
     const ready = alignTargets().length > 0;
     alignButtons.forEach(button => { button.disabled = !ready; });
+    orderButtons.forEach(button => { button.disabled = !selection.some(movable); });
     alignRef.textContent = !selection.length
       ? '요소를 선택하세요 · Shift+클릭/드래그로 여러 개 · Alt+클릭으로 기준 지정'
       : keyItem ? `기준: ${nameOf(keyItem)}` : '기준: 메인 화면 (Alt+클릭으로 기준 요소 지정)';
@@ -290,7 +313,7 @@
           oninput: event => set(item, 'memo', event.target.value) })),
       h('div', { class: 'uie-grid' },
         number('가로 이동', 'dx'), number('세로 이동', 'dy'), number('글자 크기', 'fs'),
-        number('너비', 'w'), number('높이', 'h')),
+        number('너비', 'w'), number('높이', 'h'), number('겹침 순서', 'z')),
       h('div', { class: 'uie-actions' }, ...[
         item.added && h('button', { type: 'button', class: 'uie-danger', onclick: () => remove(item) }, '삭제'),
         !item.added && !item.fixed && h('button', { type: 'button', onclick: () => { set(item, 'hidden', !e.hidden); renderPanel(); } }, e.hidden ? '보이기' : '숨기기'),
@@ -306,7 +329,7 @@
     if (!item || panel.hidden) return;
     const e = edit(item);
     const inputs = panel.querySelectorAll('.uie-num input');
-    ['dx', 'dy', 'fs', 'w', 'h'].forEach((field, index) => {
+    ['dx', 'dy', 'fs', 'w', 'h', 'z'].forEach((field, index) => {
       if (inputs[index] && document.activeElement !== inputs[index]) inputs[index].value = e[field] ?? '';
     });
   }
@@ -464,10 +487,14 @@
         else if (movable(drag.item)) setSelection(selection.includes(drag.item) ? selection.filter(other => other !== drag.item) : [...selection, drag.item]);
       } else {
         const area = marqueeRect(event);
+        // Parts touched by the box are picked, so parts running off screen or under others can be caught;
+        // grouping areas only when the box covers them whole, or every drag would grab its area too.
         const hits = items.filter(item => {
           if (!movable(item)) return false;
           const rect = item.el.getBoundingClientRect();
-          return rect.width + rect.height > 0 && rect.left >= area.left && rect.right <= area.right && rect.top >= area.top && rect.bottom <= area.bottom;
+          if (!(rect.width + rect.height > 0)) return false;
+          if (item.container) return rect.left >= area.left && rect.right <= area.right && rect.top >= area.top && rect.bottom <= area.bottom;
+          return rect.left < area.right && rect.right > area.left && rect.top < area.bottom && rect.bottom > area.top;
         });
         setSelection(drag.add ? [...new Set([...selection, ...hits])] : hits);
       }
@@ -518,6 +545,7 @@
     }
     if (e.w || e.h) lines.push(`크기: ${e.w ? `너비 ${e.w}px` : ''}${e.w && e.h ? ', ' : ''}${e.h ? `높이 ${e.h}px` : ''}`);
     if (e.fs) lines.push(`글자 크기: ${e.fs}px`);
+    if (Number.isFinite(e.z)) lines.push(`겹침 순서: ${e.z} (${e.z < 0 ? '다른 요소 뒤로 가려짐' : '다른 요소 앞으로'})`);
     if (e.hidden) lines.push('숨김(없애기)');
     if (e.memo) lines.push(`요청: ${e.memo}`);
     return lines;

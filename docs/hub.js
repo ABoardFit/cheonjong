@@ -11,8 +11,9 @@
 
   const CATEGORIES = [['righteous', '정파'], ['heterodox', '사파'], ['outer', '세외']];
   // 주세력에 따라 가운데 문양과 도장이 바뀐다. 지금은 화산만 있다.
+  // 화산 문양은 검법 4·5·6단계에 피는 채워진 매화(렌더러 flatPlumRaster)를 그대로 그린다.
   const SCHOOLS = {
-    hwasan: { name: '화산', emblem: 'assets/hwasan-emblem-v3.png', seal: '華山\n梅花' },
+    hwasan: { name: '화산', emblem: 'plum-bloom', seal: '華山\n梅花' },
   };
   const STAGES = [
     { id: 'hwasan', school: 'hwasan', name: '화산의 시련', hanja: '華山',
@@ -102,8 +103,8 @@
       if (cell) cell.replaceChildren(h('span', {}, label), h('strong', {}, String(state.factions[id] || 0)));
     }
     const emblem = document.querySelector('.hub-emblem');
-    if (emblem && emblem.getAttribute('src') !== school.emblem) emblem.src = school.emblem;
-    emblem?.setAttribute('alt', `${school.name} 문양`);
+    if (emblem && emblem.dataset.emblem !== school.emblem) drawEmblem(emblem, school.emblem);
+    emblem?.setAttribute('aria-label', `${school.name} 문양`);
     const seal = document.querySelector('.title-seal');
     if (seal) seal.textContent = school.seal;
     $('hub-wallet').replaceChildren(
@@ -113,6 +114,33 @@
     const stage = STAGES[0];
     $('hub-stage-caption').textContent = `현재 시련 · ${stage.name} — ${stage.summary}`;
     renderStats();
+  }
+
+  // 문양 그리기. 'plum-bloom'은 게임 렌더러가 검법 단계 공격에 쓰는 꽃을 같은 2배 도트로 옮긴다.
+  function drawEmblem(canvas, kind) {
+    canvas.dataset.emblem = kind;
+    const Renderer = window.CheonGameRenderer;
+    if (kind !== 'plum-bloom' || !Renderer) return;
+    const renderer = new Renderer(document.createElement('canvas'));
+    const paint = () => {
+      const stamp = renderer.flatPlumRaster(140, -Math.PI / 2);
+      if (!stamp) return false;
+      const source = stamp.canvas, hub = stamp.displayCenter;
+      const alpha = source.getContext('2d').getImageData(0, 0, source.width, source.height).data;
+      let reach = 0;
+      for (let y = 0; y < source.height; y++) for (let x = 0; x < source.width; x++) {
+        if (alpha[(y * source.width + x) * 4 + 3]) reach = Math.max(reach, Math.abs(x + 0.5 - hub.x), Math.abs(y + 0.5 - hub.y));
+      }
+      // 꽃잎이 모이는 나선 중심을 캔버스 가운데에 둔다(게임에서도 이 점이 몸 중심에 맞는다).
+      const half = Math.ceil(reach) + 2;
+      canvas.width = canvas.height = half * 4;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(source, Math.round((half - hub.x) * 2), Math.round((half - hub.y) * 2), source.width * 2, source.height * 2);
+      renderer.destroy?.();
+      return true;
+    };
+    if (!paint()) renderer.bloomAtlas.addEventListener('load', paint, { once: true });
   }
 
   function renderStats() {

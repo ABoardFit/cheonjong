@@ -40,7 +40,7 @@
 .hub-center { grid-area: center; display: grid; justify-items: center; gap: 12px; }
 .hub-portrait { position: relative; width: 100%; max-width: 440px; height: 430px; display: grid; place-items: center; }
 .hub-portrait .ink-circle { width: 360px; height: 360px; display: grid; place-items: center; }
-.hub-emblem { width: 74%; height: 74%; object-fit: contain; opacity: .2; }
+.hub-emblem { width: 74%; height: 74%; object-fit: contain; opacity: .3; image-rendering: pixelated; }
 .hub-character { position: absolute; inset: 0; min-width: 0; margin: 0; padding: 0; border: 0; background: none; display: block; cursor: pointer; }
 .hub-character .hero-art { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; transition: transform .25s; }
 .hub-character:hover .hero-art, .hub-character:focus-visible .hero-art { transform: translateY(-4px); }

@@ -27,6 +27,9 @@
 .uie-on .uie-tools, .uie-on .uie-align { display: flex; }
 .uie-align { padding-top: 5px; border-top: 1px solid var(--uie-line); }
 .uie-align strong { white-space: nowrap; padding: 0 2px; }
+.uie-align .uie-gap { margin-left: 8px; padding-left: 10px; border-left: 1px solid var(--uie-line); }
+/* Keep reordered parts (z-index, even negative) inside the main screen instead of behind the page. */
+#title-screen { isolation: isolate; }
 .uie-align button { padding: 5px 8px; }
 .uie-align button:disabled { opacity: .4; cursor: default; border-color: var(--uie-line); }
 .uie-ref { color: var(--uie-muted); white-space: nowrap; padding-left: 4px; }
