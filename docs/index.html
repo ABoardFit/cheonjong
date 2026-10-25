@@ -92,8 +92,9 @@
         <div id="category-clusters"></div>
         <div class="map-legend"><span><i class="priority-dot"></i> 우선 개발 6개 세력</span><span>전체 18개 세력</span></div>
       </section>
-      <section id="school-panel" class="school-panel" aria-live="polite" aria-atomic="false"></section>
-      <footer class="page-footer"><span>천종지자 · 무공록</span><span>단계 열람, 실제 습득 아님</span></footer>
+      <!-- 보류: 세력 상세 판과 하단 줄은 스킬 트리 작업 전까지 숨긴다(app.js는 그대로 채움). hidden만 지우면 다시 보인다. -->
+      <section id="school-panel" class="school-panel" aria-live="polite" aria-atomic="false" hidden></section>
+      <footer class="page-footer" hidden><span>천종지자 · 무공록</span><span>단계 열람, 실제 습득 아님</span></footer>
     </section>
     <section id="game-screen" aria-label="천종지자 화산 전투" hidden>
       <canvas id="game-canvas" tabindex="0" aria-label="화산 전장. WASD 또는 방향키로 이동, 스페이스바로 경공. 무공은 자동 공격합니다."></canvas>
