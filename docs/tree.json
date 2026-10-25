@@ -6,66 +6,6 @@
         "육합공 해금"
       ]
     },
-    "namgung:entry": {
-      "x": -1366,
-      "y": -443
-    },
-    "namgung:s0": {
-      "x": -1512,
-      "y": -484
-    },
-    "namgung:f0": {
-      "x": -1579,
-      "y": -522
-    },
-    "namgung:s1": {
-      "x": -1618,
-      "y": -590
-    },
-    "namgung:m0": {
-      "x": -1618,
-      "y": -667
-    },
-    "namgung:s2": {
-      "x": -1579,
-      "y": -735
-    },
-    "namgung:f1": {
-      "x": -1512,
-      "y": -773
-    },
-    "namgung:s3": {
-      "x": -1434,
-      "y": -773
-    },
-    "namgung:m1": {
-      "x": -1367,
-      "y": -735
-    },
-    "namgung:s4": {
-      "x": -1328,
-      "y": -667
-    },
-    "namgung:f2": {
-      "x": -1328,
-      "y": -590
-    },
-    "namgung:s5": {
-      "x": -1367,
-      "y": -522
-    },
-    "namgung:m2": {
-      "x": -1434,
-      "y": -484
-    },
-    "namgung:heart": {
-      "x": -1473,
-      "y": -629
-    },
-    "namgung:bridge": {
-      "x": -1296,
-      "y": -361
-    },
     "hebei:locked": {
       "x": -136,
       "y": -646
@@ -920,6 +860,800 @@
       ],
       "custom": true,
       "faction": "hwasan"
+    },
+    {
+      "id": "custom:ng_heart",
+      "x": -1600,
+      "y": -1150,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "notable",
+      "glyph": "合",
+      "name": "제왕검심",
+      "desc": "육합공의 기운이 모이는 남궁 무학의 중심. 육합공은 화산과 함께 쓰는 심법이며, 남궁에서는 호신 검기를 다룬다.",
+      "effects": [
+        "육합공 6성 해금"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_sword_0",
+      "x": -1600,
+      "y": -1270,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "蒼",
+      "name": "창궁무애검법 해금",
+      "desc": "「일검청천」 一劍靑天 전방의 적을 향해 한 번 찌른다. 캐릭터의 전신 찌르기 동작과 검 끝을 일치시킨다.",
+      "effects": [
+        "창궁무애검법 피해 계수 기본",
+        "피해 횟수 1회 · 전방 찌르기"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_sword_1",
+      "x": -1600,
+      "y": -1377,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "蒼",
+      "name": "창궁무애검법 2단계 해금",
+      "desc": "「검개창궁」 劍開蒼穹 몸 중심에서 전방으로 부채꼴 검격을 펼친다. 찌르기 연출은 횡베기로 대체한다.",
+      "effects": [
+        "창궁무애검법 피해 계수 증가",
+        "피해 횟수 1회 · 부채꼴"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_sword_2",
+      "x": -1600,
+      "y": -1485,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "宮",
+      "name": "남궁 검결",
+      "desc": "남궁 무공의 위력을 끌어올린다.",
+      "effects": [
+        "남궁 스킬 피해 +6%"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_sword_3",
+      "x": -1600,
+      "y": -1592,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "蒼",
+      "name": "창궁무애검법 3단계 해금",
+      "desc": "「창궁만리」 蒼穹萬里 부채꼴 검격의 범위가 넓어진다. 이전 단계의 작은 부채꼴을 따로 겹쳐 그리지 않는다.",
+      "effects": [
+        "창궁무애검법 피해 계수 증가",
+        "피해 횟수 1회 · 넓은 부채꼴"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_sword_4",
+      "x": -1600,
+      "y": -1700,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "蒼",
+      "name": "창궁무애검법 4단계 해금",
+      "desc": "「천뢰관공」 天雷貫空 넓은 부채꼴 검격 위로 한 줄기 번개가 전방을 일직선으로 관통한다.",
+      "effects": [
+        "창궁무애검법 피해 계수 증가",
+        "피해 횟수 2회 · 부채꼴 + 번개 1줄기"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_sword_5",
+      "x": -1600,
+      "y": -1807,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "宮",
+      "name": "남궁 검결",
+      "desc": "남궁 무공의 위력을 끌어올린다.",
+      "effects": [
+        "남궁 스킬 피해 +6%"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_sword_6",
+      "x": -1600,
+      "y": -1915,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "蒼",
+      "name": "창궁무애검법 5단계 해금",
+      "desc": "「삼뢰분천」 三雷分天 넓은 부채꼴 검격과 함께 세 갈래의 번개가 각각 직선으로 뻗는다. 한 줄기 번개를 세 줄기로 강화한다.",
+      "effects": [
+        "창궁무애검법 피해 계수 증가",
+        "피해 횟수 2회 · 부채꼴 + 번개 3줄기"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_sword_7",
+      "x": -1600,
+      "y": -2022,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "蒼",
+      "name": "창궁무애검법 6단계 해금",
+      "desc": "「창궁단악」 蒼穹斷岳 공격 반경 내 가장 먼 적을 향해 길고 굵은 검격을 뻗는다. 부채꼴은 사라지며 이전 검로를 거대한 일격으로 대체한다.",
+      "effects": [
+        "창궁무애검법 피해 계수 증가",
+        "피해 횟수 1회 · 가장 먼 적에게 거대 검격"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_sword_8",
+      "x": -1600,
+      "y": -2130,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "fusion",
+      "glyph": "絶",
+      "name": "뇌제개천",
+      "desc": "절세신공. 창궁대연신공 6성과 조합. 가장 먼 적을 향한 거대한 검격이 지나간 뒤, 바로 그 검로를 따라 굵은 번개가 일직선으로 내려친다. 심법의 강화 효과를 모두 유지한다.",
+      "effects": [
+        "뇌제개천 해금 (절세신공)"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_dayan_0",
+      "x": -1720,
+      "y": -1290,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "衍",
+      "name": "창궁대연신공",
+      "desc": "창궁대연신공 · 해금.",
+      "effects": [
+        "창궁대연신공 해금"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_dayan_1",
+      "x": -1720,
+      "y": -1371,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "衍",
+      "name": "창궁대연신공 1성",
+      "desc": "창궁대연신공 1성. 적 처치 시 획득용 호신 검기를 드랍한다. 보유 검기는 피격 시 고정 피해를 먼저 상쇄한다.",
+      "effects": [
+        "창궁대연신공 1성"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_dayan_2",
+      "x": -1720,
+      "y": -1451,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "衍",
+      "name": "창궁대연신공 2성",
+      "desc": "창궁대연신공 2성. 호신 검기 보유 한계가 증가한다.",
+      "effects": [
+        "창궁대연신공 2성"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_dayan_3",
+      "x": -1720,
+      "y": -1532,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "氣",
+      "name": "운기조식",
+      "desc": "기혈을 다스려 내력을 쌓는다.",
+      "effects": [
+        "내력 +15"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_dayan_4",
+      "x": -1720,
+      "y": -1613,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "衍",
+      "name": "창궁대연신공 3성",
+      "desc": "창궁대연신공 3성. 한 번의 피격에서 추가로 호신 검기 한 개를 더 소모할 수 있다.",
+      "effects": [
+        "창궁대연신공 3성"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_dayan_5",
+      "x": -1720,
+      "y": -1693,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "衍",
+      "name": "창궁대연신공 4성",
+      "desc": "창궁대연신공 4성. 보유한 호신 검기 개수에 비례하여 피해가 증가한다. 검기를 공격 비용으로 소모하지 않는다.",
+      "effects": [
+        "창궁대연신공 4성"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_dayan_6",
+      "x": -1706,
+      "y": -1772,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "氣",
+      "name": "운기조식",
+      "desc": "기혈을 다스려 내력을 쌓는다.",
+      "effects": [
+        "내력 +15"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_dayan_7",
+      "x": -1689,
+      "y": -1851,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "衍",
+      "name": "창궁대연신공 5성",
+      "desc": "창궁대연신공 5성. 검의 직접 공격이 적에게 감전 표식을 남긴다. 표식이 있는 적은 받는 피해가 증가한다. 표식 자체는 별도 지속 피해나 명중을 발생시키지 않는다.",
+      "effects": [
+        "창궁대연신공 5성"
+      ]
+    },
+    {
+      "id": "custom:ng_cangqiong_dayan_8",
+      "x": -1672,
+      "y": -1930,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "衍",
+      "name": "창궁대연신공 6성",
+      "desc": "창궁대연신공 6성. 감전된 적에게 직접 공격이 명중하면 해당 적에게만 추가 낙뢰를 한 번 준다. 광역 피해가 아니며 지속 피해와 추가 낙뢰는 이를 다시 발동하지 않는다.",
+      "effects": [
+        "창궁대연신공 6성"
+      ]
+    },
+    {
+      "id": "custom:ng_thunder_qi_0",
+      "x": -1480,
+      "y": -1290,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "雷",
+      "name": "천뢰기",
+      "desc": "천뢰기 · 해금.",
+      "effects": [
+        "천뢰기 해금"
+      ]
+    },
+    {
+      "id": "custom:ng_thunder_qi_1",
+      "x": -1480,
+      "y": -1371,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "雷",
+      "name": "천뢰기 1성",
+      "desc": "천뢰기 1성. 이동속도가 증가한다.",
+      "effects": [
+        "천뢰기 1성"
+      ]
+    },
+    {
+      "id": "custom:ng_thunder_qi_2",
+      "x": -1480,
+      "y": -1451,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "雷",
+      "name": "천뢰기 2성",
+      "desc": "천뢰기 2성. 도주기 이동 거리가 증가한다.",
+      "effects": [
+        "천뢰기 2성"
+      ]
+    },
+    {
+      "id": "custom:ng_thunder_qi_3",
+      "x": -1480,
+      "y": -1532,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "氣",
+      "name": "운기조식",
+      "desc": "기혈을 다스려 내력을 쌓는다.",
+      "effects": [
+        "내력 +15"
+      ]
+    },
+    {
+      "id": "custom:ng_thunder_qi_4",
+      "x": -1480,
+      "y": -1613,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "雷",
+      "name": "천뢰기 3성",
+      "desc": "천뢰기 3성. 이동속도가 추가로 증가한다.",
+      "effects": [
+        "천뢰기 3성"
+      ]
+    },
+    {
+      "id": "custom:ng_thunder_qi_5",
+      "x": -1480,
+      "y": -1693,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "雷",
+      "name": "천뢰기 4성",
+      "desc": "천뢰기 4성. 도주기의 단일 대상 직접 공격이 강화된다. 단일 공격이 해금되기 전에는 피해를 새로 만들지 않는다.",
+      "effects": [
+        "천뢰기 4성"
+      ]
+    },
+    {
+      "id": "custom:ng_thunder_qi_6",
+      "x": -1494,
+      "y": -1772,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "氣",
+      "name": "운기조식",
+      "desc": "기혈을 다스려 내력을 쌓는다.",
+      "effects": [
+        "내력 +15"
+      ]
+    },
+    {
+      "id": "custom:ng_thunder_qi_7",
+      "x": -1511,
+      "y": -1851,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "雷",
+      "name": "천뢰기 5성",
+      "desc": "천뢰기 5성. 도주기가 남긴 감전 지대 안에서 적이 받는 추가 피해가 증가한다. 감전 지대가 없는 단계에서는 지대를 새로 생성하지 않는다.",
+      "effects": [
+        "천뢰기 5성"
+      ]
+    },
+    {
+      "id": "custom:ng_thunder_qi_8",
+      "x": -1528,
+      "y": -1930,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "雷",
+      "name": "천뢰기 6성",
+      "desc": "천뢰기 6성. 도주기의 직접 공격에 맞은 적이 호신 검기를 드랍한다. 감전 지대와 지속 피해는 드랍을 발동하지 않는다.",
+      "effects": [
+        "천뢰기 6성"
+      ]
+    },
+    {
+      "id": "custom:ng_emperor_sword_0",
+      "x": -1695,
+      "y": -1195,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "帝",
+      "name": "제왕검형 해금",
+      "desc": "「일검진압」 一劍鎭壓 가장 가까운 적 한 명에게 검 한 자루가 부착되어 계속 공격한다. 지속 피해를 주며, 대상이 사망하면 해당 검은 사라진다.",
+      "effects": [
+        "제왕검형 피해 계수 기본",
+        "지속 피해 · 부착 검 최대 1자루"
+      ]
+    },
+    {
+      "id": "custom:ng_emperor_sword_1",
+      "x": -1794,
+      "y": -1195,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "帝",
+      "name": "제왕검형 2단계 해금",
+      "desc": "「삼검분위」 三劍分威 서로 다른 가까운 적 최대 세 명에게 검을 하나씩 부착한다. 적이 한 명이면 검도 하나만 생긴다.",
+      "effects": [
+        "제왕검형 피해 계수 증가",
+        "지속 피해 · 부착 검 최대 3자루"
+      ]
+    },
+    {
+      "id": "custom:ng_emperor_sword_2",
+      "x": -1892,
+      "y": -1195,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "宮",
+      "name": "남궁 검결",
+      "desc": "남궁 무공의 위력을 끌어올린다.",
+      "effects": [
+        "남궁 스킬 피해 +6%"
+      ]
+    },
+    {
+      "id": "custom:ng_emperor_sword_3",
+      "x": -1991,
+      "y": -1195,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "帝",
+      "name": "제왕검형 3단계 해금",
+      "desc": "「제왕검위」 帝王劍威 최대 세 자루의 부착 검을 유지하며 각 검의 지속 피해가 증가한다.",
+      "effects": [
+        "제왕검형 피해 계수 증가",
+        "부착 검 지속 피해 증가"
+      ]
+    },
+    {
+      "id": "custom:ng_emperor_sword_4",
+      "x": -2070,
+      "y": -1140,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "帝",
+      "name": "제왕검형 4단계 해금",
+      "desc": "「팔검군림」 八劍君臨 강화된 검이 최대 여덟 자루로 증가한다. 서로 다른 주변 적에게 한 자루씩 부착하며 적 수를 초과해 생성하지 않는다.",
+      "effects": [
+        "제왕검형 피해 계수 증가",
+        "지속 피해 · 부착 검 최대 8자루"
+      ]
+    },
+    {
+      "id": "custom:ng_emperor_sword_5",
+      "x": -1991,
+      "y": -1085,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "宮",
+      "name": "남궁 검결",
+      "desc": "남궁 무공의 위력을 끌어올린다.",
+      "effects": [
+        "남궁 스킬 피해 +6%"
+      ]
+    },
+    {
+      "id": "custom:ng_emperor_sword_6",
+      "x": -1892,
+      "y": -1085,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "帝",
+      "name": "제왕검형 5단계 해금",
+      "desc": "「검위진역」 劍威震域 최대 여덟 자루의 부착 검이 대상뿐 아니라 그 주위의 적에게도 지속 피해를 준다.",
+      "effects": [
+        "제왕검형 피해 계수 증가",
+        "대상 주위 적에게도 지속 피해"
+      ]
+    },
+    {
+      "id": "custom:ng_emperor_sword_7",
+      "x": -1794,
+      "y": -1085,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "帝",
+      "name": "제왕검형 6단계 해금",
+      "desc": "「팔검회천」 八劍廻天 적 부착을 대체하여 최대 여덟 자루의 검이 서로 다른 표적 방향으로 반경 끝까지 날아갔다 돌아온다. 왕복 중 직접 피해와 주변 피해를 주며 같은 적에게 여러 검을 배정하지 않는다.",
+      "effects": [
+        "제왕검형 피해 계수 증가",
+        "왕복 검 직접 피해 + 주변 피해 · 최대 8자루"
+      ]
+    },
+    {
+      "id": "custom:ng_emperor_sword_8",
+      "x": -1695,
+      "y": -1085,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "fusion",
+      "glyph": "絶",
+      "name": "제왕천림",
+      "desc": "절세신공. 육합공 6성과 조합. 여덟 검을 한 자루로 응축하여 큰 매화꽃만 한 거대한 검이 유성처럼 떨어진다. 원거리 적을 우선 겨냥하며 주변 피해를 계승한다. 부착과 왕복 연출은 사라지고 육합공 1~6성은 유지한다.",
+      "effects": [
+        "제왕천림 해금 (절세신공)"
+      ]
+    },
+    {
+      "id": "custom:ng_infinite_step_0",
+      "x": -1505,
+      "y": -1195,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "無",
+      "name": "무한보 해금",
+      "desc": "「천풍보」 天風步 이동속도가 증가한다. 기존 도주기를 함께 사용하며 별도의 도주기를 만들지 않는다.",
+      "effects": [
+        "이동 속도 증가"
+      ]
+    },
+    {
+      "id": "custom:ng_infinite_step_1",
+      "x": -1406,
+      "y": -1195,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "無",
+      "name": "무한보 2단계 해금",
+      "desc": "「축지보」 縮地步 이동속도 강화를 유지하고 도주기 이동 거리가 증가한다.",
+      "effects": [
+        "도주기 이동 거리 증가"
+      ]
+    },
+    {
+      "id": "custom:ng_infinite_step_2",
+      "x": -1308,
+      "y": -1195,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "宮",
+      "name": "남궁 검결",
+      "desc": "남궁 무공의 위력을 끌어올린다.",
+      "effects": [
+        "남궁 스킬 피해 +6%"
+      ]
+    },
+    {
+      "id": "custom:ng_infinite_step_3",
+      "x": -1209,
+      "y": -1195,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "無",
+      "name": "무한보 3단계 해금",
+      "desc": "「천뢰잔흔」 天雷殘痕 도주 경로에 3초간 감전 지대를 남긴다. 그 위의 적은 받는 피해가 증가한다. 감전 지대 자체는 별도 명중이나 지속 피해를 발생시키지 않는다.",
+      "effects": [
+        "감전 지대 · 적이 받는 피해 증가"
+      ]
+    },
+    {
+      "id": "custom:ng_infinite_step_4",
+      "x": -1130,
+      "y": -1140,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "無",
+      "name": "무한보 4단계 해금",
+      "desc": "「축지일검」 縮地一劍 감전 지대를 유지하며 도주기 사용 시 가까운 적 한 명에게 강력한 단일 직접 피해를 준다.",
+      "effects": [
+        "무한보 피해 계수 기본",
+        "피해 횟수 1회 · 가까운 적 한 명"
+      ]
+    },
+    {
+      "id": "custom:ng_infinite_step_5",
+      "x": -1209,
+      "y": -1085,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "宮",
+      "name": "남궁 검결",
+      "desc": "남궁 무공의 위력을 끌어올린다.",
+      "effects": [
+        "남궁 스킬 피해 +6%"
+      ]
+    },
+    {
+      "id": "custom:ng_infinite_step_6",
+      "x": -1308,
+      "y": -1085,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "無",
+      "name": "무한보 5단계 해금",
+      "desc": "「천뢰진역」 天雷震域 도주 경로의 감전 지대가 넓어진다. 가까운 적 한 명을 공격하는 축지일검도 유지한다.",
+      "effects": [
+        "감전 지대 범위 증가"
+      ]
+    },
+    {
+      "id": "custom:ng_infinite_step_7",
+      "x": -1406,
+      "y": -1085,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "skill",
+      "glyph": "無",
+      "name": "무한보 6단계 해금",
+      "desc": "「일섬관뢰」 一閃貫雷 넓은 감전 지대를 유지하고 단일 대상 공격을 더욱 강화한다.",
+      "effects": [
+        "무한보 피해 계수 증가",
+        "단일 대상 공격 강화"
+      ]
+    },
+    {
+      "id": "custom:ng_infinite_step_8",
+      "x": -1505,
+      "y": -1085,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "fusion",
+      "glyph": "絶",
+      "name": "천뢰무극보",
+      "desc": "절세신공. 천뢰기 6성과 조합. 넓은 감전 지대를 남기며 근처 적 한 명에게 응축된 천뢰의 일격을 가한다. 도주기·심법의 모든 강화와 호신 검기 드랍을 유지한다. 무적은 부여하지 않는다.",
+      "effects": [
+        "천뢰무극보 해금 (절세신공)"
+      ]
+    },
+    {
+      "id": "custom:ng_grip",
+      "x": -1600,
+      "y": -960,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "合",
+      "name": "육합 검기",
+      "desc": "육합공의 기운이 호신 검기를 맺는다.",
+      "effects": [
+        "육합공이 호신 검기를 드랍"
+      ]
+    },
+    {
+      "id": "custom:ng_pommel",
+      "x": -1600,
+      "y": -820,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "力",
+      "name": "검세 단련",
+      "desc": "남궁으로 가는 수련의 길.",
+      "effects": [
+        "공격력 +1"
+      ]
+    },
+    {
+      "id": "custom:ng_stem_0",
+      "x": -1423,
+      "y": -558,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "體",
+      "name": "체력 단련",
+      "desc": "남궁으로 가는 수련의 길.",
+      "effects": [
+        "체력 +5"
+      ]
+    },
+    {
+      "id": "custom:ng_stem_1",
+      "x": -1175,
+      "y": -391,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "輕",
+      "name": "경신 수련",
+      "desc": "남궁으로 가는 수련의 길.",
+      "effects": [
+        "이동 속도 +1%"
+      ]
+    },
+    {
+      "id": "custom:ng_stem_2",
+      "x": -876,
+      "y": -290,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "力",
+      "name": "검세 단련",
+      "desc": "남궁으로 가는 수련의 길.",
+      "effects": [
+        "공격력 +1"
+      ]
+    },
+    {
+      "id": "custom:ng_stem_3",
+      "x": -570,
+      "y": -237,
+      "category": "righteous",
+      "faction": "namgung",
+      "custom": true,
+      "kind": "minor",
+      "glyph": "體",
+      "name": "체력 단련",
+      "desc": "남궁으로 가는 수련의 길.",
+      "effects": [
+        "체력 +5"
+      ]
     }
   ],
   "removed": [
@@ -937,7 +1671,22 @@
     "hwasan:s5",
     "hwasan:m2",
     "hwasan:heart",
-    "hwasan:bridge"
+    "hwasan:bridge",
+    "namgung:entry",
+    "namgung:s0",
+    "namgung:f0",
+    "namgung:s1",
+    "namgung:m0",
+    "namgung:s2",
+    "namgung:f1",
+    "namgung:s3",
+    "namgung:m1",
+    "namgung:s4",
+    "namgung:f2",
+    "namgung:s5",
+    "namgung:m2",
+    "namgung:heart",
+    "namgung:bridge"
   ],
   "links": {
     "add": [
@@ -1164,6 +1913,214 @@
       [
         "custom:mvnxebd9",
         "custom:mvny8bxx"
+      ],
+      [
+        "custom:ng_heart",
+        "custom:ng_cangqiong_sword_0"
+      ],
+      [
+        "custom:ng_cangqiong_sword_0",
+        "custom:ng_cangqiong_sword_1"
+      ],
+      [
+        "custom:ng_cangqiong_sword_1",
+        "custom:ng_cangqiong_sword_2"
+      ],
+      [
+        "custom:ng_cangqiong_sword_2",
+        "custom:ng_cangqiong_sword_3"
+      ],
+      [
+        "custom:ng_cangqiong_sword_3",
+        "custom:ng_cangqiong_sword_4"
+      ],
+      [
+        "custom:ng_cangqiong_sword_4",
+        "custom:ng_cangqiong_sword_5"
+      ],
+      [
+        "custom:ng_cangqiong_sword_5",
+        "custom:ng_cangqiong_sword_6"
+      ],
+      [
+        "custom:ng_cangqiong_sword_6",
+        "custom:ng_cangqiong_sword_7"
+      ],
+      [
+        "custom:ng_cangqiong_sword_7",
+        "custom:ng_cangqiong_sword_8"
+      ],
+      [
+        "custom:ng_heart",
+        "custom:ng_cangqiong_dayan_0"
+      ],
+      [
+        "custom:ng_cangqiong_dayan_0",
+        "custom:ng_cangqiong_dayan_1"
+      ],
+      [
+        "custom:ng_cangqiong_dayan_1",
+        "custom:ng_cangqiong_dayan_2"
+      ],
+      [
+        "custom:ng_cangqiong_dayan_2",
+        "custom:ng_cangqiong_dayan_3"
+      ],
+      [
+        "custom:ng_cangqiong_dayan_3",
+        "custom:ng_cangqiong_dayan_4"
+      ],
+      [
+        "custom:ng_cangqiong_dayan_4",
+        "custom:ng_cangqiong_dayan_5"
+      ],
+      [
+        "custom:ng_cangqiong_dayan_5",
+        "custom:ng_cangqiong_dayan_6"
+      ],
+      [
+        "custom:ng_cangqiong_dayan_6",
+        "custom:ng_cangqiong_dayan_7"
+      ],
+      [
+        "custom:ng_cangqiong_dayan_7",
+        "custom:ng_cangqiong_dayan_8"
+      ],
+      [
+        "custom:ng_heart",
+        "custom:ng_thunder_qi_0"
+      ],
+      [
+        "custom:ng_thunder_qi_0",
+        "custom:ng_thunder_qi_1"
+      ],
+      [
+        "custom:ng_thunder_qi_1",
+        "custom:ng_thunder_qi_2"
+      ],
+      [
+        "custom:ng_thunder_qi_2",
+        "custom:ng_thunder_qi_3"
+      ],
+      [
+        "custom:ng_thunder_qi_3",
+        "custom:ng_thunder_qi_4"
+      ],
+      [
+        "custom:ng_thunder_qi_4",
+        "custom:ng_thunder_qi_5"
+      ],
+      [
+        "custom:ng_thunder_qi_5",
+        "custom:ng_thunder_qi_6"
+      ],
+      [
+        "custom:ng_thunder_qi_6",
+        "custom:ng_thunder_qi_7"
+      ],
+      [
+        "custom:ng_thunder_qi_7",
+        "custom:ng_thunder_qi_8"
+      ],
+      [
+        "custom:ng_heart",
+        "custom:ng_emperor_sword_0"
+      ],
+      [
+        "custom:ng_emperor_sword_0",
+        "custom:ng_emperor_sword_1"
+      ],
+      [
+        "custom:ng_emperor_sword_1",
+        "custom:ng_emperor_sword_2"
+      ],
+      [
+        "custom:ng_emperor_sword_2",
+        "custom:ng_emperor_sword_3"
+      ],
+      [
+        "custom:ng_emperor_sword_3",
+        "custom:ng_emperor_sword_4"
+      ],
+      [
+        "custom:ng_emperor_sword_4",
+        "custom:ng_emperor_sword_5"
+      ],
+      [
+        "custom:ng_emperor_sword_5",
+        "custom:ng_emperor_sword_6"
+      ],
+      [
+        "custom:ng_emperor_sword_6",
+        "custom:ng_emperor_sword_7"
+      ],
+      [
+        "custom:ng_emperor_sword_7",
+        "custom:ng_emperor_sword_8"
+      ],
+      [
+        "custom:ng_heart",
+        "custom:ng_infinite_step_0"
+      ],
+      [
+        "custom:ng_infinite_step_0",
+        "custom:ng_infinite_step_1"
+      ],
+      [
+        "custom:ng_infinite_step_1",
+        "custom:ng_infinite_step_2"
+      ],
+      [
+        "custom:ng_infinite_step_2",
+        "custom:ng_infinite_step_3"
+      ],
+      [
+        "custom:ng_infinite_step_3",
+        "custom:ng_infinite_step_4"
+      ],
+      [
+        "custom:ng_infinite_step_4",
+        "custom:ng_infinite_step_5"
+      ],
+      [
+        "custom:ng_infinite_step_5",
+        "custom:ng_infinite_step_6"
+      ],
+      [
+        "custom:ng_infinite_step_6",
+        "custom:ng_infinite_step_7"
+      ],
+      [
+        "custom:ng_infinite_step_7",
+        "custom:ng_infinite_step_8"
+      ],
+      [
+        "custom:ng_heart",
+        "custom:ng_grip"
+      ],
+      [
+        "custom:ng_grip",
+        "custom:ng_pommel"
+      ],
+      [
+        "custom:ng_pommel",
+        "custom:ng_stem_0"
+      ],
+      [
+        "custom:ng_stem_0",
+        "custom:ng_stem_1"
+      ],
+      [
+        "custom:ng_stem_1",
+        "custom:ng_stem_2"
+      ],
+      [
+        "custom:ng_stem_2",
+        "custom:ng_stem_3"
+      ],
+      [
+        "custom:ng_stem_3",
+        "righteous:gate"
       ]
     ],
     "remove": [
@@ -1238,12 +2195,8 @@
       [
         "hwasan:bridge",
         "hwasan:entry"
-      ],
-      [
-        "namgung:bridge",
-        "righteous:gate"
       ]
     ]
   },
-  "savedAt": "2026-10-25T16:34:50.218Z"
+  "savedAt": "2026-10-25T17:39:24.207Z"
 }

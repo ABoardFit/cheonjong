@@ -405,7 +405,8 @@
       const members = heart ? [heart] : [...nodes.values()].filter(n => n.faction === label.faction);
       text.style.display = members.length ? '' : 'none';
       if (!members.length) continue;
-      const x = heart ? heart.x + label.ox : members.reduce((sum, n) => sum + n.x, 0) / members.length;
+      const core = members.filter(n => n.kind === 'notable');
+      const x = heart ? heart.x + label.ox : (core.length ? core : members).reduce((sum, n) => sum + n.x, 0) / (core.length || members.length);
       const y = heart ? heart.y + label.oy : Math.min(...members.map(n => n.y)) - 60;
       text.setAttribute('x', Math.round(x));
       text.setAttribute('y', Math.round(y));
