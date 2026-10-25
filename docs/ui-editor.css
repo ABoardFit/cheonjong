@@ -125,3 +125,6 @@ html.uie-loading #app { visibility: hidden; }
 @media (max-width: 700px) {
   .uie-panel { left: 8px; right: 8px; bottom: 8px; width: auto; max-height: 48dvh; }
 }
+
+/* In the 무공록 view the portrait normally lets presses through to the tree; while editing it can be picked. */
+.uie-on .hub--tree .hub-portrait { pointer-events: auto; }

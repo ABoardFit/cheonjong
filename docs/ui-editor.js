@@ -9,6 +9,7 @@
   // While the 무공록 tree is open the main screen's parts are pushed off screen; this tool then works on the
   // tree's own panels (top bar, effect totals, search, legend). The tree itself belongs to the 무공록 tool.
   const tree = window.CheonTree;
+  const PORTRAIT_PARTS = new Set(['#title-screen .hub-portrait', '#title-screen .ink-circle', '#title-screen .hub-emblem', '#hub-character', '#title-screen .title-seal']);
   if (tree?.ui && !tree.ui.id) tree.ui.id = 'tree-ui';
   const DRAFT = 'cheonjong-ui-draft-v3', MEMOS = 'cheonjong-ui-memo-v3', TOKEN = 'cheonjong-ui-token';
   const REPO = 'ABoardFit/cheonjong', LAYOUT_PATH = 'docs/layout.json';
@@ -125,6 +126,8 @@
   const carriers = new Map();      // part → the box its stacking order is set on
 
   const screenEl = id => document.getElementById(id);
+  // The active screen plus, while the tree is open, the character portrait at its centre.
+  const inActive = (el, active = activeScreen()) => Boolean(el && active && (active.contains(el) || (tree?.isOpen && document.querySelector('.hub-portrait')?.contains(el))));
   const activeScreen = () => (tree?.isOpen && screenEl('tree-ui')) || SCREENS.map(screenEl).find(el => el && !el.hidden) || null;
   const movable = item => !item.fixed;
   const single = () => (selection.length === 1 ? selection[0] : null);
@@ -269,9 +272,17 @@
     carriers.clear();
     items = [];
     const title = screenEl('title-screen');
+    const treeOpen = Boolean(tree?.isOpen);
     for (const [selector, defaultName, kind, options = {}] of TITLE_PARTS) {
       const el = document.querySelector(selector);
-      if (el) register({ key: selector, el, defaultName, kind: `메인 · ${kind}`, selector, screen: 'title-screen', ...options });
+      if (!el) continue;
+      // In the 무공록 view the character, emblem, ink circle and seal sit at the tree centre: they get their
+      // own edits ("tree|" keys) so the hub layout is not touched; the character area itself follows the tree.
+      if (treeOpen && PORTRAIT_PARTS.has(selector)) {
+        const area = selector.endsWith('.hub-portrait');
+        // The area keeps its hub key so a hub move still applies (the tree measured it that way); here it only takes a name or memo.
+        register({ key: area ? selector : `tree|${selector}`, el, defaultName: `무공록 ${defaultName}`, kind: `무공록 · ${kind}`, selector, screen: 'tree-ui', ...options, ...(area ? { fixed: true, container: false } : {}) });
+      } else register({ key: selector, el, defaultName, kind: `메인 · ${kind}`, selector, screen: 'title-screen', ...options });
     }
     for (const id of [...SCREENS, 'tree-ui']) {
       const root = screenEl(id);
@@ -450,9 +461,11 @@
   const topLevel = list => list.filter(item => movable(item) && !list.some(other => other !== item && movable(other) && !ungrouped(other) && other.el.contains(item.el)));
 
   // Moves a part so its box lands at (x, y) on screen.
+  // How much the part's own pixels are shrunk or grown on screen by its ancestors (the tree-centre portrait is scaled).
+  const scaleOf = el => { const p = el.parentElement; return p && p.offsetWidth ? (p.getBoundingClientRect().width / p.offsetWidth) || 1 : 1; };
   function moveTo(item, x, y) {
-    const rect = item.el.getBoundingClientRect(), e = edit(item);
-    const dx = Math.round((e.dx || 0) + x - rect.left), dy = Math.round((e.dy || 0) + y - rect.top);
+    const rect = item.el.getBoundingClientRect(), e = edit(item), k = scaleOf(item.el);
+    const dx = Math.round((e.dx || 0) + (x - rect.left) / k), dy = Math.round((e.dy || 0) + (y - rect.top) / k);
     if (dx) e.dx = dx; else delete e.dx;
     if (dy) e.dy = dy; else delete e.dy;
     apply(item);
@@ -628,7 +641,7 @@
     layer.hidden = !active;
     const shown = new Set();
     for (const item of items) {
-      if (!active || !active.contains(item.el) || ungrouped(item) || !showTags || item.el.closest('[inert]')) continue;
+      if (!active || !inActive(item.el, active) || ungrouped(item) || !showTags || item.el.closest('[inert]')) continue;
       const rect = item.el.getBoundingClientRect();
       if (!(rect.width > 0 && rect.height > 0)) continue;
       let tag = tags.get(item.key);
@@ -689,7 +702,7 @@
     const moving = topLevel(selection);
     if (!moving.length) return;
     drag = { mode: 'move', x: event.clientX, y: event.clientY, moved: false,
-      start: moving.map(part => [part, edit(part).dx || 0, edit(part).dy || 0]) };
+      start: moving.map(part => [part, edit(part).dx || 0, edit(part).dy || 0, scaleOf(part.el)]) };
   }
 
   // fromScreen: pressed on the page itself (may start a drag); tags only select.
@@ -729,7 +742,7 @@
     // A shape inside a drawing is taken as the whole drawing (its outermost <svg>).
     let el = target;
     while (el && el.ownerSVGElement) el = el.ownerSVGElement;
-    if (!el || !active || el === active || !active.contains(el) || el.closest('.uie-added')) return null;
+    if (!el || !active || el === active || !inActive(el, active) || el.closest('.uie-added')) return null;
     const holder = itemFrom(el);
     if (holder && holder.el !== el && !holder.fixed && !holder.container) return null;
     if (holder && holder.el === el) return null;
@@ -759,7 +772,7 @@
   document.addEventListener('pointerdown', event => {
     if (!editing || event.button !== 0) return;
     const active = activeScreen();
-    if (!active || !active.contains(event.target)) return;
+    if (!active || !inActive(event.target, active)) return;
     const pressed = pressedElement(event.target);
     const item = pressed ? adopt(pressed) : itemFrom(event.target);
     if (!item) return;
@@ -774,7 +787,8 @@
     event.preventDefault();
     event.stopPropagation();
     const rect = item.el.getBoundingClientRect();
-    drag = { mode: 'size', item, x: event.clientX, y: event.clientY, w: rect.width, h: rect.height, moved: false, shift: event.shiftKey,
+    const k = scaleOf(item.el);
+    drag = { mode: 'size', item, x: event.clientX, y: event.clientY, w: rect.width / k, h: rect.height / k, k, moved: false, shift: event.shiftKey,
       fs: item.slot ? parseFloat(getComputedStyle(item.el).fontSize) : 0 };
   });
 
@@ -805,18 +819,18 @@
     if (!drag.moved && drag.mode !== 'marquee') mark();
     drag.moved = true;
     if (drag.mode === 'move') {
-      for (const [item, dx, dy] of drag.start) {
+      for (const [item, dx, dy, k] of drag.start) {
         const e = edit(item);
-        e.dx = Math.round(dx + mx);
-        e.dy = Math.round(dy + my);
+        e.dx = Math.round(dx + mx / k);
+        e.dy = Math.round(dy + my / k);
         apply(item);
       }
     } else if (drag.mode === 'size') {
       const e = edit(drag.item);
-      let w = drag.w + mx, height = drag.h + my;
+      let w = drag.w + mx / drag.k, height = drag.h + my / drag.k;
       if (event.shiftKey || shiftHeld || drag.shift) {
         // Same ratio: the box (and its lettering) scale together.
-        const k = Math.max(0.05, Math.abs(mx / drag.w) > Math.abs(my / drag.h) ? w / drag.w : height / drag.h);
+        const k = Math.max(0.05, Math.abs(mx / drag.k / drag.w) > Math.abs(my / drag.k / drag.h) ? w / drag.w : height / drag.h);
         w = drag.w * k;
         height = drag.h * k;
         if (drag.fs) e.fs = Math.max(6, Math.round(drag.fs * k * 10) / 10);
@@ -844,7 +858,7 @@
         const box = marqueeRect(event), active = activeScreen();
         // Parts touched by the box are picked; grouping areas only when the box covers them whole.
         const hits = items.filter(item => {
-          if (!movable(item) || ungrouped(item) || !active?.contains(item.el)) return false;
+          if (!movable(item) || ungrouped(item) || !inActive(item.el, active)) return false;
           const rect = item.el.getBoundingClientRect();
           if (!(rect.width > 0 && rect.height > 0)) return false;
           if (item.container) return rect.left >= box.left && rect.right <= box.right && rect.top >= box.top && rect.bottom <= box.bottom;
@@ -859,10 +873,10 @@
   // In edit mode the page's own buttons, canvas and images must not react.
   for (const type of ['click', 'dblclick', 'contextmenu']) {
     document.addEventListener(type, event => {
-      if (editing && activeScreen()?.contains(event.target)) { event.preventDefault(); event.stopPropagation(); }
+      if (editing && inActive(event.target)) { event.preventDefault(); event.stopPropagation(); }
     }, true);
   }
-  document.addEventListener('dragstart', event => { if (editing && activeScreen()?.contains(event.target)) event.preventDefault(); }, true);
+  document.addEventListener('dragstart', event => { if (editing && inActive(event.target)) event.preventDefault(); }, true);
 
   const typing = target => target.closest?.('input, textarea, select, [contenteditable], .uie-modal');
   window.addEventListener('keydown', event => {
