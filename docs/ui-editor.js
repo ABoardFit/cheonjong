@@ -129,12 +129,14 @@
   // ---- toolbar, overlay and inspector ----
   const toggle = h('button', { type: 'button', class: 'uie-toggle', title: '메인 화면 수정 도구 (이 브라우저에만 저장)', onclick: () => setEditing(!editing) });
   const tagToggle = h('input', { type: 'checkbox', checked: true, onchange: () => { showTags = tagToggle.checked; } });
+  const regroupButton = h('button', { type: 'button', hidden: true, title: '해제한 묶음을 모두 다시 묶음 (안의 요소 위치는 그대로)', onclick: () => regroupAll() });
   const tools = h('div', { class: 'uie-tools' },
     h('button', { type: 'button', onclick: () => add('button') }, '+ 버튼'),
     h('button', { type: 'button', onclick: () => add('text') }, '+ 글'),
     h('button', { type: 'button', onclick: () => add('box') }, '+ 영역'),
     h('label', { class: 'uie-check' }, tagToggle, '이름표'),
     h('button', { type: 'button', onclick: openRequest }, '요청서 복사'),
+    regroupButton,
     h('button', { type: 'button', class: 'uie-danger', onclick: resetAll }, '전체 초기화'));
   const ALIGN = [
     ['left', '⇤ 좌측'], ['hcenter', '↔ 가로 중앙'], ['right', '⇥ 우측'],
@@ -270,7 +272,44 @@
     syncPanelNumbers();
   }
 
+  // ---- grouping areas: 묶음 해제 lets the parts inside stand on their own ----
+  const ungrouped = item => Boolean(item.container && edit(item).ungrouped);
+  // Registered parts whose nearest registered holder is this area.
+  function members(group) {
+    return items.filter(item => {
+      if (item === group || !group.el.contains(item.el)) return false;
+      let el = item.el.parentElement;
+      while (el && el !== group.el) {
+        if (items.some(other => other.el === el)) return false;
+        el = el.parentElement;
+      }
+      return true;
+    });
+  }
+  function ungroup(group) {
+    const parts = members(group), g = edit(group);
+    // The area's own move goes to each part, so nothing jumps when the area stops counting.
+    for (const part of parts) {
+      const e = edit(part);
+      if (g.dx) e.dx = (e.dx || 0) + g.dx;
+      if (g.dy) e.dy = (e.dy || 0) + g.dy;
+    }
+    delete g.dx; delete g.dy; delete g.z;
+    g.ungrouped = true;
+    [group, ...parts].forEach(apply);
+    save();
+    setSelection(parts.filter(movable));
+  }
+  function regroupAll() {
+    for (const item of items) if (ungrouped(item)) delete edit(item).ungrouped;
+    save();
+    renderAlign();
+  }
+
   function renderAlign() {
+    const loose = items.filter(ungrouped).length;
+    regroupButton.hidden = !loose;
+    regroupButton.textContent = `묶음 다시 묶기 (${loose})`;
     const ready = alignTargets().length > 0;
     alignButtons.forEach(button => { button.disabled = !ready; });
     orderButtons.forEach(button => { button.disabled = !selection.some(movable); });
@@ -316,6 +355,7 @@
         number('너비', 'w'), number('높이', 'h'), number('겹침 순서', 'z')),
       h('div', { class: 'uie-actions' }, ...[
         item.added && h('button', { type: 'button', class: 'uie-danger', onclick: () => remove(item) }, '삭제'),
+        item.container && members(item).length > 0 && h('button', { type: 'button', title: 'Ctrl+Shift+G', onclick: () => ungroup(item) }, '묶음 해제'),
         !item.added && !item.fixed && h('button', { type: 'button', onclick: () => { set(item, 'hidden', !e.hidden); renderPanel(); } }, e.hidden ? '보이기' : '숨기기'),
         h('button', { type: 'button', onclick: () => resetPart(item) }, '원래대로'),
       ].filter(Boolean)),
@@ -349,7 +389,7 @@
         layer.append(tag);
       }
       const rect = item.el.getBoundingClientRect();
-      const visible = showTags && !screen.hidden && rect.width + rect.height > 0;
+      const visible = showTags && !screen.hidden && rect.width + rect.height > 0 && !ungrouped(item);
       tag.hidden = !visible;
       if (!visible) continue;
       const label = item === keyItem ? `★ ${nameOf(item)}` : nameOf(item);
@@ -379,9 +419,15 @@
   }
 
   // ---- pointer: select, Shift/Alt modifiers, drag to move, marquee to select many, handle to resize ----
+  // The part under the pointer; an ungrouped area is skipped so the press falls to what holds it.
   const itemFrom = target => {
-    const el = target.closest && target.closest('[data-uie]');
-    return el && screen.contains(el) ? items.find(item => item.el === el) : null;
+    let el = target.closest && target.closest('[data-uie]');
+    while (el && screen.contains(el)) {
+      const item = items.find(other => other.el === el);
+      if (item && !ungrouped(item)) return item;
+      el = el.parentElement && el.parentElement.closest('[data-uie]');
+    }
+    return null;
   };
 
   // fromScreen: pressed on the part itself (may start a drag); tags only select.
@@ -490,7 +536,7 @@
         // Parts touched by the box are picked, so parts running off screen or under others can be caught;
         // grouping areas only when the box covers them whole, or every drag would grab its area too.
         const hits = items.filter(item => {
-          if (!movable(item)) return false;
+          if (!movable(item) || ungrouped(item)) return false;
           const rect = item.el.getBoundingClientRect();
           if (!(rect.width + rect.height > 0)) return false;
           if (item.container) return rect.left >= area.left && rect.right <= area.right && rect.top >= area.top && rect.bottom <= area.bottom;
@@ -513,6 +559,13 @@
   window.addEventListener('keydown', event => {
     if (!editing || screen.hidden || !selection.length || typing(event.target)) return;
     if (event.key === 'Escape') { event.stopImmediatePropagation(); setSelection([]); return; }
+    const group = single();
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.code === 'KeyG' && group?.container && members(group).length) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      ungroup(group);
+      return;
+    }
     const step = event.shiftKey ? 10 : 1;
     const move = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[event.key];
     if (!move) return;
@@ -546,6 +599,7 @@
     if (e.w || e.h) lines.push(`크기: ${e.w ? `너비 ${e.w}px` : ''}${e.w && e.h ? ', ' : ''}${e.h ? `높이 ${e.h}px` : ''}`);
     if (e.fs) lines.push(`글자 크기: ${e.fs}px`);
     if (Number.isFinite(e.z)) lines.push(`겹침 순서: ${e.z} (${e.z < 0 ? '다른 요소 뒤로 가려짐' : '다른 요소 앞으로'})`);
+    if (e.ungrouped) lines.push('묶음 해제: 안의 요소를 이 묶음에서 빼서 따로 배치');
     if (e.hidden) lines.push('숨김(없애기)');
     if (e.memo) lines.push(`요청: ${e.memo}`);
     return lines;
