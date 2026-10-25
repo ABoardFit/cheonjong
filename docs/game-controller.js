@@ -231,8 +231,8 @@
     if (now >= nextHud) { updateHud(); nextHud = now + 100; }
   }
 
-  // The hub's stage select calls this; 출전 itself opens that select (hub.js).
-  window.CheonBattle = { start: startBattle };
+  // The hub's stage select calls start; 출전 itself opens that select (hub.js). The page edit tool pauses a running fight.
+  window.CheonBattle = { start: startBattle, pause: showPause };
   $('battle-pause').addEventListener('click', showPause);
   $('battle-stats').addEventListener('click', showStats);
   $('battle-codex').addEventListener('click', showCodex);

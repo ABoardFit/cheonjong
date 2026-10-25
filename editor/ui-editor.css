@@ -1,4 +1,22 @@
-/* Main-screen UI edit tool (editor/ui-editor.js). */
+/* Page edit tool (editor/ui-editor.js). */
+html.uie-loading #app { visibility: hidden; }
+/* Closed: a small tab on the left edge, clear of every screen's own controls. */
+.uie-tab {
+  position: fixed; left: 0; top: 50%; z-index: 50; transform: translateY(-50%); writing-mode: vertical-rl;
+  margin: 0; min-width: 0; padding: 10px 5px; border: 1px solid #c9c6b9; border-left: 0; border-radius: 0 6px 6px 0;
+  background: #f6f3eae6; color: #1f2420; font: 12px/1 system-ui, sans-serif; letter-spacing: .1em; cursor: pointer; opacity: .75;
+}
+.uie-tab:hover { opacity: 1; }
+.uie-tab[hidden] { display: none; }
+.uie-primary { background: #b0344a !important; border-color: #b0344a !important; color: #fff !important; }
+.uie-primary:disabled { opacity: .6; }
+.uie-link { border: 0 !important; background: none !important; padding: 0 !important; color: #6c7068 !important; text-decoration: underline; justify-self: start; }
+.uie-lead { margin: 0; }
+.uie-key { display: grid; gap: 6px; }
+.uie-key label { display: grid; gap: 4px; color: #6c7068; }
+.uie-key input { font: 13px system-ui, sans-serif; padding: 7px 8px; border: 1px solid #c9c6b9; }
+.uie-key a { color: #b0344a; }
+.uie-tools button:disabled { opacity: .4; cursor: default; }
 :root {
   --uie-ink: #1f2420;
   --uie-paper: #f6f3ea;
@@ -28,8 +46,8 @@
 .uie-align { padding-top: 5px; border-top: 1px solid var(--uie-line); }
 .uie-align strong { white-space: nowrap; padding: 0 2px; }
 .uie-align .uie-gap { margin-left: 8px; padding-left: 10px; border-left: 1px solid var(--uie-line); }
-/* Keep reordered parts (z-index, even negative) inside the main screen instead of behind the page. */
-#title-screen { isolation: isolate; }
+/* Keep reordered parts (z-index, even negative) inside their screen instead of behind the page. */
+#title-screen, #martial-screen, #game-screen, #dojo-screen { isolation: isolate; }
 .uie-align button { padding: 5px 8px; }
 .uie-align button:disabled { opacity: .4; cursor: default; border-color: var(--uie-line); }
 .uie-ref { color: var(--uie-muted); white-space: nowrap; padding-left: 4px; }
@@ -39,10 +57,10 @@
 /* Parts while editing */
 .uie-gone { visibility: hidden; }
 .uie-on .uie-gone { visibility: visible; opacity: .3; }
-.uie-on #title-screen [data-uie] { cursor: move; user-select: none; -webkit-user-select: none; }
-.uie-on #title-screen[data-uie] { cursor: default; }
-.uie-on #title-screen .uie-hover:not(#title-screen) { outline: 1px dashed var(--uie-accent); outline-offset: 2px; }
-.uie-on #title-screen img { -webkit-user-drag: none; }
+.uie-on #title-screen [data-uie], .uie-on #martial-screen [data-uie], .uie-on #game-screen [data-uie], .uie-on #dojo-screen [data-uie] { cursor: move; user-select: none; -webkit-user-select: none; }
+.uie-on #title-screen[data-uie], .uie-on #martial-screen[data-uie], .uie-on #game-screen[data-uie], .uie-on #dojo-screen[data-uie] { cursor: default; }
+.uie-on .uie-hover:not(#title-screen):not(#martial-screen):not(#game-screen):not(#dojo-screen) { outline: 1px dashed var(--uie-accent); outline-offset: 2px; }
+.uie-on #app img { -webkit-user-drag: none; }
 
 /* Things added with the tool (shown with or without edit mode) */
 .uie-added { position: absolute; z-index: 3; box-sizing: border-box; margin: 0; }
@@ -72,7 +90,7 @@
   position: fixed; z-index: 2; width: 12px; height: 12px; pointer-events: auto; cursor: nwse-resize;
   background: #fff; border: 2px solid var(--uie-accent); border-radius: 50%; touch-action: none;
 }
-.uie-on #title-screen { touch-action: none; }
+.uie-on #title-screen, .uie-on #martial-screen, .uie-on #game-screen, .uie-on #dojo-screen { touch-action: none; }
 
 /* Inspector */
 .uie-panel {
