@@ -1,14 +1,18 @@
 /* 시설(3단계)
  * 폐관동 — 은자로 기본 능력치를 영구 강화하고, 주세력 특수 능력치는 비급으로 올린다(저장 seclusion).
  * 연무장 — 고난도 맹약(무료, 다음 출전에 걸림), 새로고침 · 부활 횟수, 폐공 칸과 폐공 무공(저장 hall).
+ * 연단방 — 판에서 얻은 약재 · 영물과 은자로 영단(영구 강화)을 빚어 먹는다(저장 alchemy).
+ * 대장간 — 수문장이 떨군 장비를 끼고, 합성 · 속성 변경 · 분해한다(저장 forge, 규칙은 forge.js).
+ *   낀 장비 이름은 hub.js 의 장비 칸(state.equipment)에도 적어 둔다.
  * 저장은 hub.js 의 저장 데이터(window.CheonHub.state)에 함께 들어간다.
  * 출전할 때 game-controller.js 가 runOptions() 를 전투 코어 createRun 에 넘긴다(bonuses · pacts · banned).
  * 맹약 보상은 판이 끝날 때(cheon:run-end) hub.js 의 은자 보상 뒤에 더한다.
- * 수치는 docs/시설-경제-기획.md 의 임시값. 연단방·대장간은 아직 hub.js 의 "준비 중" 창. */
+ * 수치는 docs/시설-경제-기획.md 의 임시값. */
 (() => {
   'use strict';
   const hub = () => window.CheonHub;
   const B = window.CHEONJONG_BALANCE;
+  const FG = window.CheonForge;
   const MAX_LEVEL = 10, GROWTH = 1.5;
   const pct = v => `${Math.round(v * 1000) / 10}%`;
   const won = n => n.toLocaleString('ko-KR');
@@ -42,6 +46,15 @@
     swift: '제한 4분 → 3분 · 수문장 2분 30초 → 1분 50초',
   };
   const SKILL_GLYPHS = { plum_sword: '劍', zixia: '紫', plum_rain: '雨', liuhe: '合', dark_fragrance: '影', five_elements: '步' };
+  // 연단방 영단(영구). 같은 영단 n번째는 효과 1/n — 먹은 수 n 이면 합계 = 효과 × (1 + 1/2 + … + 1/n).
+  const ELIXIRS = {
+    gongcheong: { name: '공청석유', glyph: '乳', note: '영구 내력 +10', herbs: 30, spirit: 1, silver: 10000,
+      bonus: m => ({ innerForce: 10 * m }), show: m => `내력 +${Math.round(10 * m * 10) / 10}` },
+    daehwan: { name: '대환단', glyph: '丹', note: '영구 체력 +2 · 공력·이동·범위 +1%', herbs: 60, spirit: 3, silver: 25000,
+      bonus: m => ({ hp: 2 * m, damage: 0.01 * m, speed: 0.01 * m, area: 0.01 * m }),
+      show: m => `체력 +${Math.round(2 * m * 10) / 10} · 공력 · 이동 · 범위 +${Math.round(m * 100) / 100}%` },
+  };
+  const harmonic = n => Array.from({ length: n }, (_, i) => 1 / (i + 1)).reduce((a, b) => a + b, 0);
 
   // ---- 저장 ----
   const cost = (stat, level) => Math.round(stat.base * GROWTH ** level / 10) * 10;
@@ -63,6 +76,27 @@
     state.hall.banned = state.hall.banned.slice(0, state.hall.banSlots);
     return state.hall;
   }
+  function forge() {
+    const state = hub().state, saved = state.forge || {};
+    const items = Array.isArray(saved.items) ? saved.items.filter(item => FG.SLOTS[item?.slot] && FG.GRADES[item?.grade] && Array.isArray(item.attrs)) : [];
+    const equipped = Object.fromEntries(FG.SLOT_IDS.map(slot => [slot, items.some(item => item.id === saved.equipped?.[slot] && item.slot === slot) ? saved.equipped[slot] : null]));
+    state.forge = { items, equipped, nextId: Math.max(Number(saved.nextId) || 1, ...items.map(item => item.id + 1)) };
+    return state.forge;
+  }
+  const equippedItems = () => { const fg = forge(); return fg.items.filter(item => fg.equipped[item.slot] === item.id); };
+  // hub.js 의 장비 칸은 이름 글자만 본다.
+  function syncEquipmentNames() {
+    const state = hub().state;
+    state.equipment = {};
+    for (const item of equippedItems()) state.equipment[item.slot] = FG.itemName(item);
+  }
+  function alchemy() {
+    const state = hub().state, saved = state.alchemy || {};
+    const count = v => Math.max(0, Math.floor(Number(v) || 0));
+    state.alchemy = { herbs: count(saved.herbs), spirit: count(saved.spirit),
+      eaten: Object.fromEntries(Object.keys(ELIXIRS).map(id => [id, count(saved.eaten?.[id])])) };
+    return state.alchemy;
+  }
   const levelOf = id => Math.max(0, Math.min(MAX_LEVEL, Number(data().levels[id]) || 0));
   function bonuses() {
     if (!hub()) return {};
@@ -71,6 +105,11 @@
     if (special) Object.assign(out, special.bonus(Math.min(special.max, Number(data().special[school]) || 0)));
     const h = hall();
     out.rerolls = h.rerolls; out.revives = h.revives;
+    if (FG) for (const [key, value] of Object.entries(FG.bonusesOf(equippedItems()))) out[key] = (out[key] || 0) + value;
+    const eaten = alchemy().eaten;
+    for (const [id, elixir] of Object.entries(ELIXIRS)) {
+      for (const [key, value] of Object.entries(elixir.bonus(harmonic(eaten[id])))) out[key] = (out[key] || 0) + value;
+    }
     return out;
   }
   // 출전 때 전투에 넘길 것. 걸어 둔 맹약은 판이 끝날 때 보상을 셈하려고 기억해 둔다.
@@ -109,9 +148,10 @@
     current = null;
     opener?.focus?.({ preventScroll: true });
   }
+  const DRAW = { seclusion: focus => drawSeclusion(focus), hall: focus => drawHall(focus), alchemy: focus => drawAlchemy(focus), forge: focus => drawForge(focus) };
   function commit(focusSelector) {
     hub().save(); hub().render();
-    (current === 'hall' ? drawHall : drawSeclusion)(focusSelector);
+    DRAW[current](focusSelector);
   }
   function pips(level, max) {
     return h('span', { class: 'fac-pips', 'aria-hidden': 'true' }, ...Array.from({ length: max }, (_, i) => h('i', { class: i < level ? 'is-on' : '' })));
@@ -138,7 +178,7 @@
     if (modal.hidden) opener = document.activeElement;
     modal.hidden = false;
     current = kind;
-    (kind === 'hall' ? drawHall : drawSeclusion)();
+    DRAW[kind]();
   }
 
   // ---- 폐관동 ----
@@ -255,6 +295,126 @@
       h('p', { class: 'fac-note' }, '맹약 보상은 은자 보상에 더해집니다. 수치는 임시값입니다.')), focusSelector);
   }
 
+  // ---- 연단방 ----
+  function brew(id) {
+    const elixir = ELIXIRS[id], al = alchemy(), state = hub().state;
+    if (al.herbs < elixir.herbs || al.spirit < elixir.spirit || state.silver < elixir.silver) return;
+    al.herbs -= elixir.herbs; al.spirit -= elixir.spirit; state.silver -= elixir.silver;
+    al.eaten[id] += 1;
+    commit(`[data-elixir="${id}"] button`);
+  }
+  function drawAlchemy(focusSelector) {
+    const state = hub().state, al = alchemy();
+    const rows = Object.entries(ELIXIRS).map(([id, elixir]) => {
+      const n = al.eaten[id], ready = al.herbs >= elixir.herbs && al.spirit >= elixir.spirit && state.silver >= elixir.silver;
+      return h('li', { class: 'fac-row fac-elixir', 'data-elixir': id },
+        h('span', { class: 'fac-glyph', 'aria-hidden': 'true' }, elixir.glyph),
+        h('span', { class: 'fac-name' }, h('strong', {}, elixir.name), h('small', {}, elixir.note)),
+        h('span', { class: 'fac-level' }, h('small', {}, `${n}번 복용`), h('small', {}, `다음 효과 ×1/${n + 1}`)),
+        h('span', { class: 'fac-value' }, n ? elixir.show(harmonic(n)) : '—',
+          h('small', {}, `草 ${elixir.herbs} · 靈 ${elixir.spirit} · 銀 ${won(elixir.silver)}`)),
+        h('button', { type: 'button', class: 'fac-buy', disabled: !ready,
+          'aria-label': `${elixir.name} 빚어 먹기, 약재 ${elixir.herbs} 영물 ${elixir.spirit} 은자 ${elixir.silver}`,
+          onclick: () => brew(id) }, '빚어 먹기'));
+    });
+    show(frame('煉丹房 · 연단방', '영단을 빚는 곳',
+      h('p', { class: 'fac-stock' }, h('span', {}, `草 약재 ${won(al.herbs)}`), h('span', {}, `靈 영물 ${won(al.spirit)}`)),
+      h('ul', { class: 'fac-list' }, ...rows),
+      h('p', { class: 'fac-note' }, '약재는 일반 적이 가끔(3%), 영물은 수문장이 떨굽니다. 영단은 빚는 즉시 먹고 효과는 영구입니다. 같은 영단은 먹을수록 효과가 줄어듭니다. 수치는 임시값입니다.')), focusSelector);
+  }
+
+  // ---- 대장간 ----
+  const pay = (silver, spirit = 0) => {
+    const state = hub().state, al = alchemy();
+    if (state.silver < silver || al.spirit < spirit) return false;
+    state.silver -= silver; al.spirit -= spirit;
+    return true;
+  };
+  function toggleEquip(id) {
+    const fg = forge(), item = fg.items.find(i => i.id === id);
+    if (!item) return;
+    fg.equipped[item.slot] = fg.equipped[item.slot] === id ? null : id;
+    syncEquipmentNames(); commit(`[data-item="${id}"] .fac-equip`);
+  }
+  function combine(slot, grade) {
+    const fg = forge(), plan = FG.combineCandidates(fg.items, slot, grade, Object.values(fg.equipped));
+    if (!plan.possible || !pay(plan.silver)) return;
+    const used = new Set(plan.use.map(item => item.id));
+    fg.items = fg.items.filter(item => !used.has(item.id));
+    const made = FG.makeItem(slot, grade + 1, Math.random, fg.nextId++);
+    fg.items.push(made);
+    commit(`[data-item="${made.id}"] .fac-equip`);
+  }
+  function reroll(id, index) {
+    const fg = forge(), item = fg.items.find(i => i.id === id);
+    if (!item || !pay(FG.GRADES[item.grade].rerollSilver, 1)) return;
+    FG.rerollAttr(item, index, Math.random);
+    commit(`[data-item="${id}"] [data-attr="${index}"]`);
+  }
+  function salvage(id) {
+    const fg = forge(), item = fg.items.find(i => i.id === id);
+    if (!item || fg.equipped[item.slot] === id) return;
+    fg.items = fg.items.filter(i => i.id !== id);
+    hub().state.silver += FG.GRADES[item.grade].salvage;
+    commit();
+  }
+  function drawForge(focusSelector) {
+    const state = hub().state, fg = forge(), al = alchemy();
+    const slots = FG.SLOT_IDS.map(slot => {
+      const item = fg.items.find(i => i.id === fg.equipped[slot]), info = FG.SLOTS[slot];
+      return h('div', { class: `fac-slot${item ? '' : ' is-empty'}` },
+        h('span', { class: 'fac-glyph', 'aria-hidden': 'true' }, info.glyph),
+        h('span', { class: 'fac-name' }, h('strong', {}, item ? FG.itemName(item) : `${info.label} · 비어 있음`),
+          h('small', {}, item ? item.attrs.map(FG.describe).join(' · ') : '장비를 끼면 능력치가 오릅니다')));
+    });
+    const groups = [];
+    for (const slot of FG.SLOT_IDS) for (const grade of FG.GRADES) {
+      if (!grade.combine) continue;
+      const plan = FG.combineCandidates(fg.items, slot, grade.index, Object.values(fg.equipped));
+      if (!plan.have) continue;
+      groups.push(h('li', { class: 'fac-row fac-combine' },
+        h('span', { class: 'fac-glyph', 'aria-hidden': 'true' }, FG.SLOTS[slot].glyph),
+        h('span', { class: 'fac-name' }, h('strong', {}, `${grade.name} ${FG.SLOTS[slot].noun} ${plan.have} / ${plan.need}`),
+          h('small', {}, `${plan.need}개 → ${FG.GRADES[grade.index + 1].name} 1개(장착 중인 장비는 빼고 셈)`)),
+        h('button', { type: 'button', class: 'fac-buy', disabled: !plan.possible || state.silver < plan.silver,
+          onclick: () => combine(slot, grade.index) }, `합성 · 銀 ${won(plan.silver)}`)));
+    }
+    const bag = fg.items.slice().sort((a, b) => FG.SLOT_IDS.indexOf(a.slot) - FG.SLOT_IDS.indexOf(b.slot) || b.grade - a.grade || a.id - b.id).map(item => {
+      const on = fg.equipped[item.slot] === item.id, grade = FG.GRADES[item.grade];
+      const canReroll = state.silver >= grade.rerollSilver && al.spirit >= 1;
+      return h('li', { class: `fac-item grade-${item.grade}${on ? ' is-on' : ''}`, 'data-item': item.id },
+        h('span', { class: 'fac-glyph', 'aria-hidden': 'true' }, FG.SLOTS[item.slot].glyph),
+        h('span', { class: 'fac-name' }, h('strong', {}, FG.itemName(item), on ? ' · 장착 중' : ''),
+          h('span', { class: 'fac-attrs' }, ...item.attrs.map((attr, index) => h('span', { class: 'fac-attr' }, FG.describe(attr),
+            h('button', { type: 'button', class: 'fac-mini', 'data-attr': index, disabled: !canReroll,
+              'aria-label': `${FG.describe(attr)} 다시 굴리기, 은자 ${grade.rerollSilver} 영물 1`, onclick: () => reroll(item.id, index) }, '변경'))))),
+        h('span', { class: 'fac-actions' },
+          h('button', { type: 'button', class: `fac-toggle fac-equip${on ? ' is-on' : ''}`, 'aria-pressed': String(on), onclick: () => toggleEquip(item.id) }, on ? '해제' : '장착'),
+          h('button', { type: 'button', class: 'fac-toggle', disabled: on, onclick: () => salvage(item.id) }, `분해 +銀 ${won(grade.salvage)}`)));
+    });
+    show(frame('鍛冶場 · 대장간', '장비를 다듬는 곳',
+      h('div', { class: 'fac-slots' }, ...slots),
+      h('h3', {}, '합성'),
+      groups.length ? h('ul', { class: 'fac-list' }, ...groups) : h('p', { class: 'fac-note' }, '같은 슬롯 · 같은 등급 장비를 모으면 한 등급 위로 합칠 수 있습니다(범품 3 · 양품 4 · 상품 5 · 극품 6개).'),
+      h('h3', {}, `가방 · ${fg.items.length}개 · 영물 ${won(al.spirit)}`),
+      bag.length ? h('ul', { class: 'fac-bag' }, ...bag) : h('p', { class: 'fac-note' }, '수문장을 쓰러뜨리면 범품 장비가 하나씩 들어옵니다.'),
+      h('p', { class: 'fac-note' }, `속성 변경은 한 줄을 다시 굴립니다(등급별 은자 + 영물 1). 장비는 다음 출전부터 적용됩니다. 수치는 임시값입니다.`)), focusSelector);
+  }
+
+  // ---- 판이 끝나면 전리품을 넣는다: 재료는 연단방, 장비는 대장간 가방 ----
+  window.addEventListener('cheon:run-end', event => {
+    const loot = event.detail?.loot;
+    if (!hub() || !loot || (!loot.herbs && !loot.spirit && !loot.gear)) return;
+    const al = alchemy();
+    al.herbs += Math.max(0, Math.floor(loot.herbs || 0));
+    al.spirit += Math.max(0, Math.floor(loot.spirit || 0));
+    if (FG) {
+      const fg = forge();
+      for (let i = 0; i < Math.max(0, Math.floor(loot.gear || 0)); i++) fg.items.push(FG.makeItem(FG.randomSlot(Math.random), 0, Math.random, fg.nextId++));
+    }
+    hub().save();
+  });
+
   // ---- 맹약 보상: hub.js 의 보상 정산 뒤에 더한다 ----
   window.addEventListener('cheon:run-end', event => {
     if (!hub() || !runPacts.length) return;
@@ -271,8 +431,8 @@
 
   function start() {
     document.body.append(modal);
-    // 폐관동 · 연무장 버튼은 hub.js 의 "준비 중" 창 대신 이 화면을 연다.
-    for (const kind of ['seclusion', 'hall']) {
+    // 네 시설 버튼은 hub.js 의 "준비 중" 창 대신 이 화면을 연다.
+    for (const kind of ['seclusion', 'hall', 'alchemy', 'forge']) {
       document.querySelectorAll(`[data-facility="${kind}"]`).forEach(button => button.addEventListener('click', event => {
         event.stopImmediatePropagation();
         open(kind);
@@ -281,5 +441,6 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 
-  window.CheonFacilities = { bonuses, runOptions, openSeclusion: () => open('seclusion'), openHall: () => open('hall'), stats: STATS, cost };
+  window.CheonFacilities = { bonuses, runOptions, openSeclusion: () => open('seclusion'), openHall: () => open('hall'),
+    openAlchemy: () => open('alchemy'), openForge: () => open('forge'), stats: STATS, cost, elixirs: ELIXIRS };
 })();

@@ -44,3 +44,31 @@
   .fac-pact > .fac-value { grid-area: v; justify-self: start; } .fac-pact > .fac-toggle { grid-area: b; }
   .fac-pact .fac-name small { white-space: normal; }
 }
+/* 연단방: 재료 보유량, 영단 줄 */
+.fac-stock { margin: 0; display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--ink); }
+.fac-stock > span { padding: 4px 10px; border: 1px solid var(--line); background: var(--paper-light); }
+.fac-elixir .fac-value small { white-space: nowrap; }
+/* 대장간: 장착 칸, 합성, 가방 */
+.fac-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.fac-slot { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--accent); background: var(--paper-light); }
+.fac-slot.is-empty { border-color: var(--line); color: var(--muted); }
+.fac-combine { grid-template-columns: 32px minmax(0, 1fr) auto; }
+.fac-bag { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.fac-item { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); background: var(--paper-light); }
+.fac-item.is-on { border-color: var(--accent); }
+.fac-item.grade-1 .fac-name strong { color: #4f7a5a; }
+.fac-item.grade-2 .fac-name strong { color: #3f6c96; }
+.fac-item.grade-3 .fac-name strong { color: #7a4f96; }
+.fac-item.grade-4 .fac-name strong { color: var(--accent); }
+.fac-attrs { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.fac-attr { display: inline-flex; align-items: center; gap: 6px; color: #62695f; }
+.fac-mini { margin: 0; min-width: 0; padding: 0 6px; border: 1px solid var(--line); background: none; color: var(--ink); }
+.fac-mini:disabled { color: var(--muted); cursor: default; }
+.fac-actions { display: grid; gap: 4px; justify-items: stretch; }
+.fac-toggle:disabled { color: var(--muted); cursor: default; }
+@media (max-width: 760px) {
+  .fac-combine { grid-template-columns: 32px minmax(0, 1fr); grid-template-areas: 'g n' 'b b'; }
+  .fac-combine > .fac-buy { grid-area: b; }
+  .fac-item { grid-template-columns: 32px minmax(0, 1fr); }
+  .fac-item > .fac-actions { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
+}

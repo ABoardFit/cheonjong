@@ -94,6 +94,7 @@
       version: 1, mode: options.mode || 'normal', rng: options.seed || 247617,
       stage: options.stage || 'hwasan', difficulty: normalizeDifficulty(options.difficulty), bonuses: normalizeBonuses(options.bonuses),
       pacts: normalizePacts(options.pacts), banned: normalizeBanned(options.banned), rerollExclude: null,
+      loot: { herbs: 0, spirit: 0, gear: 0 }, lootRng: ((options.seed || 247617) ^ 0x5bd1e995) | 0 || 1,
       width: options.width || 1000, height: options.height || 650, serial: 0,
       status: 'running', time: 0, level: 1, xp: 0, nextXp: B.progression.firstXp,
       kills: 0, bossSpawned: false, bossDefeated: false,
@@ -197,8 +198,19 @@
       if (s.skills.zixia >= 1) pickup(s, 'petal', enemy.x + 7, enemy.y + 5);
       effect(s, 'burst', enemy.x, enemy.y, enemy.radius + 8, 0.22, { color: enemy.type === 'boss' ? '#fcdd9e' : '#947b8b', source: 'death' });
       if (enemy.type === 'boss') { s.bossDefeated = true; s.status = 'won'; s.resultReason = '매화곡의 주인 격파'; }
+      dropLoot(s, enemy);
     }
     return dealt;
+  }
+  // 연단방 재료. 전투의 rng 순서를 건드리지 않도록 따로 굴린다.
+  function lootRoll(s) { let x = s.lootRng | 0; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; s.lootRng = x | 0; return (x >>> 0) / 4294967296; }
+  function dropLoot(s, enemy) {
+    if (!s.loot) return;
+    if (enemy.type === 'boss') {
+      s.loot.spirit += B.loot.bossSpirit; s.loot.gear += B.loot.bossGear;
+      floatText(s, enemy.x, enemy.y - enemy.radius - 18, '영물 +' + B.loot.bossSpirit + ' · 장비 +' + B.loot.bossGear, '#ffe6a7');
+    }
+    else if (lootRoll(s) < B.loot.herbChance) { s.loot.herbs++; floatText(s, enemy.x, enemy.y - enemy.radius - 12, '약재 +1', '#a9d6a0'); }
   }
   function radialDamage(s, x, y, radius, amount, source, options) {
     for (const e of s.enemies) if (e.hp > 0 && distance(options?.bodyCentered ? getCombatCenter(e) : e, { x, y }) <= radius + e.radius) damageEnemy(s, e, amount, source, options);

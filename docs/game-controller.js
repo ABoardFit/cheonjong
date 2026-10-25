@@ -186,10 +186,20 @@
     const fusions = pairs.filter(pair => run.skills[pair.active] === 7).map(pair => pair.result);
     if (!run.reported) {
       run.reported = true;
-      window.dispatchEvent(new CustomEvent('cheon:run-end', { detail: { won, stage: run.stage, difficulty: { ...run.difficulty }, time: run.time, kills: run.kills, level: run.level } }));
+      window.dispatchEvent(new CustomEvent('cheon:run-end', { detail: { won, stage: run.stage, difficulty: { ...run.difficulty }, time: run.time, kills: run.kills, level: run.level, loot: { ...run.loot } } }));
     }
     openModal('result', `<p class="dialog-eyebrow">${won ? '華山 · 시련 돌파' : '다시 피어날 매화를 위하여'}</p><h2 id="battle-dialog-title">${won ? '매화, 시련을 넘다' : '이번 수련을 마칩니다'}</h2><p class="dialog-lead">${won ? '공세와 보스의 시련을 이겨냈습니다. 다른 무공 조합으로 다시 수련해 보세요.' : '배운 무공과 적의 예고를 기억하세요. 다음 수련에서 새로운 길을 택할 수 있습니다.'}</p><div class="battle-result-numbers"><div><span>수련 시간</span><strong>${clock(run.time)}</strong></div><div><span>격파</span><strong>${run.kills}</strong></div><div><span>도달 레벨</span><strong>${run.level}</strong></div><div><span>완성한 절세신공</span><strong>${fusions.length}</strong></div></div>${fusions.length ? `<p class="dialog-lead">${esc(fusions.join(' · '))}</p>` : ''}${ownedMarkup()}<div class="dialog-footer"><button data-action="title">메인으로</button><button class="dialog-primary" data-action="retry">다시 수련 →</button></div>`);
     announce(won ? '시련 돌파. 수련 결과를 확인하세요.' : '수련 종료. 다시 도전할 수 있습니다.');
+    addLootLine();
+  }
+  // 전리품: 이번 판에 얻은 약재 · 영물(연단방) · 장비(대장간)를 결과 창에 한 줄로.
+  function addLootLine() {
+    const loot = run.loot || {};
+    if (!loot.herbs && !loot.spirit && !loot.gear) return;
+    const line = document.createElement('p');
+    line.className = 'dialog-lead battle-loot';
+    line.textContent = `전리품 · 약재 +${loot.herbs || 0}${loot.spirit ? ` · 영물 +${loot.spirit}` : ''}${loot.gear ? ` · 장비 +${loot.gear}` : ''}`;
+    dialog.querySelector('.battle-result-numbers')?.after(line);
   }
   // 내력(마나) 줄: 생명 줄 바로 아래에 한 번만 만든다(index.html 은 건드리지 않음).
   function ensureManaRow() {

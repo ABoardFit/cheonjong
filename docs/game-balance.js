@@ -38,6 +38,9 @@
       swift: { name: '속전', maxTime: 180, bossAt: 110, reward: 0.2 },
     },
     revive: { hp: 0.5, invulnerable: 2 },
+    // 연단방 재료: 일반 적이 herbChance 확률로 약재를, 수문장이 영물을 떨군다(판이 끝나면 정산).
+    // 대장간 장비: 수문장이 범품 장비를 bossGear 개 떨군다(속성은 시설 쪽에서 굴림).
+    loot: { herbChance: 0.03, bossSpirit: 1, bossGear: 1 },
     field: { duration: 3, tick: 0.3, swordDamage: 11, rainDamage: 9,
       trailDamage: 10, trailRadius: 25, wideTrailRadius: 43 },
     enemy: { spawnStart: 0.7, spawnEnd: 0.22, maximum: 115,
