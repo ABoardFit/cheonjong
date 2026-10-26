@@ -8,3 +8,32 @@
 /* 연무장 새로고침 버튼(레벨업 창) */
 .battle-reroll{display:block;margin:12px auto 0;padding:8px 16px;border:1px solid #c28aa166;background:none;color:inherit}
 .battle-reroll:hover{border-color:currentColor}
+/* 레벨업 창: 세로 목록. 줄 = 아이콘(아래 단계) · 구분 · 이름 · 짧은 효과, 오른쪽 위 = 조합 짝. */
+.battle-modal.is-levelup{background:#0a131166;backdrop-filter:none}
+.battle-dialog.is-levelup{width:min(520px,100%);padding:16px;overflow:visible;max-height:none;border:2px solid #5d6b57;box-shadow:0 0 0 4px #eee8dc,0 0 0 6px #5d6b57,0 20px 60px #0007}
+.lv-head{text-align:center;margin-bottom:12px}
+.battle-dialog .lv-head .dialog-eyebrow{margin:0}
+.battle-dialog .lv-head h2{margin:0;font-size:32px;line-height:1.3}
+.lv-list{display:grid;gap:8px}
+#game-screen .battle-dialog .lv-row{position:relative;display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:center;text-align:left;padding:8px 12px 8px 8px;min-height:0;background:#f8f5ed;border:2px solid #b7b8a6;border-radius:0}
+#game-screen .battle-dialog .lv-row:hover,#game-screen .battle-dialog .lv-row:focus-visible{background:#fff;border-color:#a25973}
+.lv-icon{display:grid;justify-items:center;gap:2px}
+.lv-icon>b{display:grid;place-items:center;width:56px;height:56px;border:2px solid #a25973;background:#f1dfe4;color:#a25973;font-family:var(--serif);font-size:32px;font-weight:400}
+.lv-row.is-mind .lv-icon>b{border-color:#4f6f96;background:#dfe7f1;color:#3f5f86}
+.lv-row.is-fusion .lv-icon>b{border-color:#b08440;background:#f3e6c8;color:#8a6224}
+.lv-icon>small{font-size:16px;line-height:1;color:#6b7763}
+.lv-text{display:grid;gap:2px;min-width:0;padding-right:40px}
+.lv-row.is-fusion .lv-text{padding-right:76px}
+.lv-text>strong{display:flex;gap:6px;min-width:0;font-family:var(--serif);font-size:16px;font-weight:400;color:#2e362f;white-space:nowrap}
+.lv-name{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.lv-kind{flex-shrink:0;color:#8b6a79}
+.lv-row.is-mind .lv-kind{color:#4f6f96}
+.lv-row.is-fusion .lv-kind{color:#8a6224}
+.lv-desc{font-size:16px;line-height:1.5;color:#5d6858;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lv-desc>b{font-weight:400;color:#a25973}
+.lv-row.is-mind .lv-desc>b{color:#3f5f86}
+.lv-combo{position:absolute;top:8px;right:8px;display:flex;gap:4px}
+.lv-combo-icon{display:grid;place-items:center;width:32px;height:32px;border:2px solid #b08440;background:#f3e6c8;color:#8a6224;font-family:var(--serif);font-size:16px}
+.lv-combo-icon.is-off{filter:grayscale(1);opacity:.35}
+.battle-dialog.is-levelup .battle-reroll{margin-top:10px}
+@media(max-width:760px){.battle-dialog.is-levelup{padding:12px}.lv-text{padding-right:34px}.lv-row.is-fusion .lv-text{padding-right:64px}.lv-combo{top:6px;right:6px}.lv-combo-icon{width:28px;height:28px}#game-screen .battle-dialog .lv-row{grid-template-columns:56px minmax(0,1fr);gap:4px 10px}.lv-icon>b{width:48px;height:48px}}

@@ -70,6 +70,8 @@
     heldActionKeys.forEach(key => blockedActionKeys.add(key));
     clearInput();
     modalKind = kind;
+    modal.classList?.toggle('is-levelup', kind === 'levelup');
+    dialog.classList?.toggle('is-levelup', kind === 'levelup');
     modal.hidden = false;
     dialog.innerHTML = html;
     requestAnimationFrame(() => dialog.querySelector('button')?.focus());
@@ -163,13 +165,26 @@
       return `<section class="codex-entry"><h3>${symbols[id]} · ${esc(skill.name)}<small>${rankText(id, rank)}</small></h3>${rank === 7 && id === 'plum_sword' ? '<p><strong>절세신공의 압축:</strong> 기존 1·2차 직접 피해를 한 번의 매화 베기에 합산합니다. 개화 폭발을 따로 재생하지 않으며, 3초 장판과 심법 효과는 유지합니다.</p>' : ''}${rank ? skill.levels.filter(level => Number(level.rank) <= rank).map(level => `<p><strong>${level.rank}${['zixia', 'liuhe', 'five_elements'].includes(id) ? '성' : '단계'}</strong> · ${esc(level.description)}</p>`).join('') : '<p>레벨이 오르면 새 무공으로 습득할 수 있습니다.</p>'}</section>`;
     }).join('')}<div class="dialog-footer"><small>계보 전체는 메인 화면의 무공록에서 확인할 수 있습니다.</small><button class="dialog-primary" data-action="resume">전투로 돌아가기 →</button></div>`);
   }
+  // 레벨업 한 줄: 아이콘(아래 단계) · "이름 - 초식/심법" · 짧은 효과. 오른쪽 위는 조합 짝 아이콘(보유하면 색, 아니면 흐리게).
+  function comboIcon(id) {
+    const rank = run.skills[id] || 0;
+    return `<span class="lv-combo-icon${rank ? '' : ' is-off'}" title="${esc(skillById(id).name)} · ${rankText(id, rank)}">${symbols[id]}</span>`;
+  }
+  function choiceRow(choice) {
+    const id = choice.skillId, heal = choice.type === 'heal', fusion = choice.rank === 7;
+    const mind = ['zixia', 'liuhe', 'five_elements'].includes(id);
+    const pair = pairs.find(p => p.active === id || p.partner === id);
+    const kind = heal ? '운기' : fusion ? '절세신공' : mind ? '심법' : '초식';
+    const name = heal || fusion ? choice.title : skillById(id).name;
+    const level = heal ? '' : fusion ? '절세' : choice.rank === 1 ? 'NEW' : `Lv.${choice.rank}`;
+    const combo = heal || !pair ? '' : `<span class="lv-combo" aria-label="조합 ${esc(pair.result)}">${fusion ? `${comboIcon(pair.active)}${comboIcon(pair.partner)}` : comboIcon(id === pair.active ? pair.partner : pair.active)}</span>`;
+    const short = String(choice.description || '').split(/(?<=다\.)\s+/)[0];
+    const full = `${choice.formTitle ? `「${choice.formTitle}」 ` : ''}${choice.description || ''}`;
+    return `<button class="lv-row${mind ? ' is-mind' : ''}${fusion ? ' is-fusion' : ''}" data-choice="${esc(choice.id)}" title="${esc(full)}"><span class="lv-icon" aria-hidden="true"><b>${heal ? '修' : symbols[id]}</b><small>${level}</small></span><span class="lv-text"><strong><span class="lv-name">${esc(name)}</span><span class="lv-kind">- ${kind}</span></strong><span class="lv-desc">${choice.formTitle ? `<b>${esc(choice.formTitle)}</b> · ` : ''}${esc(short)}</span></span>${combo}</button>`;
+  }
   function showChoices() {
     const choices = core.getChoices(run);
-    openModal('levelup', `<p class="dialog-eyebrow">무학의 깨달음 · Lv. ${run.level}</p><h2 id="battle-dialog-title">다음 초식을 선택하세요</h2><p class="dialog-lead">선택하는 동안 전투가 멈춥니다. 현재 무공과 조합 조건을 함께 확인하세요.</p><div class="battle-choice-grid">${choices.map(choice => {
-      const id = choice.skillId;
-      const type = choice.type === 'heal' ? '운기 · 생명 회복' : choice.rank === 7 ? '절세신공 · 양쪽 6단계 완성' : choice.rank === 1 ? '새 무공 습득' : '효과를 계승하는 강화';
-      return `<button class="battle-choice ${choice.rank === 7 ? 'fusion-choice' : ''}" data-choice="${esc(choice.id)}"><span class="choice-type">${type}</span><span class="choice-symbol" aria-hidden="true">${symbols[id] || '修'}</span><strong>${esc(choice.title)}</strong><span class="choice-detail">${choice.formTitle ? `<b>${esc(choice.formTitle)}</b><br>` : ''}${esc(choice.description)}</span><span class="choice-select">이 깨달음을 얻는다 →</span></button>`;
-    }).join('')}</div>${ownedMarkup()}`);
+    openModal('levelup', `<div class="lv-head"><p class="dialog-eyebrow">무학의 깨달음 · Lv. ${run.level}</p><h2 id="battle-dialog-title">초식을 고르세요</h2></div><div class="lv-list">${choices.map(choiceRow).join('')}</div>`);
     announce(`레벨 ${run.level}. 다음 무공을 선택하세요.`);
     addRerollButton();
   }
@@ -179,7 +194,7 @@
     const button = document.createElement('button');
     button.type = 'button'; button.className = 'battle-reroll'; button.dataset.action = 'reroll';
     button.textContent = `다시 뽑기 · ${run.rerollsLeft}회 남음`;
-    dialog.querySelector('.battle-choice-grid')?.after(button);
+    dialog.querySelector('.lv-list')?.after(button);
   }
   function showResult() {
     const won = run.status === 'won';
@@ -312,6 +327,12 @@
       if (event.repeat) return;
       if (['pause', 'stats', 'codex'].includes(modalKind)) closeModal();
       else if (!modalKind) showPause();
+      return;
+    }
+    // 레벨업 창: 숫자 1 · 2 · 3 으로 고른다.
+    if (modalKind === 'levelup' && /^(Digit|Numpad)[1-9]$/.test(event.code)) {
+      event.preventDefault();
+      dialog.querySelectorAll('[data-choice]')[Number(event.code.slice(-1)) - 1]?.click();
       return;
     }
     if (event.code === 'Tab') {
