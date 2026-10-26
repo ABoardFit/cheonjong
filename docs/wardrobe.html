@@ -42,7 +42,7 @@
   let entries = [], selectedId = '', currentGroup = 'all', descriptionGender = 'female', femaleEntries = new Map();
   const groupLabel = group => groupNames[group] || group || '기본';
   const malePath = entry => 'assets/outfits-v5/' + encodeURIComponent(entry.file);
-  const femalePath = entry => 'assets/outfits-female-v1/' + encodeURIComponent(entry.file);
+  const femalePath = entry => 'assets/outfits-female-v1/' + encodeURIComponent(entry.file) + (entry.revision ? '?v=' + encodeURIComponent(entry.revision) : '');
   const textValue = value => Array.isArray(value) ? value.join(' · ') : String(value || '');
   function choose(entry, announce = true) {
     selectedId = entry.id;
@@ -110,7 +110,7 @@
       const male=await response.json();
       const valid=e=>e&&typeof e.id==='string'&&typeof e.name==='string'&&typeof e.file==='string'&&/^[a-z0-9_-]+\.png$/i.test(e.file);
       entries=(male.entries||[]).filter(valid); if(!entries.length)throw new Error('empty');
-      let female={entries:[]}; try {const result=await fetch('assets/outfits-female-v1/manifest.json');if(result.ok)female=await result.json();}catch {}
+      let female={entries:[]}; try {const result=await fetch('assets/outfits-female-v1/manifest.json?v=20261027-style-unified', {cache:'no-store'});if(result.ok)female=await result.json();}catch {}
       const pending=(female.entries||[]).filter(valid);
       femaleEntries=new Map(pending.map(entry=>[entry.id,{...entry,ready:entry.status!=='pending'}]));
       $('completion').textContent='백의 + '+(entries.length-1)+'세력 · 남녀 의상';
