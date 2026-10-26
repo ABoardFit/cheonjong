@@ -37,3 +37,33 @@
 .lv-combo-icon.is-off{filter:grayscale(1);opacity:.35}
 .battle-dialog.is-levelup .battle-reroll{margin-top:10px}
 @media(max-width:760px){.battle-dialog.is-levelup{padding:12px}.lv-text{padding-right:34px}.lv-row.is-fusion .lv-text{padding-right:64px}.lv-combo{top:6px;right:6px}.lv-combo-icon{width:28px;height:28px}#game-screen .battle-dialog .lv-row{grid-template-columns:56px minmax(0,1fr);gap:4px 10px}.lv-icon>b{width:48px;height:48px}}
+/* 전투 HUD: 좌상단 무공 아이콘, 캐릭터 발밑 생명·내력 / 머리 위 꽃잎(game-controller placeFollow), 맨 아래 경험치, 타이머 아래 일정. */
+.battle-identity,.battle-meters,.battle-petal-row,.battle-loadout,#battle-goal{display:none!important}
+.battle-skillbar{display:grid;gap:4px;justify-items:start}
+#battle-skill-icons{display:flex;flex-wrap:wrap;gap:4px;max-width:240px}
+.skill-icon{display:grid;place-items:center;width:32px;height:32px;border:2px solid #c28aa1aa;background:#412c3dcc;color:#ecc2d2;font-family:var(--serif);font-size:16px}
+.skill-icon.is-mind{border-color:#7fa9cfaa;background:#2a3a4dcc;color:#cfe0f2}
+.skill-icon.is-fused{border-color:#ecc686;background:#4a3a1fcc;color:#f2d99f}
+.battle-skillbar>small{font-size:16px;color:#b6baab}
+.battle-skillbar>small>strong{font-weight:400;color:#e1e0d1}
+.battle-events{list-style:none;margin:6px auto 0;padding:4px 10px;display:grid;gap:2px;background:#101a18b3;border:1px solid #b8b8a524;font-size:16px;line-height:1.4;text-align:left}
+.battle-events>li{display:flex;gap:8px;white-space:nowrap;color:#c4c4b7}
+.battle-events time{color:#979f90}
+.battle-events small{margin-left:auto;padding-left:8px;font-size:16px;color:#979f90}
+.battle-events .is-past{opacity:.4;text-decoration:line-through}
+.battle-events .is-next{color:#f2d99f}
+.battle-events .is-soon,.battle-events .is-soon small{color:#ffb3a0}
+.battle-boss{top:144px}
+.battle-follow{position:absolute;left:0;top:0;z-index:2;pointer-events:none;will-change:transform}
+.follow-petals{position:absolute;left:0;top:-92px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:0 6px;font-size:16px;line-height:20px;color:#f2c4d4;background:#101a18a6;white-space:nowrap}
+.battle-follow.is-locked .follow-petals{opacity:.45}
+.follow-bars{position:absolute;left:-26px;top:12px;width:52px;display:grid;gap:2px}
+.follow-bars>i{display:block;height:5px;background:#060d0bcc;outline:1px solid #060d0b88}
+.follow-bars>i>b{display:block;height:100%;transition:width .12s linear}
+.follow-bars>.hp>b{background:#d0646c}
+.follow-bars>.mana>b{background:#7fa9cf}
+.battle-xpbar{position:absolute;left:0;right:0;bottom:0;height:8px;background:#060d0bcc;pointer-events:none}
+.battle-xpbar>i{display:block;height:100%;width:0;background:#a7bd96;transition:width .12s linear}
+.battle-xpbar>span{position:absolute;left:10px;bottom:10px;font-size:16px;color:#c4c4b7}
+.battle-bottom{bottom:24px;justify-content:flex-end}
+@media(max-width:760px){#battle-skill-icons{max-width:160px}.skill-icon{width:24px;height:24px}.battle-events{margin-top:4px;padding:2px 8px}.battle-boss{top:170px}.battle-bottom{bottom:22px}}

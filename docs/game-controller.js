@@ -216,21 +216,46 @@
     line.textContent = `전리품 · 약재 +${loot.herbs || 0}${loot.spirit ? ` · 영물 +${loot.spirit}` : ''}${loot.gear ? ` · 장비 +${loot.gear}` : ''}`;
     dialog.querySelector('.battle-result-numbers')?.after(line);
   }
-  // 내력(마나) 줄: 생명 줄 바로 아래에 한 번만 만든다(index.html 은 건드리지 않음).
-  function ensureManaRow() {
-    if ($('battle-mana-fill')) return;
-    const hp = document.querySelector('.battle-hp-row');
-    if (!hp) return;
-    const row = document.createElement('div'), label = document.createElement('span'), meter = document.createElement('div');
-    const fill = document.createElement('i'), value = document.createElement('strong');
-    row.className = 'battle-hp-row battle-mana-row';
-    label.textContent = '내력';
-    meter.className = 'battle-meter mana';
-    fill.id = 'battle-mana-fill';
-    value.id = 'battle-mana';
-    meter.append(fill);
-    row.append(label, meter, value);
-    hp.after(row);
+  // 전투 HUD(index.html 은 건드리지 않고 한 번만 만든다): 좌상단 보유 무공 아이콘, 캐릭터를 따라다니는 생명·내력 막대와
+  // 머리 위 꽃잎, 화면 맨 아래 경험치 막대, 타이머 아래 스테이지 일정. 예전 줄(생명·경험·꽃잎·현재 무공)은 CSS 로 숨긴다.
+  function ensureHud() {
+    if ($('battle-follow')) return;
+    document.querySelector('.battle-top')?.insertAdjacentHTML('afterbegin', '<div class="battle-skillbar"><div id="battle-skill-icons" aria-label="보유 무공"></div><small>격파 <strong id="battle-kill-count">0</strong></small></div>');
+    $('battle-goal')?.insertAdjacentHTML('afterend', '<ol id="battle-events" class="battle-events" aria-label="스테이지 일정"></ol>');
+    screen.insertAdjacentHTML('beforeend', '<div id="battle-follow" class="battle-follow" aria-hidden="true"><span class="follow-petals"><span>✿</span><b id="follow-petals">0/0</b></span><span class="follow-bars"><i class="hp"><b id="follow-hp"></b></i><i class="mana"><b id="follow-mana"></b></i></span></div>'
+      + '<div class="battle-xpbar" aria-hidden="true"><span id="battle-xpbar-level">Lv. 1</span><i id="battle-xpbar-fill"></i></div>');
+  }
+  // 스테이지 일정: 지금은 보스 등장과 시한 두 가지(속전 맹약이면 앞당겨진다). 다음 일정만 남은 시간을 붙인다.
+  function renderEvents() {
+    const events = [{ at: run.bossAt, text: '혈영객 등장' }, { at: run.maxTime, text: '해돋이 · 시한' }];
+    const list = $('battle-events'), next = events.find(event => run.time < event.at);
+    if (typeof list?.replaceChildren !== 'function') return;
+    list.replaceChildren(...events.map(event => {
+      const item = document.createElement('li'), time = document.createElement('time'), left = event.at - run.time;
+      item.className = left <= 0 ? 'is-past' : event === next ? `is-next${left <= 10 ? ' is-soon' : ''}` : '';
+      time.textContent = clock(event.at);
+      item.append(time, event.text);
+      if (event === next) { const until = document.createElement('small'); until.textContent = `${clock(Math.ceil(left))} 후`; item.append(until); }
+      return item;
+    }));
+  }
+  // 좌상단: 익힌 무공만 아이콘으로(초식 분홍 · 심법 파랑 · 절세 금색).
+  function renderSkillIcons() {
+    const bar = $('battle-skill-icons');
+    if (typeof bar?.replaceChildren !== 'function') return;
+    bar.replaceChildren(...order.filter(id => run.skills[id]).map(id => {
+      const icon = document.createElement('span');
+      icon.className = `skill-icon${['zixia', 'liuhe', 'five_elements'].includes(id) ? ' is-mind' : ''}${run.skills[id] === 7 ? ' is-fused' : ''}`;
+      icon.title = `${skillById(id).name} · ${rankText(id, run.skills[id])}`;
+      icon.textContent = symbols[id];
+      return icon;
+    }));
+  }
+  // 캐릭터 발밑·머리 위 표시를 화면 위 캐릭터 자리에 맞춘다(렌더러가 그린 뒤, 매 프레임).
+  function placeFollow() {
+    const follow = $('battle-follow');
+    if (!follow || !Number.isFinite(renderer?.ox)) return;
+    follow.style.transform = `translate(${Math.round(renderer.ox + run.player.x)}px, ${Math.round(renderer.oy + run.player.y)}px)`;
   }
   function updateHud() {
     if (!run) return;
@@ -239,17 +264,21 @@
     $('battle-level').textContent = `Lv. ${run.level}`;
     $('battle-hp').textContent = `${Math.max(0, Math.ceil(run.player.hp))} / ${run.player.maxHp}`;
     $('battle-hp-fill').style.width = `${Math.max(0, run.player.hp / run.player.maxHp) * 100}%`;
-    ensureManaRow();
-    if ($('battle-mana')) {
-      $('battle-mana').textContent = `${Math.floor(run.player.mana)} / ${run.player.maxMana}`;
-      $('battle-mana-fill').style.width = `${Math.max(0, run.player.mana / run.player.maxMana) * 100}%`;
-    }
+    ensureHud();
+    $('follow-hp').style.width = `${Math.max(0, run.player.hp / run.player.maxHp) * 100}%`;
+    $('follow-mana').style.width = `${Math.max(0, run.player.mana / run.player.maxMana) * 100}%`;
+    $('battle-xpbar-level').textContent = `Lv. ${run.level}`;
+    $('battle-xpbar-fill').style.width = `${Math.min(1, run.xp / run.nextXp) * 100}%`;
+    $('battle-kill-count').textContent = run.kills;
+    renderEvents();
     $('battle-xp').textContent = `${Math.floor(run.xp)} / ${Math.ceil(run.nextXp)}`;
     $('battle-xp-fill').style.width = `${Math.min(1, run.xp / run.nextXp) * 100}%`;
     $('battle-petals').textContent = `${run.player.petals} / ${s.maxPetals}`;
     $('battle-kills').textContent = run.kills;
     const lock = Math.max(0, run.player.pickupLockedUntil - run.time);
     $('battle-petal-lock').textContent = lock > 0 ? `획득 금지 ${lock.toFixed(1)}초` : '';
+    $('follow-petals').textContent = `${run.player.petals}/${s.maxPetals}`;
+    $('battle-follow').classList?.toggle('is-locked', lock > 0);
     const cooldown = run.player.dashCooldown || 0;
     const needsPetal = run.skills.dark_fragrance === 7 && run.skills.five_elements === 7 && run.player.petals < 1;
     $('battle-dash-cooldown').textContent = needsPetal ? '꽃잎 필요' : cooldown > 0 ? `${cooldown.toFixed(1)}초` : 'Space · 준비';
@@ -266,6 +295,7 @@
     const signature = order.map(id => run.skills[id] || 0).join(',');
     if (signature !== lastSkillSignature) {
       $('battle-skills').innerHTML = skillMarkup();
+      renderSkillIcons();
       lastSkillSignature = signature;
     }
   }
@@ -286,6 +316,7 @@
     if (!modalKind && run.status === 'levelup') showChoices();
     if (!modalKind && (run.status === 'won' || run.status === 'lost')) showResult();
     renderer.draw(run, { paused: !!modalKind, reducedMotion: reducedMotion.matches });
+    placeFollow();
     if (now >= nextHud) { updateHud(); nextHud = now + 100; }
   }
 
