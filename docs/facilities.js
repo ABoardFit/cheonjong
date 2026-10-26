@@ -135,17 +135,29 @@
     el.append(...children.filter(child => child !== null && child !== undefined && child !== false));
     return el;
   }
-  const modal = h('div', { class: 'hub-modal fac-modal', hidden: true, onclick: event => { if (event.target === modal) close(); } });
-  modal.addEventListener('keydown', event => {
+  // 시설은 무공록처럼 허브 위에 전체 화면으로 열린다: 위 줄(← 메인으로 · 이름 · 재화), 뒤 장면 그림, 오른쪽 패널.
+  const sceneImage = h('img', { class: 'fac-scene', alt: '', decoding: 'async' });
+  const backButton = h('button', { type: 'button', class: 'fac-back', onclick: () => close() }, '← 메인으로');
+  const eyebrowEl = h('p', { class: 'fac-eyebrow' }), titleEl = h('h2', { id: 'fac-title' }), walletEl = h('p', { class: 'fac-wallet' });
+  const panel = h('div', { class: 'fac-panel' });
+  const screen = h('section', { class: 'fac-screen', hidden: true, 'aria-labelledby': 'fac-title' },
+    sceneImage, h('div', { class: 'fac-shade', 'aria-hidden': 'true' }),
+    h('header', { class: 'fac-top' }, backButton, h('div', { class: 'fac-heading' }, eyebrowEl, titleEl), walletEl),
+    panel);
+  screen.addEventListener('keydown', event => {
     event.stopPropagation();
     if (event.key === 'Escape') { event.preventDefault(); close(); }
   });
   let opener = null, current = null;
+  const hubScreen = () => document.getElementById('title-screen');
   function close() {
-    if (modal.hidden) return;
-    modal.hidden = true;
-    modal.replaceChildren();
+    if (screen.hidden) return;
+    screen.classList.remove('is-open');
+    screen.hidden = true;
+    panel.replaceChildren();
     current = null;
+    document.body.classList.remove('fac-open');
+    if (hubScreen()) hubScreen().inert = false;
     opener?.focus?.({ preventScroll: true });
   }
   const DRAW = { seclusion: focus => drawSeclusion(focus), hall: focus => drawHall(focus), alchemy: focus => drawAlchemy(focus), forge: focus => drawForge(focus) };
@@ -156,29 +168,33 @@
   function pips(level, max) {
     return h('span', { class: 'fac-pips', 'aria-hidden': 'true' }, ...Array.from({ length: max }, (_, i) => h('i', { class: i < level ? 'is-on' : '' })));
   }
-  function show(card, focusSelector) {
-    modal.replaceChildren(card);
-    requestAnimationFrame(() => {
-      const target = (focusSelector && card.querySelector(focusSelector)) || card.querySelector('.fac-buy:not(:disabled), .fac-toggle') || card.querySelector('.hub-close');
-      target?.focus({ preventScroll: true });
-    });
+  function show(body, focusSelector) {
+    // 다시 그려도 패널 스크롤 자리는 그대로.
+    const scroll = panel.scrollTop;
+    panel.replaceChildren(body);
+    panel.scrollTop = scroll;
+    if (!focusSelector) return;
+    requestAnimationFrame(() => body.querySelector(focusSelector)?.focus({ preventScroll: true }));
   }
   function frame(eyebrow, title, ...content) {
     const state = hub().state;
-    return h('section', { class: 'hub-dialog fac-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'fac-title' },
-      h('button', { type: 'button', class: 'hub-close', 'aria-label': '닫기', onclick: close }, '×'),
-      h('p', { class: 'hub-eyebrow' }, eyebrow),
-      h('h2', { id: 'fac-title' }, title),
-      h('p', { class: 'fac-wallet' }, `은자 ${won(state.silver)} · 비급 ${won(state.manuals)}`),
-      ...content,
-      h('div', { class: 'hub-dialog-footer' }, h('button', { type: 'button', class: 'hub-secondary', onclick: close }, '닫기')));
+    eyebrowEl.textContent = eyebrow;
+    titleEl.textContent = title;
+    walletEl.textContent = `은자 ${won(state.silver)} · 비급 ${won(state.manuals)}`;
+    return h('div', { class: 'fac-body' }, ...content);
   }
   function open(kind) {
     if (!hub()) return;
-    if (modal.hidden) opener = document.activeElement;
-    modal.hidden = false;
+    if (screen.hidden) opener = document.activeElement;
     current = kind;
+    screen.dataset.kind = kind;
+    sceneImage.src = `assets/facilities/${kind}.webp`;
+    panel.scrollTop = 0;
+    screen.hidden = false;
+    document.body.classList.add('fac-open');
+    if (hubScreen()) hubScreen().inert = true;
     DRAW[kind]();
+    requestAnimationFrame(() => { screen.classList.add('is-open'); backButton.focus({ preventScroll: true }); });
   }
 
   // ---- 폐관동 ----
@@ -430,7 +446,7 @@
   });
 
   function start() {
-    document.body.append(modal);
+    document.body.append(screen);
     // 네 시설 버튼은 hub.js 의 "준비 중" 창 대신 이 화면을 연다.
     for (const kind of ['seclusion', 'hall', 'alchemy', 'forge']) {
       document.querySelectorAll(`[data-facility="${kind}"]`).forEach(button => button.addEventListener('click', event => {
