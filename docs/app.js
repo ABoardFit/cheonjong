@@ -53,7 +53,7 @@
     const level = skill.levels.find(item => Number(item.rank) === currentRank) || skill.levels[currentRank - 1];
     const support = ['zixia', 'liuhe', 'five_elements'].includes(skill.id);
     return `<section class="skill-column" aria-label="${escape(skill.name)} 단계 열람">
-      <span class="skill-type">${support ? '조합 심법 · 보법' : '주 무공'}</span><h4>${escape(skill.name)}</h4>
+      <span class="skill-type">${support ? '조합 심법 · 보법' : '주 무공'}</span><h4>${window.CheonSkillIcons.markup(skill.id, currentRank)}${escape(window.CheonSkillIcons.resolve(skill.id, currentRank)?.name || skill.name)}</h4>
       <div class="stage-tabs" role="group" aria-label="${escape(skill.name)} 단계 선택">${skill.levels.map(item => `
         <button class="stage-button ${Number(item.rank) === 7 ? 'fusion-stage' : ''}" data-skill="${escape(skill.id)}" data-rank="${item.rank}" aria-pressed="${Number(item.rank) === currentRank}" aria-label="${escape(skill.name)} ${item.rank}${support ? '성' : '단계'}${Number(item.rank) === 7 ? ', 절세신공' : ''}">${item.rank}<small>${Number(item.rank) === 7 ? '조합' : Number(item.rank) === 6 ? '화경' : support ? '성' : '단계'}</small></button>`).join('')}</div>
       <div class="stage-detail ${currentRank === 7 ? 'is-fusion' : ''}">

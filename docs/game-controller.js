@@ -6,7 +6,8 @@
   const dialog = document.querySelector('#battle-dialog');
   const core = window.CheonGameCore;
   const skills = window.CHEONJONG_DATA.schools.hwasan.skills;
-  const symbols = { plum_sword: '劍', zixia: '紫', plum_rain: '雨', liuhe: '合', dark_fragrance: '影', five_elements: '步' };
+  const artwork = window.CheonSkillIcons;
+  const skillName = (id, rank) => artwork.resolve(id, rank)?.name || skillById(id).name;
   const order = ['plum_sword', 'zixia', 'plum_rain', 'liuhe', 'dark_fragrance', 'five_elements'];
   const pairs = [
     { active: 'plum_sword', partner: 'zixia', result: '매화만리향' },
@@ -56,7 +57,7 @@
     return order.map(id => {
       const skill = skillById(id);
       const rank = run.skills[id] || 0;
-      return `<div class="battle-skill ${rank === 0 ? 'unlearned' : ''} ${rank === 7 ? 'fused' : ''}" title="${esc(skill.name)} · ${rankText(id, rank)}"><span class="battle-skill-symbol" aria-hidden="true">${symbols[id]}</span><span class="battle-rank">${rank || '−'}</span><small>${esc(skill.name === '이십사수매화검법' ? '매화검법' : skill.name)}</small><span class="battle-sr-only">${rankText(id, rank)}</span></div>`;
+      return `<div class="battle-skill ${rank === 0 ? 'unlearned' : ''} ${rank === 7 ? 'fused' : ''}" title="${esc(skillName(id, rank))} · ${rankText(id, rank)}"><span class="battle-skill-symbol" aria-hidden="true">${artwork.markup(id, rank)}</span><span class="battle-rank">${rank || '−'}</span><small>${esc(skillName(id, rank) === '이십사수매화검법' ? '매화검법' : skillName(id, rank))}</small><span class="battle-sr-only">${rankText(id, rank)}</span></div>`;
     }).join('');
   }
   function ownedMarkup() {
@@ -162,13 +163,13 @@
     openModal('codex', `<p class="dialog-eyebrow">이번 수련의 무공록</p><h2 id="battle-dialog-title">매화의 길</h2><p class="dialog-lead">현재 배운 무공의 효과입니다. 1~6단계는 누적되며, 절세신공도 양쪽 효과를 계승합니다.</p>${order.map(id => {
       const skill = skillById(id);
       const rank = run.skills[id] || 0;
-      return `<section class="codex-entry"><h3>${symbols[id]} · ${esc(skill.name)}<small>${rankText(id, rank)}</small></h3>${rank === 7 && id === 'plum_sword' ? '<p><strong>절세신공의 압축:</strong> 기존 1·2차 직접 피해를 한 번의 매화 베기에 합산합니다. 개화 폭발을 따로 재생하지 않으며, 3초 장판과 심법 효과는 유지합니다.</p>' : ''}${rank ? skill.levels.filter(level => Number(level.rank) <= rank).map(level => `<p><strong>${level.rank}${['zixia', 'liuhe', 'five_elements'].includes(id) ? '성' : '단계'}</strong> · ${esc(level.description)}</p>`).join('') : '<p>레벨이 오르면 새 무공으로 습득할 수 있습니다.</p>'}</section>`;
+      return `<section class="codex-entry"><h3>${artwork.markup(id, rank)}${esc(skillName(id, rank))}<small>${rankText(id, rank)}</small></h3>${rank === 7 && id === 'plum_sword' ? '<p><strong>절세신공의 압축:</strong> 기존 1·2차 직접 피해를 한 번의 매화 베기에 합산합니다. 개화 폭발을 따로 재생하지 않으며, 3초 장판과 심법 효과는 유지합니다.</p>' : ''}${rank ? skill.levels.filter(level => Number(level.rank) <= rank).map(level => `<p><strong>${level.rank}${['zixia', 'liuhe', 'five_elements'].includes(id) ? '성' : '단계'}</strong> · ${esc(level.description)}</p>`).join('') : '<p>레벨이 오르면 새 무공으로 습득할 수 있습니다.</p>'}</section>`;
     }).join('')}<div class="dialog-footer"><small>계보 전체는 메인 화면의 무공록에서 확인할 수 있습니다.</small><button class="dialog-primary" data-action="resume">전투로 돌아가기 →</button></div>`);
   }
   // 레벨업 한 줄: 아이콘(아래 단계) · "이름 - 초식/심법" · 짧은 효과. 오른쪽 위는 조합 짝 아이콘(보유하면 색, 아니면 흐리게).
   function comboIcon(id) {
     const rank = run.skills[id] || 0;
-    return `<span class="lv-combo-icon${rank ? '' : ' is-off'}" title="${esc(skillById(id).name)} · ${rankText(id, rank)}">${symbols[id]}</span>`;
+    return `<span class="lv-combo-icon${rank ? '' : ' is-off'}" title="${esc(skillName(id, rank))} · ${rankText(id, rank)}">${artwork.markup(id, rank)}</span>`;
   }
   function choiceRow(choice) {
     const id = choice.skillId, heal = choice.type === 'heal', fusion = choice.rank === 7;
@@ -180,7 +181,7 @@
     const combo = heal || !pair ? '' : `<span class="lv-combo" aria-label="조합 ${esc(pair.result)}">${fusion ? `${comboIcon(pair.active)}${comboIcon(pair.partner)}` : comboIcon(id === pair.active ? pair.partner : pair.active)}</span>`;
     const short = String(choice.description || '').split(/(?<=다\.)\s+/)[0];
     const full = `${choice.formTitle ? `「${choice.formTitle}」 ` : ''}${choice.description || ''}`;
-    return `<button class="lv-row${mind ? ' is-mind' : ''}${fusion ? ' is-fusion' : ''}" data-choice="${esc(choice.id)}" title="${esc(full)}"><span class="lv-icon" aria-hidden="true"><b>${heal ? '修' : symbols[id]}</b><small>${level}</small></span><span class="lv-text"><strong><span class="lv-name">${esc(name)}</span><span class="lv-kind">- ${kind}</span></strong><span class="lv-desc">${choice.formTitle ? `<b>${esc(choice.formTitle)}</b> · ` : ''}${esc(short)}</span></span>${combo}</button>`;
+    return `<button class="lv-row${mind ? ' is-mind' : ''}${fusion ? ' is-fusion' : ''}" data-choice="${esc(choice.id)}" title="${esc(full)}"><span class="lv-icon" aria-hidden="true">${heal ? '<b>修</b>' : artwork.markup(id, choice.rank)}<small>${level}</small></span><span class="lv-text"><strong><span class="lv-name">${esc(name)}</span><span class="lv-kind">- ${kind}</span></strong><span class="lv-desc">${choice.formTitle ? `<b>${esc(choice.formTitle)}</b> · ` : ''}${esc(short)}</span></span>${combo}</button>`;
   }
   function showChoices() {
     const choices = core.getChoices(run);
@@ -246,8 +247,10 @@
     bar.replaceChildren(...order.filter(id => run.skills[id]).map(id => {
       const icon = document.createElement('span');
       icon.className = `skill-icon${['zixia', 'liuhe', 'five_elements'].includes(id) ? ' is-mind' : ''}${run.skills[id] === 7 ? ' is-fused' : ''}`;
-      icon.title = `${skillById(id).name} · ${rankText(id, run.skills[id])}`;
-      icon.textContent = symbols[id];
+      icon.title = `${skillName(id, run.skills[id])} · ${rankText(id, run.skills[id])}`;
+      icon.setAttribute('role', 'img');
+      icon.setAttribute('aria-label', icon.title);
+      icon.innerHTML = artwork.markup(id, run.skills[id]);
       return icon;
     }));
   }

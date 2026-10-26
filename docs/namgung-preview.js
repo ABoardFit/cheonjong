@@ -44,7 +44,7 @@
   const mechanics = { sword: ['검 자체의 근접 찌르기 · 붓 검기 없음', '몸 중심 · 75° 부채꼴', '확장된 75° 검격', '부채꼴 + 직선 천뢰 한 줄기', '한 줄기에서 세 갈래로', '부채꼴 없이 · 가장 먼 적을 가르는 일검', '적 밀집 무리의 중심을 가르는 검격 → 불꽃 낙뢰'], formation: ['작은 검 한 자루가 적 몸을 반복해서 찌르기', '서로 다른 적 · 최대 세 자루', '세 자루의 강화된 위력', '서로 다른 적 · 최대 여덟 자루', '적 뒤에서 앞으로 통과하는 베기 · 주변 피해', '적 수와 무관하게 고정 여덟 방향으로 왕복', '원거리 적 우선 · 코등이는 지면 위 · 보이는 검날부터 구슬로 소멸'], dash: ['도주기 이동 · 무적 없음', '늘어난 경공 거리', '경공 경로에 감전 지대 3초', '감전 지대 + 가까운 적에게 큰 낙뢰', '더 넓은 감전 지대', '강화된 단일 일격', '경공과 하늘에서 떨어지는 큰 천뢰 · 무적 없음'] };
   function update() {
     const p = data.paths[path], rank = ranks[path], mind = data.minds[p.partnerId], m = minds[path], stage = level(p.levels, rank), ml = level(mind.levels, m);
-    $('stage-title').textContent = p.name; $('stage-rank').textContent = `${rank === 7 ? '絶世' : rank === 6 ? '化境' : ['一', '二', '三', '四', '五'][rank - 1]} · ${stage.title}`;
+    $('stage-title').textContent = window.CheonSkillIcons.resolve(p.id, rank, 'namgung').name; $('stage-rank').textContent = `${rank === 7 ? '絶世' : rank === 6 ? '化境' : ['一', '二', '三', '四', '五'][rank - 1]} · ${stage.title}`;
     $('stage-mind').textContent = m ? `${mind.name} ${m}성` : '심법 없음 · 순수 초식';
     $('rank-caption').textContent = rank === 7 ? '절세무공' : `${rank}단계`;
     $('mind-name').textContent = mind.name; $('direction-caption').textContent = names[directions.indexOf(direction)];
@@ -52,6 +52,11 @@
     $('form-name').textContent = detail === 'mind' ? `${mind.name} ${m === 0 ? '미습득' : m + '성'}` : stage.title;
     $('form-description').textContent = detail === 'mind' ? ml.description : stage.description;
     $('mind-focus').setAttribute('aria-pressed', String(detail === 'mind'));
+    const icons = window.CheonSkillIcons;
+    icons.label($('stage-title'), p.id, rank, 'namgung');
+    icons.label($('form-name'), detail === 'mind' ? mind.id : p.id, detail === 'mind' ? m : rank, 'namgung');
+    icons.label($('mind-name'), mind.id, m, 'namgung');
+    document.querySelectorAll('[data-path]').forEach(button => icons.label(button, data.paths[button.dataset.path].id, ranks[button.dataset.path], 'namgung'));
     $('fusion-note').textContent = rank === 7 && m < 6 ? '연출 비교용 7단계 · 실제 조합 조건: 초식 6 + 심법 6' : '초식 6단계 + 짝 심법 6성에서 절세무공 완성';
     $('mechanic-note').textContent = mechanics[path][rank - 1];
     $('qi-pickup').disabled = path === 'dash' && (m < 6 || rank < 4);

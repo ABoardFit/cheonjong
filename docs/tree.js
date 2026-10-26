@@ -360,7 +360,9 @@
       const r = radiusOf(n);
       const group = el('g', { class: `tree-node is-${n.kind}`, 'data-node': n.id, tabindex: '0', role: 'button', 'aria-label': n.name });
       group.append(el('circle', { r: r + 9, class: 'tree-hit' }), el('circle', { r: r + 7, class: 'tree-glow' }), el('circle', { r, class: 'tree-dot' }));
-      if (n.glyph) group.append(el('text', { class: 'tree-glyph', 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': Math.round(r * 1.05) }, n.glyph));
+      const skillArt = ['skill', 'fusion'].includes(n.kind) ? window.CheonSkillIcons.byName(n.name) : null;
+      if (skillArt) group.append(el('image', { href: skillArt.src, x: -r + 2, y: -r + 2, width: (r - 2) * 2, height: (r - 2) * 2, class: 'tree-skill-art', 'aria-hidden': 'true' }));
+      else if (n.glyph) group.append(el('text', { class: 'tree-glyph', 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': Math.round(r * 1.05) }, n.glyph));
       if (['skill', 'notable', 'locked', 'fusion'].includes(n.kind) || n.custom) {
         group.append(el('text', { class: 'tree-name', 'font-size': n.kind === 'notable' ? 15 : 12 }, n.name));
       }

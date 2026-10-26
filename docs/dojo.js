@@ -107,6 +107,13 @@
     $('dojo-walk').textContent = walking ? '걷기 끄기' : '걷기 켜기';
     $('dojo-live').textContent = `${skill.name} ${rank === 7 ? '절세신공' : rank + '단계'}, ${partner.name} ${partnerRanks[category] === 0 ? '없음' : partnerRanks[category] + '성'}, ${directionNames[direction]}${paused ? ', 일시정지' : ', 반복 재생'}`;
     $('dojo-time').textContent = `${run.time.toFixed(2)}초`;
+    const icons = window.CheonSkillIcons;
+    icons.label($('dojo-form-name'), detailSource === 'partner' ? path.partner : path.active, detailSource === 'partner' ? partnerRanks[category] : rank);
+    icons.label($('dojo-partner-label'), path.partner, partnerRanks[category]);
+    screen.querySelectorAll('[data-dojo-category]').forEach(button => {
+      const entry = paths[button.dataset.dojoCategory];
+      icons.label(button, entry.active, button.dataset.dojoCategory === category ? rank : 1);
+    });
   }
 
   function advance(dt) {
@@ -143,6 +150,7 @@
     lastFrame = now;
     if (!paused && !document.hidden) advance(dt);
     $('dojo-time').textContent = `${run.time.toFixed(2)}초`;
+
     renderer.draw(run, { paused, reducedMotion: reducedMotion.matches });
     frame = requestAnimationFrame(animate);
   }
