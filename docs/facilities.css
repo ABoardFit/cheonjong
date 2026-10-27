@@ -86,10 +86,17 @@ body.fac-open { overflow: hidden; }
 .fac-item.grade-2 .fac-name strong { color: #3f6c96; }
 .fac-item.grade-3 .fac-name strong { color: #7a4f96; }
 .fac-item.grade-4 .fac-name strong { color: var(--accent); }
+.fac-item.grade-5 .fac-name strong, .fac-special-opt { color: #b07a16; }
 .fac-attrs { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .fac-attr { display: inline-flex; align-items: center; gap: 6px; color: #62695f; }
 .fac-mini { margin: 0; min-width: 0; padding: 0 6px; border: 1px solid var(--line); background: none; color: var(--ink); }
 .fac-mini:disabled { color: var(--muted); cursor: default; }
+.fac-lock { width: 22px; padding: 0; text-align: center; }
+.fac-lock.is-on { background: var(--ink); border-color: var(--ink); color: var(--paper-light); }
+.fac-attr.is-locked { color: var(--ink); }
+.fac-tier { font-size: 0.8em; color: var(--muted); }
+.fac-tier.tier-5, .fac-tier.tier-6 { color: #3f6c96; }
+.fac-tier.tier-7 { color: #b07a16; font-weight: 700; }
 .fac-actions { display: grid; gap: 4px; justify-items: stretch; }
 .fac-toggle:disabled { color: var(--muted); cursor: default; }
 @container fac (max-width: 520px) {
@@ -97,4 +104,5 @@ body.fac-open { overflow: hidden; }
   .fac-combine > .fac-buy { grid-area: b; }
   .fac-item { grid-template-columns: 32px minmax(0, 1fr); }
   .fac-item > .fac-actions { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
+  .fac-item > .fac-actions > .fac-reroll { grid-column: 1 / -1; }
 }

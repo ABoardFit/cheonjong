@@ -30,21 +30,30 @@
   }
   // 출전 전에 정해지는 영구 강화(폐관동 등)의 합. 공력(damage)·이동(speed)·범위(area)는 비율, 피해 감소·치명타 확률은 0~1.
   // 내력(innerForce)은 최대 내력(마나)에 더해진다. 주세력 특수(화산): petalCapacity = 꽃잎 최대 보유 +n, petalArmor = 꽃잎 갑옷 고정 감소 비율.
-  const BONUS_KEYS = ['hp', 'damage', 'speed', 'reduction', 'critChance', 'critDamage', 'area', 'innerForce', 'petalCapacity', 'petalArmor', 'rerolls', 'revives'];
+  // 대장간 옵션(forge.js ATTRS): xpGain · pickupRange · cooldown · attackSpeed · projectileSpeed · dropChance · specialChance(특수 아이템) · stageSpeed 는 비율,
+  // regen 은 초당 생명, dodge 는 0~1, startLevel 은 시작할 때 더 받는 레벨, size 는 ± 비율(캐릭터 크기). silverGain 은 시설 쪽에서 정산.
+  const BONUS_KEYS = ['hp', 'damage', 'speed', 'reduction', 'critChance', 'critDamage', 'area', 'innerForce', 'petalCapacity', 'petalArmor', 'rerolls', 'revives',
+    'xpGain', 'pickupRange', 'cooldown', 'attackSpeed', 'regen', 'projectileSpeed', 'dodge', 'dropChance', 'specialChance', 'stageSpeed', 'startLevel'];
   function normalizeBonuses(value = {}) {
     const out = Object.fromEntries(BONUS_KEYS.map(key => [key, Math.max(0, Number(value[key]) || 0)]));
     out.reduction = Math.min(out.reduction, 0.6);
     out.critChance = Math.min(out.critChance, 0.6);
-    out.rerolls = Math.floor(out.rerolls); out.revives = Math.floor(out.revives);
+    out.cooldown = Math.min(out.cooldown, 0.5); out.dodge = Math.min(out.dodge, 0.5); out.stageSpeed = Math.min(out.stageSpeed, 0.5);
+    out.size = clamp(Number(value.size) || 0, -0.5, 0.5);
+    out.rerolls = Math.floor(out.rerolls); out.revives = Math.floor(out.revives); out.startLevel = Math.floor(out.startLevel);
+    out.specials = Array.isArray(value.specials) ? value.specials.filter(key => typeof key === 'string') : [];
     return out;
   }
   // 연무장: 맹약(blood·solo·swift)과 폐공(이번 판 선택지에 안 나올 무공).
   const normalizePacts = value => (Array.isArray(value) ? [...new Set(value)].filter(id => B.pacts[id]) : []);
   const normalizeBanned = value => (Array.isArray(value) ? [...new Set(value)].filter(id => skillIds.includes(id)) : []);
   const hasPact = (s, id) => (s.pacts || []).includes(id);
+  // 대장간 신병이기 특수 옵션(forge.js SPECIALS).
+  const hasSpecial = (s, key) => (s.bonuses?.specials || []).includes(key);
   // 내력: 검우·경공을 쓸 때 든다(검법은 들지 않음). 단계가 오를수록 perRank 씩 더 든다.
   function manaCost(s, kind) {
     const rank = kind === 'rain' ? s.skills.plum_rain : s.skills.dark_fragrance;
+    if (kind === 'rain' && hasSpecial(s, 'rain_free')) return 0;
     return B.mana[kind] + Math.max(0, rank - 1) * B.mana.perRank;
   }
   function spendMana(s, kind) {
@@ -67,15 +76,16 @@
     const dashReduction = k.dark_fragrance >= 4 && (s.player.dashRemaining > 0 || s.time < s.player.reductionUntil) ? d.reduction : 0;
     return {
       maxHp: s.player.maxHp, hp: s.player.hp,
-      attackSpeed: B.player.attackSpeed, attackDamage: B.player.attackDamage * (1 + Math.max(0, k.plum_sword - 1) * B.player.attackRankDamage) * (k.zixia >= 4 ? 1 + s.player.petals * p.damagePerHeld : 1),
+      attackSpeed: B.player.attackSpeed * (1 + b.attackSpeed), attackDamage: B.player.attackDamage * (1 + Math.max(0, k.plum_sword - 1) * B.player.attackRankDamage) * (k.zixia >= 4 ? 1 + s.player.petals * p.damagePerHeld : 1),
       attackRadius, bloomRadius, fieldRadius: rank === 6 ? bloomRadius : attackRadius,
       swordSectorHalfAngle: B.player.swordSectorHalfAngle,
-      maxPetals: p.baseCapacity + p.capacityPerUpgrade * (Number(k.zixia >= 2) + Number(k.liuhe >= 1) + Number(k.liuhe >= 3)) + Math.floor(b.petalCapacity),
+      maxPetals: p.baseCapacity + p.capacityPerUpgrade * (Number(k.zixia >= 2) + Number(k.liuhe >= 1) + Number(k.liuhe >= 3)) + Math.floor(b.petalCapacity) + (hasSpecial(s, 'petal_cap') ? 2 : 0),
       petalConsumption: p.baseConsumption + p.consumptionPerUpgrade * (Number(k.zixia >= 3) + Number(k.liuhe >= 4)),
       petalFlatReduction: (p.flatReduction + (k.liuhe >= 2 ? p.liuheFlatBonus : 0)) * (1 + b.petalArmor),
       damageReduction: 1 - (1 - dashReduction) * (1 - b.reduction),
       moveSpeed: B.player.speed * (1 + speedUps * d.speedPerUpgrade) * (1 + b.speed),
-      rainCooldown: B.rain.cooldown, dashCooldown: d.cooldown,
+      rainCooldown: B.rain.cooldown * (1 - b.cooldown), dashCooldown: d.cooldown * (hasSpecial(s, 'dash_cd') ? 0.6 : 1) * (1 - b.cooldown),
+      pickupRadius: B.player.pickupRadius * (1 + b.pickupRange), xpMagnetRadius: B.player.xpMagnetRadius * (1 + b.pickupRange),
       dashDistance: d.distance + (k.five_elements >= 2 ? d.distanceBonus : 0),
       critChance: B.player.critChance + b.critChance, critMultiplier: B.player.critMultiplier + b.critDamage, damageMultiplier: 1 + b.damage,
       mana: s.player.mana, maxMana: s.player.maxMana, rainManaCost: manaCost(s, 'rain'), dashManaCost: manaCost(s, 'dash'),
@@ -114,8 +124,12 @@
     s.player.maxHp = s.player.hp = B.player.hp + s.bonuses.hp;
     s.player.maxMana = s.player.mana = B.mana.max + s.bonuses.innerForce;
     s.rerollsLeft = s.bonuses.rerolls; s.revivesLeft = s.bonuses.revives;
-    s.maxTime = hasPact(s, 'swift') ? B.pacts.swift.maxTime : B.progression.maxTime;
-    s.bossAt = hasPact(s, 'swift') ? B.pacts.swift.bossAt : B.progression.bossAt;
+    s.player.sizeScale = 1 + s.bonuses.size; s.player.radius = B.player.radius * s.player.sizeScale;
+    s.bonusLevels = s.bonuses.startLevel;
+    // 스테이지 진행 속도: 수문장 등장 · 제한 시간이 그만큼 앞당겨진다.
+    const pace = 1 + s.bonuses.stageSpeed;
+    s.maxTime = (hasPact(s, 'swift') ? B.pacts.swift.maxTime : B.progression.maxTime) / pace;
+    s.bossAt = (hasPact(s, 'swift') ? B.pacts.swift.bossAt : B.progression.bossAt) / pace;
     return s;
   }
   // Independent, testable mitigation: fixed reduction is applied BEFORE percentage.
@@ -136,12 +150,13 @@
     for (const e of candidates.slice(0, Math.max(0, max - attached.length))) e.petalAttached = true;
   }
   function pickup(s, type, x, y, value = 1) {
-    if (s.pickups.length >= B.limits.pickups) {
+    // 특수 아이템(단약 · 부적)은 드물어서 한도와 무관하게 떨어진다.
+    if (s.pickups.length >= B.limits.pickups && !B.special.weights[type]) {
       // Coalesce XP instead of silently losing progression under the entity cap.
       if (type === 'xp') { const q = s.pickups.find(p => p.type === 'xp'); if (q) q.value += value; }
       return;
     }
-    s.pickups.push({ id: id(s), type, x, y, value, bornAt: s.time, expiresAt: s.time + (type === 'petal' ? B.petal.lifetime : 120) });
+    s.pickups.push({ id: id(s), type, x, y, value, bornAt: s.time, expiresAt: s.time + (type === 'petal' ? B.petal.lifetime : type === 'xp' ? 120 : B.special.lifetime) });
   }
   function knockback(s, x, y, radius, amount, kind, visual = {}) {
     for (const e of s.enemies) {
@@ -155,6 +170,11 @@
   function damagePlayer(s, incoming, source) {
     if (s.status !== 'running' || s.time < s.player.invulnerableUntil || s.time < s.player.hurtUntil) return { damage: 0, consumed: 0, ignored: true };
     const st = getStats(s), p = s.player;
+    if (s.bonuses?.dodge && rng(s) < s.bonuses.dodge) {
+      p.hurtUntil = s.time + B.player.hurtGrace;
+      floatText(s, p.x, p.y - 20, '회피', '#cfe8ff');
+      return { damage: 0, consumed: 0, ignored: true, dodged: true };
+    }
     const hit = mitigateDamage({ damage: incoming * (s.difficulty?.attack ?? 1) * (hasPact(s, 'blood') ? B.pacts.blood.taken : 1), petals: p.petals, consumption: st.petalConsumption, flatReduction: st.petalFlatReduction, percentReduction: st.damageReduction });
     p.petals -= hit.consumed;
     syncAttachments(s);
@@ -162,7 +182,8 @@
     p.hurtUntil = s.time + B.player.hurtGrace;
     floatText(s, p.x, p.y - 20, hit.damage > 0 ? '-' + Math.ceil(hit.damage) : '방어', '#ff9c99');
     if (hit.consumed > 0) effect(s, 'burst', p.x, p.y, 42, 0.3, { color: '#f7b6df', source: 'petal_armor' });
-    if (hit.consumed > 0 && s.skills.liuhe >= 5) {
+    if (hit.consumed > 0 && hasSpecial(s, 'petal_thorns')) radialDamage(s, p.x, p.y, 90, 30, 'thorns');
+    if (hit.consumed > 0 && (s.skills.liuhe >= 5 || hasSpecial(s, 'liuhe_quake'))) {
       s.metrics.armorKnockbacks++;
       knockback(s, p.x, p.y, B.petal.armorKnockbackRadius, B.petal.armorKnockbackDistance, 'armor');
     }
@@ -198,7 +219,7 @@
       if (s.skills.zixia >= 1) pickup(s, 'petal', enemy.x + 7, enemy.y + 5);
       effect(s, 'burst', enemy.x, enemy.y, enemy.radius + 8, 0.22, { color: enemy.type === 'boss' ? '#fcdd9e' : '#947b8b', source: 'death' });
       if (enemy.type === 'boss') { s.bossDefeated = true; s.status = 'won'; s.resultReason = '매화곡의 주인 격파'; }
-      dropLoot(s, enemy);
+      dropLoot(s, enemy); dropSpecial(s, enemy);
     }
     return dealt;
   }
@@ -208,9 +229,34 @@
     if (!s.loot) return;
     if (enemy.type === 'boss') {
       s.loot.spirit += B.loot.bossSpirit; s.loot.gear += B.loot.bossGear;
+      // 특수 아이템 등장 확률: 수문장 장비가 한 등급 위(양품)로 나온다(gear 중 rareGear 개).
+      if (lootRoll(s) < (s.bonuses?.specialChance || 0)) s.loot.rareGear = (s.loot.rareGear || 0) + 1;
       floatText(s, enemy.x, enemy.y - enemy.radius - 18, '영물 +' + B.loot.bossSpirit + ' · 장비 +' + B.loot.bossGear, '#ffe6a7');
     }
-    else if (lootRoll(s) < B.loot.herbChance) { s.loot.herbs++; floatText(s, enemy.x, enemy.y - enemy.radius - 12, '약재 +1', '#a9d6a0'); }
+    else if (lootRoll(s) < B.loot.herbChance * (1 + (s.bonuses?.dropChance || 0))) { s.loot.herbs++; floatText(s, enemy.x, enemy.y - enemy.radius - 12, '약재 +1', '#a9d6a0'); }
+  }
+  // 판 안 특수 아이템(단약 · 부적). 수문장은 떨구지 않는다.
+  function dropSpecial(s, enemy) {
+    const sp = B.special;
+    if (enemy.type === 'boss' || lootRoll(s) >= sp.chance * (1 + (s.bonuses?.specialChance || 0))) return;
+    const kinds = Object.entries(sp.weights).filter(([kind]) => !(kind === 'elixir' && hasPact(s, 'solo')));
+    let roll = lootRoll(s) * kinds.reduce((sum, [, w]) => sum + w, 0), kind = kinds[kinds.length - 1][0];
+    for (const [k, w] of kinds) if ((roll -= w) < 0) { kind = k; break; }
+    pickup(s, kind, enemy.x - 6, enemy.y - 4);
+  }
+  function takeSpecial(s, q) {
+    const p = s.player;
+    if (q.type === 'elixir') {
+      p.hp = Math.min(p.maxHp, p.hp + B.special.elixirHeal);
+      floatText(s, p.x, p.y - 30, '단약 +' + B.special.elixirHeal, '#ff9fa0');
+      effect(s, 'aura', p.x, p.y, 60, 0.5, { color: '#ffb3a8', source: 'elixir' });
+    } else if (q.type === 'talisman') {
+      let gained = 0;
+      for (const o of s.pickups) if (o.type === 'xp' && !o.dead) { gained += o.value; o.dead = true; }
+      s.xp += gained * (1 + (s.bonuses?.xpGain || 0));
+      floatText(s, p.x, p.y - 30, '흡기 부적', '#ffe28e');
+      effect(s, 'aura', p.x, p.y, 120, 0.6, { color: '#ffe6a7', source: 'talisman' });
+    }
   }
   function radialDamage(s, x, y, radius, amount, source, options) {
     for (const e of s.enemies) if (e.hp > 0 && distance(options?.bodyCentered ? getCombatCenter(e) : e, { x, y }) <= radius + e.radius) damageEnemy(s, e, amount, source, options);
@@ -221,6 +267,7 @@
     const gained = Math.min(Math.floor(amount), capacity - p.petals);
     if (gained <= 0) return 0;
     p.petals += gained; s.metrics.petalPickups += gained;
+    if (hasSpecial(s, 'zixia_heal') && !hasPact(s, 'solo')) p.hp = Math.min(p.maxHp, p.hp + 3 * gained);
     syncAttachments(s);
     if (s.skills.liuhe >= 6) {
       for (let i = 0; i < gained; i++) {
@@ -232,7 +279,7 @@
     return gained;
   }
   function addField(s, field) {
-    const f = Object.assign({ id: id(s), skillId: 'plum_sword', x: 0, y: 0, radius: 50, expiresAt: s.time + B.field.duration, bornAt: s.time }, field);
+    const f = Object.assign({ id: id(s), skillId: 'plum_sword', x: 0, y: 0, radius: 50, expiresAt: s.time + B.field.duration * (hasSpecial(s, 'field_long') ? 1.5 : 1), bornAt: s.time }, field);
     // Same skill overlaps are resolved once per enemy/tick, not per field.
     s.fields.push(f);
     if (s.fields.length > B.limits.fields) s.fields.shift();
@@ -262,6 +309,7 @@
     if (rank >= 5 && rank < 7) schedule(s, B.player.bloomDelay, 'sword_bloom',
       { x: center.x, y: center.y, radius: st.bloomRadius, flowerRadius: radius, rank, damage: base * 0.8, field: rank >= 6 });
     if (rank === 7) addField(s, { skillId: 'plum_sword', x: center.x, y: center.y, radius: st.fieldRadius, damage: B.field.swordDamage, bodyCentered: true });
+    if (hasSpecial(s, 'sword_echo') && targets.length) schedule(s, 0.3, 'sword_echo', { x: center.x, y: center.y, radius, damage: base * 0.5 });
   }
   function rainAttack(s) {
     const rank = s.skills.plum_rain; if (!rank) return;
@@ -269,7 +317,7 @@
       .sort((a, b) => distance(a, s.player) - distance(b, s.player));
     if (!targets.length) return;
     if (!spendMana(s, 'rain')) return 'mana';
-    const count = Math.min(B.rain.counts[rank], targets.length);
+    const count = Math.min(B.rain.counts[rank] + (hasSpecial(s, 'rain_extra') ? 3 : 0), targets.length);
     for (let i = 0; i < count; i++) {
       const kind = rank === 7 ? (rng(s) < 0.5 ? 'sword' : 'petal') : rank < 5 ? 'sword' : 'petal';
       // Each enemy receives at most one projectile. Swords prefer a remaining
@@ -278,9 +326,11 @@
       const target = targets.splice(ranged >= 0 ? ranged : 0, 1)[0];
       const visual = getCombatCenter(target);
       const delay = rank === 4 ? 0 : i * B.rain.sequentialDelay;
-      const strike = { x: target.x, y: target.y, visualX: visual.x, visualY: visual.y, targetId: target.id, rank, kind };
+      // 투사체 속도: 검우가 떨어지는 시간이 짧아진다.
+      const fall = 0.3 / (1 + (s.bonuses?.projectileSpeed || 0));
+      const strike = { x: target.x, y: target.y, visualX: visual.x, visualY: visual.y, targetId: target.id, rank, kind, fall };
       schedule(s, delay, 'rain_visual', strike);
-      schedule(s, delay + 0.3, 'rain_hit', strike);
+      schedule(s, delay + fall, 'rain_hit', strike);
     }
   }
   function dashDrop(s, enemy) {
@@ -291,14 +341,15 @@
     const p = s.player;
     const visual = { dashSerial: p.dashSerial, landedAt: s.time,
       activeRank: s.skills.dark_fragrance, partnerRank: s.skills.five_elements,
-      hasLandingDamage: s.skills.dark_fragrance >= 3 };
+      hasLandingDamage: s.skills.dark_fragrance >= 3 || hasSpecial(s, 'landing_wave') };
     // Only the active landing strike creates a burst. The partner's first
     // four ranks improve movement/contact, without adding a landing wave.
-    if (s.skills.dark_fragrance >= 3) {
+    const wave = visual.hasLandingDamage;
+    if (wave) {
       effect(s, 'burst', p.x, p.y, B.dash.landingRadius, 0.42,
         { color: '#f9a3cc', source: 'landing', ...visual });
     }
-    if (s.skills.dark_fragrance >= 3) {
+    if (wave) {
       for (const e of s.enemies) if (e.hp > 0 && distance(e, p) <= B.dash.landingRadius + e.radius) {
         damageEnemy(s, e, B.dash.landingDamage, 'landing'); dashDrop(s, e);
       }
@@ -368,11 +419,14 @@
       effect(s, 'burst', ev.x, ev.y, ev.radius, 0.55, { color: '#f9b0da', source: 'bloom', bodyCentered: true, flowerRadius: ev.flowerRadius, rank: ev.rank });
       radialDamage(s, ev.x, ev.y, ev.radius, ev.damage, 'sword', { scaled: true, bodyCentered: true });
       if (ev.field) addField(s, { skillId: 'plum_sword', x: ev.x, y: ev.y, radius: ev.radius, damage: B.field.swordDamage, bodyCentered: true });
+    } else if (ev.type === 'sword_echo') {
+      effect(s, 'burst', ev.x, ev.y, ev.radius, 0.35, { color: '#ffd0e2', source: 'sword_echo', bodyCentered: true });
+      radialDamage(s, ev.x, ev.y, ev.radius, ev.damage, 'sword', { scaled: true, bodyCentered: true });
     } else if (ev.type === 'rain_visual') {
       const target = s.enemies.find(e => e.id === ev.targetId && e.hp > 0);
       const center = target ? getCombatCenter(target) : { x: ev.visualX ?? ev.x, y: ev.visualY ?? ev.y };
       const kind = ev.kind || (ev.rank < 5 ? 'sword' : 'petal');
-      effect(s, 'rain', center.x, center.y, B.rain.radius, 0.3, { rank: ev.rank, kind, targetId: ev.targetId,
+      effect(s, 'rain', center.x, center.y, B.rain.radius, ev.fall || 0.3, { rank: ev.rank, kind, targetId: ev.targetId,
         groundX: target ? target.x : ev.x, groundY: target ? target.y : ev.y,
         bodyCentered: true, color: kind === 'petal' ? '#f1a5cb' : '#d0b2f7', sword: kind === 'sword' });
     } else if (ev.type === 'rain_hit') {
@@ -463,7 +517,10 @@
     return getChoices(s);
   }
   function checkLevel(s) {
-    if (s.status !== 'running' || s.xp < s.nextXp) return;
+    if (s.status !== 'running') return;
+    // 대장간 시작 레벨: 판 처음에 경험치 없이 레벨을 그만큼 더 받는다.
+    if (s.bonusLevels > 0) { s.bonusLevels--; s.level++; s.status = 'levelup'; s.choiceList = null; getChoices(s); return; }
+    if (s.xp < s.nextXp) return;
     s.xp -= s.nextXp; s.level++;
     s.nextXp = B.progression.firstXp + (s.level - 1) * B.progression.xpPerLevel;
     s.status = 'levelup'; s.choiceList = null; getChoices(s);
@@ -531,13 +588,13 @@
       p.trailDistance = (carried + moved) % spacing;
     }
     s.camera.x = p.x; s.camera.y = p.y;
-    if (!hasPact(s, 'solo')) p.hp = Math.min(p.maxHp, p.hp + B.player.regeneration * dt);
+    if (!hasPact(s, 'solo')) p.hp = Math.min(p.maxHp, p.hp + (B.player.regeneration + (s.bonuses?.regen || 0)) * dt);
     p.mana = Math.min(p.maxMana, p.mana + B.mana.regen * dt);
     s.attackTimer -= dt;
     if (s.attackTimer <= 0) { s.attackTimer += 1 / st.attackSpeed; swordAttack(s); }
     s.rainTimer -= dt;
     // 내력이 모자라 못 쓴 검우는 잠시 뒤 다시 시도한다.
-    if (s.rainTimer <= 0) s.rainTimer = rainAttack(s) === 'mana' ? 0.25 : s.rainTimer + B.rain.cooldown;
+    if (s.rainTimer <= 0) s.rainTimer = rainAttack(s) === 'mana' ? 0.25 : s.rainTimer + st.rainCooldown;
     s.spawnTimer -= dt;
     if (s.spawnTimer <= 0) {
       const count = s.difficulty?.count ?? 1;
@@ -593,11 +650,12 @@
     for (const q of existingPickups) {
       if (q.dead || q.expiresAt <= s.time) continue;
       const dist = distance(q, p);
-      if (q.type === 'xp' && dist < B.player.xpMagnetRadius) {
+      if (q.type === 'xp' && dist < st.xpMagnetRadius) {
         const v = vector(p.x - q.x, p.y - q.y); q.x += v.x * Math.min(dist, 420 * dt); q.y += v.y * Math.min(dist, 420 * dt);
       }
-      if (distance(q, p) < B.player.pickupRadius) {
-        if (q.type === 'xp') { s.xp += q.value; q.dead = true; }
+      if (distance(q, p) < st.pickupRadius) {
+        if (q.type === 'xp') { s.xp += q.value * (1 + (s.bonuses?.xpGain || 0)); q.dead = true; }
+        else if (q.type === 'elixir' || q.type === 'talisman') { q.dead = true; takeSpecial(s, q); }
         else if (pickupPetal(s, q.value) > 0) q.dead = true;
       }
     }

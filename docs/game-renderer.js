@@ -752,6 +752,15 @@
       if (item.type === 'petal') {
         const stamp = this.collectiblePetalRaster(0, '#ffd0df');
         this.drawPixelStamp(stamp.canvas, -stamp.center.x * 2, -stamp.center.y * 2, 1);
+      } else if (item.type === 'elixir') {
+        // 단약: 붉은 환약에 금빛 테.
+        ctx.fillStyle = '#e8c36a'; ctx.fillRect(-6, -6, 12, 12);
+        ctx.fillStyle = '#c4373a'; ctx.fillRect(-5, -5, 10, 10);
+        ctx.fillStyle = '#ff8f8a'; ctx.fillRect(-3, -4, 3, 3);
+      } else if (item.type === 'talisman') {
+        // 부적: 누런 종이에 붉은 획.
+        ctx.fillStyle = '#efd98a'; ctx.fillRect(-5, -9, 10, 18);
+        ctx.fillStyle = '#b8302f'; ctx.fillRect(-1, -7, 2, 14); ctx.fillRect(-3, -4, 6, 2); ctx.fillRect(-3, 2, 6, 2);
       } else {
         ctx.shadowColor = '#7bbfba'; ctx.shadowBlur = 0;
         ctx.fillStyle = '#b1e7d1'; ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(4, 0); ctx.lineTo(0, 5); ctx.lineTo(-4, 0); ctx.closePath(); ctx.fill();
@@ -850,6 +859,9 @@
       ctx.save(); ctx.translate(player.x, player.y);
       if (finite(player.hurtUntil) > this.time && Math.floor(this.time * 24) % 2 === 0) ctx.globalAlpha = 0.55;
       if (invincible) { ctx.shadowColor = '#f4b7d7'; ctx.shadowBlur = 0; }
+      // 대장간 캐릭터 크기 옵션(발밑 기준으로 키우거나 줄인다).
+      const sizeScale = finite(player.sizeScale, 1);
+      if (sizeScale !== 1) ctx.scale(sizeScale, sizeScale);
       this.drawHeroFrame(pose);
       ctx.shadowBlur = 0;
       ctx.restore();

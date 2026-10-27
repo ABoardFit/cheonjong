@@ -41,6 +41,9 @@
     // 연단방 재료: 일반 적이 herbChance 확률로 약재를, 수문장이 영물을 떨군다(판이 끝나면 정산).
     // 대장간 장비: 수문장이 범품 장비를 bossGear 개 떨군다(속성은 시설 쪽에서 굴림).
     loot: { herbChance: 0.03, bossSpirit: 1, bossGear: 1 },
+    // 판 안 특수 아이템: 일반 적이 chance 확률로 떨군다(대장간 "특수 아이템 등장 확률"이 비율로 올림).
+    // 단약 = 생명 elixirHeal 회복(단신 맹약이면 안 나옴), 부적 = 땅에 떨어진 경험치를 모두 먹음.
+    special: { chance: 0.006, weights: { elixir: 60, talisman: 40 }, elixirHeal: 40, lifetime: 30 },
     field: { duration: 3, tick: 0.3, swordDamage: 11, rainDamage: 9,
       trailDamage: 10, trailRadius: 25, wideTrailRadius: 43 },
     enemy: { spawnStart: 0.7, spawnEnd: 0.22, maximum: 115,
