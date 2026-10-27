@@ -35,7 +35,8 @@
   const polar = (r, degrees) => ({ x: Math.cos(rad(degrees)) * r, y: Math.sin(rad(degrees)) * r });
 
   // ---- 트리 모양(기본) ----
-  const model = { nodes: new Map(), edges: [], labels: [] };
+  // bends: 손으로 정한 줄의 휨(키 "작은id|큰id" → 작은 id 쪽에서 큰 id 쪽을 볼 때 왼쪽(+)으로 부푼 거리, 월드 단위).
+  const model = { nodes: new Map(), edges: [], labels: [], bends: new Map() };
   const nodes = model.nodes;
   function node(id, props) { nodes.set(id, { id, effects: [], ...props }); return id; }
   function link(a, b) { model.edges.push([a, b]); }
@@ -159,7 +160,19 @@
     }
     return count;
   }
+  const bendKey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+  // 손으로 휜 줄: 두 끝을 잇는 직선에서 가운데가 bend만큼 부푼 2차 곡선. 다른 원을 비켜 가는지는 따지지 않는다.
+  function bentRoute(a, b, bend) {
+    const [s, t] = a < b ? [a, b] : [b, a];
+    const p = nodes.get(s), q = nodes.get(t);
+    const len = Math.hypot(q.x - p.x, q.y - p.y) || 1;
+    const nx = -(q.y - p.y) / len, ny = (q.x - p.x) / len;
+    const c = { x: (p.x + q.x) / 2 + nx * bend * 2, y: (p.y + q.y) / 2 + ny * bend * 2 };
+    const points = curve(p, c, q);
+    return { d: `M${p.x} ${p.y}Q${c.x} ${c.y} ${q.x} ${q.y}`, ok: true, points, box: boxOf(points), crossings: 0, bent: true };
+  }
   function route(a, b, placed = []) {
+    if (model.bends.has(bendKey(a, b))) return bentRoute(a, b, model.bends.get(bendKey(a, b)));
     const p = nodes.get(a), q = nodes.get(b);
     const obstacles = [...nodes.values()].filter(n => n.id !== a && n.id !== b);
     const clear = points => points.slice(1, -1).every(pt => obstacles.every(o => Math.hypot(pt.x - o.x, pt.y - o.y) >= radiusOf(o) + 7));
@@ -661,7 +674,15 @@
     get isOpen() { return open; },
     get view() { return { ...view }; },
     toWorld, panBy, zoomBy, svg, nodeLayer, overlayLayer, ui, tools, screen,
-    radiusOf,
+    radiusOf, bendKey,
+    // 지금 그려진 줄의 한가운데(휨 손잡이 자리).
+    edgeMiddle(a, b) {
+      const view = edgeViews.find(v => bendKey(v.a, v.b) === bendKey(a, b));
+      if (!view) return null;
+      const length = view.path.getTotalLength();
+      const point = view.path.getPointAtLength(length / 2);
+      return { x: point.x, y: point.y };
+    },
     neighbors: id => [...(neighbors.get(id) || [])],
     setEditing(on) { editing = on; selected = null; screen.classList.toggle('is-editing', on); draw(); },
     setCloseGuard(fn) { closeGuard = fn; },

@@ -59,6 +59,9 @@
     const now = new Set(T.model.edges.map(([a, b]) => edgeKey(a, b)));
     out.links.add = [...now].filter(key => !baseEdges.has(key)).map(key => key.split('|'));
     out.links.remove = [...baseEdges].filter(key => !now.has(key)).map(key => key.split('|'));
+    // 손으로 휜 줄(있는 줄만). 없으면 칸을 만들지 않아 예전 tree.json 과 같은 모양이 된다.
+    const bend = Object.fromEntries([...T.model.bends].filter(([key, value]) => now.has(key) && Math.round(value)).map(([key, value]) => [key, Math.round(value)]));
+    if (Object.keys(bend).length) out.links.bend = bend;
     return out;
   }
   // 바꿈 → 트리(기본에서 다시 시작).
@@ -76,6 +79,8 @@
     T.model.edges.length = 0;
     T.model.edges.push(...kept);
     for (const [a, b] of c.links.add) if (T.nodes.has(a) && T.nodes.has(b)) T.model.edges.push([a, b]);
+    T.model.bends.clear();
+    for (const [key, value] of Object.entries(c.links.bend || {})) if (Number.isFinite(value)) T.model.bends.set(key, value);
     T.rebuild();
     paint();
   }
@@ -171,6 +176,26 @@
       for (const [key, value] of Object.entries({ x: pendingRegion.x, y: pendingRegion.y, width: pendingRegion.w, height: pendingRegion.h, class: 'te-region is-pending' })) rect.setAttribute(key, value);
       T.overlayLayer.append(rect);
     }
+    // 고른 노드에 이어진 줄마다 가운데에 휨 손잡이. 끌면 휘고, 두 번 누르면 자동 경로로 돌아간다.
+    const r = 7 / T.view.k;
+    for (const [a, b] of bendEdges()) {
+      const at = T.edgeMiddle(a, b);
+      if (!at) continue;
+      const handle = document.createElementNS(ns, 'circle');
+      for (const [key, value] of Object.entries({ cx: at.x, cy: at.y, r, class: `te-bend${T.model.bends.has(T.bendKey(a, b)) ? ' is-set' : ''}`, 'data-bend': T.bendKey(a, b) })) handle.setAttribute(key, value);
+      T.overlayLayer.append(handle);
+    }
+  }
+  const bendEdges = () => T.model.edges.filter(([a, b]) => selection.includes(a) || selection.includes(b));
+  // 끄는 점이 줄의 가운데가 되도록: 두 끝을 잇는 직선에서 그 점까지의 거리(작은 id → 큰 id 를 볼 때 왼쪽이 +).
+  function bendTo(key, clientX, clientY) {
+    const [s, t] = key.split('|'), p = T.nodes.get(s), q = T.nodes.get(t);
+    if (!p || !q) return;
+    const w = T.toWorld(clientX, clientY), len = Math.hypot(q.x - p.x, q.y - p.y) || 1;
+    const nx = -(q.y - p.y) / len, ny = (q.x - p.x) / len;
+    T.model.bends.set(key, Math.round((w.x - (p.x + q.x) / 2) * nx + (w.y - (p.y + q.y) / 2) * ny));
+    T.layout();
+    paint();
   }
 
   // ---- 바꾸기 ----
@@ -294,7 +319,7 @@
     h('div', { class: 'te-tools' }, undoButton, redoButton,
       h('button', { type: 'button', onclick: addNode }, '+ 노드'), linkButton, unlinkButton,
       h('button', { type: 'button', class: 'te-danger', onclick: removeSelected }, '지우기'), requestButton),
-    h('p', { class: 'te-hint' }, '노드 누르기(Shift: 여러 개, Alt: 중심 노드) · 끌어서 이동 · 빈 곳 끌기 = 영역 선택 · Space+끌기나 오른쪽 버튼 끌기 = 화면 이동 · 휠 = 확대'),
+    h('p', { class: 'te-hint' }, '노드 누르기(Shift: 여러 개, Alt: 중심 노드) · 끌어서 이동 · 고른 노드의 줄 가운데 점을 끌면 줄이 휨(두 번 누르면 원래대로) · 빈 곳 끌기 = 영역 선택 · Space+끌기나 오른쪽 버튼 끌기 = 화면 이동 · 휠 = 확대'),
     body);
 
   const put = (...parts) => body.append(...parts.filter(part => part !== null && part !== undefined && part !== false));
@@ -365,6 +390,16 @@
     try { T.svg.setPointerCapture(event.pointerId); } catch {}
     const id = event.target.closest('[data-node]')?.dataset.node;
     if (spaceHeld) { drag = { mode: 'pan', x: event.clientX, y: event.clientY }; return; }
+    const bend = event.target.closest('[data-bend]')?.dataset.bend;
+    if (bend) {
+      if (event.detail >= 2) {
+        // 두 번 누르기: 손으로 준 휨을 지우고 자동 경로로.
+        if (T.model.bends.has(bend)) { mark(); T.model.bends.delete(bend); T.layout(); paint(); changed(); }
+        return;
+      }
+      drag = { mode: 'bend', key: bend, x: event.clientX, y: event.clientY, moved: false };
+      return;
+    }
     if (id && event.altKey) {
       // Alt+클릭: 중심 노드로 강조(고른 것에 없으면 더한다). 다시 누르면 풀린다.
       if (keyNode === id) keyNode = null;
@@ -389,8 +424,9 @@
     const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
     if (drag.mode === 'pan') { T.panBy(dx, dy); drag.x = event.clientX; drag.y = event.clientY; return; }
     if (!drag.moved && Math.hypot(dx, dy) < 4) return;
-    if (!drag.moved && drag.mode === 'move') mark();
+    if (!drag.moved && (drag.mode === 'move' || drag.mode === 'bend')) mark();
     drag.moved = true;
+    if (drag.mode === 'bend') { bendTo(drag.key, event.clientX, event.clientY); return; }
     if (drag.mode === 'move') {
       const k = T.view.k;
       for (const [id, x, y] of drag.start) Object.assign(T.nodes.get(id), { x: Math.round(x + dx / k), y: Math.round(y + dy / k) });
@@ -404,6 +440,7 @@
   const finish = event => {
     if (!drag) return;
     if (drag.mode === 'move' && drag.moved) { dropBlocked(); paint(); changed(); }
+    else if (drag.mode === 'bend' && drag.moved) changed();
     else if (drag.mode === 'region') {
       marquee.hidden = true;
       if (!drag.moved) { if (!drag.add) { selection = []; pendingRegion = null; render(); } }

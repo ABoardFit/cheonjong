@@ -48,6 +48,10 @@
 .tree-node.is-key .tree-glow { fill: none; stroke: #f0b400; stroke-width: 3; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 6px #f0b400); }
 .te-region { fill: #2f6f8f12; stroke: #2f6f8f; stroke-width: 1.5; stroke-dasharray: 6 5; vector-effect: non-scaling-stroke; pointer-events: none; }
 .te-region.is-pending { fill: #b0344a10; stroke: #b0344a; }
+/* 줄 휨 손잡이: 고른 노드에 이어진 줄의 가운데. 손으로 휜 줄은 채워진 점. */
+.te-bend { fill: #fffaf0; stroke: #b0473f; stroke-width: 2; vector-effect: non-scaling-stroke; cursor: grab; pointer-events: all; }
+.te-bend.is-set { fill: #b0473f; }
+.te-bend:hover { stroke-width: 3; }
 .te-region-label { fill: #2f6f8f; font: 600 22px system-ui, sans-serif; pointer-events: none; }
 
 @media (max-width: 960px) {
