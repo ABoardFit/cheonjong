@@ -84,7 +84,7 @@
       item.locked = Array.isArray(item.locked) ? item.locked.filter(i => Number.isInteger(i) && i >= 0 && i < item.attrs.length) : [];
     }
     const equipped = Object.fromEntries(FG.SLOT_IDS.map(slot => [slot, items.some(item => item.id === saved.equipped?.[slot] && item.slot === slot) ? saved.equipped[slot] : null]));
-    state.forge = { items, equipped, nextId: Math.max(Number(saved.nextId) || 1, ...items.map(item => item.id + 1)), testSeeded: Boolean(saved.testSeeded) };
+    state.forge = { items, equipped, nextId: Math.max(Number(saved.nextId) || 1, ...items.map(item => item.id + 1)), testSeeded: Number(saved.testSeeded) || 0 };
     return state.forge;
   }
   const equippedItems = () => { const fg = forge(); return fg.items.filter(item => fg.equipped[item.slot] === item.id); };
@@ -345,114 +345,192 @@
   }
 
   // ---- 대장간 ----
+  // 왼쪽 작업대(합성 · 재련 중 하나), 오른쪽 내 장비(장착 칸 + 가방 칸). 가방에서 고른 장비가 작업대로 옮겨 가고,
+  // 작업대 아래에 올린 장비의 능력이 나온다. 작업대 상태는 저장하지 않는다.
+  let forgeMode = 'combine', bench = [];
   const pay = (silver, spirit = 0) => {
     const state = hub().state, al = alchemy();
     if (state.silver < silver || al.spirit < spirit) return false;
     state.silver -= silver; al.spirit -= spirit;
     return true;
   };
+  // forge() 는 부를 때마다 저장 객체를 새로 만든다. 조회는 지금 객체를 그대로 봐야 손에 쥔 fg 가 낡지 않는다.
+  const liveForge = () => hub().state.forge || forge();
+  const itemById = id => liveForge().items.find(i => i.id === id);
+  const isEquipped = item => liveForge().equipped[item.slot] === item.id;
+  function setMode(mode) {
+    if (forgeMode === mode) return;
+    forgeMode = mode;
+    // 재련은 한 개만: 합성대에 올려 둔 첫 장비를 그대로 가져간다.
+    bench = mode === 'refine' ? bench.slice(0, 1) : bench.filter(id => !isEquipped(itemById(id)));
+    DRAW.forge(`.fg-tab[data-mode="${mode}"]`);
+  }
+  // 가방 칸을 누르면: 재련은 그 장비로 바꾸고, 합성은 같은 부위 · 같은 등급이면 더 올리고 아니면 새로 시작한다.
+  function pick(id) {
+    const item = itemById(id);
+    if (!item) return;
+    if (bench.includes(id)) bench = bench.filter(b => b !== id);
+    else if (forgeMode === 'refine') bench = [id];
+    else {
+      if (isEquipped(item)) return;
+      const first = itemById(bench[0]), need = FG.GRADES[item.grade].combine;
+      if (first && first.slot === item.slot && first.grade === item.grade && bench.length < need) bench = [...bench, id];
+      else bench = [id];
+    }
+    DRAW.forge(`[data-inv="${id}"]`);
+  }
+  // 합성대를 같은 부위 · 같은 등급(장착 안 한 것)으로 가득 채운다.
+  function fillBench() {
+    const first = itemById(bench[0]);
+    if (!first) return;
+    const plan = FG.combineCandidates(forge().items, first.slot, first.grade, Object.values(forge().equipped));
+    bench = [...bench, ...plan.use.map(i => i.id).filter(id => !bench.includes(id))].slice(0, plan.need);
+    DRAW.forge('.fg-fill');
+  }
   function toggleEquip(id) {
-    const fg = forge(), item = fg.items.find(i => i.id === id);
+    const fg = forge(), item = itemById(id);
     if (!item) return;
     fg.equipped[item.slot] = fg.equipped[item.slot] === id ? null : id;
-    syncEquipmentNames(); commit(`[data-item="${id}"] .fac-equip`);
+    syncEquipmentNames(); commit('.fg-equip');
   }
-  function combine(slot, grade) {
-    const fg = forge(), plan = FG.combineCandidates(fg.items, slot, grade, Object.values(fg.equipped));
-    if (!plan.possible || !pay(plan.silver)) return;
-    const used = new Set(plan.use.map(item => item.id));
+  function combine() {
+    const fg = forge(), items = bench.map(itemById).filter(Boolean), first = items[0];
+    if (!first) return;
+    const need = FG.GRADES[first.grade].combine;
+    if (!need || items.length !== need || items.some(i => i.slot !== first.slot || i.grade !== first.grade || isEquipped(i))) return;
+    if (!pay(FG.GRADES[first.grade].combineSilver)) return;
+    const used = new Set(bench);
     fg.items = fg.items.filter(item => !used.has(item.id));
-    const made = FG.makeItem(slot, grade + 1, Math.random, fg.nextId++);
+    const made = FG.makeItem(first.slot, first.grade + 1, Math.random, fg.nextId++);
     fg.items.push(made);
-    commit(`[data-item="${made.id}"] .fac-equip`);
+    bench = [made.id];
+    commit('.fg-go');
   }
   function toggleLock(id, index) {
-    const item = forge().items.find(i => i.id === id);
+    const item = itemById(id);
     if (!item) return;
     FG.toggleLock(item, index);
-    commit(`[data-item="${id}"] [data-attr="${index}"]`);
+    commit(`.fg-lock[data-attr="${index}"]`);
   }
   function reroll(id) {
-    const item = forge().items.find(i => i.id === id);
+    const item = itemById(id);
     const plan = item && FG.rerollPlan(item);
     if (!plan?.possible || !pay(plan.silver, plan.spirit)) return;
     FG.rerollItem(item, Math.random);
-    commit(`[data-item="${id}"] .fac-reroll`);
+    commit('.fg-go');
   }
   function salvage(id) {
-    const fg = forge(), item = fg.items.find(i => i.id === id);
-    if (!item || fg.equipped[item.slot] === id) return;
+    const fg = forge(), item = itemById(id);
+    if (!item || isEquipped(item)) return;
     fg.items = fg.items.filter(i => i.id !== id);
+    bench = bench.filter(b => b !== id);
     hub().state.silver += FG.GRADES[item.grade].salvage;
     commit();
   }
-  // 테스트: 가방을 모든 슬롯 · 모든 등급 장비로 갈아 끼우고(장착 해제), 합성 · 속성 변경을 해 볼 은자 · 영물을 채운다.
-  const TEST_SILVER = 1000000, TEST_SPIRIT = 100;
+  // 테스트: 가방을 모든 슬롯 · 모든 등급 장비로 갈아 끼우고(장착 해제), 은자 · 비급 · 영물을 넉넉히 채운다.
+  // TEST_SEED 를 올리면 이미 받은 사람도 대장간을 열 때 한 번 더 받는다.
+  const TEST_SEED = 2, TEST_FILL = 100000000;
   function testReset() {
     const fg = forge(), al = alchemy(), state = hub().state;
     fg.items = FG.testSet(Math.random, fg.nextId);
     fg.nextId += fg.items.length;
     for (const slot of FG.SLOT_IDS) fg.equipped[slot] = null;
-    fg.testSeeded = true;
-    state.silver = Math.max(state.silver, TEST_SILVER);
-    al.spirit = Math.max(al.spirit, TEST_SPIRIT);
+    fg.testSeeded = TEST_SEED;
+    bench = [];
+    state.silver = Math.max(state.silver, TEST_FILL);
+    state.manuals = Math.max(state.manuals, TEST_FILL);
+    al.spirit = Math.max(al.spirit, TEST_FILL);
     syncEquipmentNames(); commit('.fac-test');
   }
+  // 네모 칸: 부위 글자 + 등급 색 틀. 장착 중이면 모서리 점.
+  function cell(item, { class: extra = '', onclick, ...rest } = {}) {
+    return h('button', { type: 'button', class: `fg-cell grade-${item.grade}${isEquipped(item) ? ' is-on' : ''}${extra ? ' ' + extra : ''}`,
+      title: `${FG.itemName(item)}${isEquipped(item) ? ' · 장착 중' : ''}`, 'aria-label': `${FG.itemName(item)}${isEquipped(item) ? ', 장착 중' : ''}`,
+      ...rest, onclick: onclick || (() => pick(item.id)) }, FG.SLOTS[item.slot].glyph);
+  }
+  function attrLines(item, withLocks) {
+    return h('ul', { class: 'fg-attrs' }, ...item.attrs.map((attr, index) => {
+      const locked = item.locked.includes(index), fixed = FG.ATTRS[attr.key].fixed;
+      return h('li', { class: locked ? 'is-locked' : '' },
+        withLocks ? h('button', { type: 'button', class: `fac-mini fac-lock fg-lock${locked ? ' is-on' : ''}`, 'data-attr': index, 'aria-pressed': String(locked),
+          'aria-label': `${FG.describe(attr)} ${locked ? '고정 풀기' : '고정'}`, onclick: () => toggleLock(item.id, index) }, locked ? '固' : '·') : '',
+        h('span', {}, FG.describe(attr)),
+        fixed ? '' : h('small', { class: `fac-tier tier-${attr.tier}`, title: `${attr.tier} / 7단계` }, `${attr.tier}단`));
+    }),
+    FG.SPECIALS[item.special] ? h('li', { class: 'fac-special-opt' }, `傳 ${FG.SPECIALS[item.special].name} — ${FG.SPECIALS[item.special].note}`) : '');
+  }
+  function drawCombine(state) {
+    const items = bench.map(itemById).filter(Boolean), first = items[0];
+    const grade = first ? FG.GRADES[first.grade] : null, need = grade?.combine || 3;
+    const slots = Array.from({ length: need }, (_, i) => items[i]
+      ? cell(items[i], { class: 'is-big', onclick: () => pick(items[i].id), 'aria-label': `${FG.itemName(items[i])} 내리기` })
+      : h('span', { class: 'fg-cell is-big is-empty', 'aria-hidden': 'true' }));
+    const full = Boolean(first && grade.combine && items.length === need);
+    const have = first ? FG.combineCandidates(forge().items, first.slot, first.grade, Object.values(forge().equipped)).have : 0;
+    return [
+      h('div', { class: 'fg-slots' }, ...slots,
+        h('span', { class: 'fg-arrow', 'aria-hidden': 'true' }, '→'),
+        h('span', { class: `fg-cell is-big is-result${first && grade.combine ? ` grade-${first.grade + 1}` : ' is-empty'}`, 'aria-hidden': 'true' },
+          first && grade.combine ? FG.SLOTS[first.slot].glyph : '?')),
+      h('p', { class: 'fac-note' }, !first ? '오른쪽 가방에서 같은 부위 · 같은 등급 장비를 골라 올리세요(범품 3 · 양품 4 · 상품 5 · 극품 6 · 신품 7개, 장착 중인 장비는 못 씀).'
+        : !grade.combine ? '신병이기는 더 합성할 수 없습니다.'
+        : `${grade.name} ${FG.SLOTS[first.slot].noun} ${items.length} / ${need} → ${FG.GRADES[first.grade + 1].name} 1개 · 가방에 같은 것 ${have}개`),
+      h('div', { class: 'fg-buttons' },
+        h('button', { type: 'button', class: 'fac-toggle fg-fill', disabled: !first || !grade.combine || items.length >= need || have <= items.length, onclick: fillBench }, '같은 장비 채우기'),
+        h('button', { type: 'button', class: 'fac-buy fg-go', disabled: !full || state.silver < grade.combineSilver, onclick: combine },
+          grade?.combine ? `합성 · 銀 ${won(grade.combineSilver)}` : '합성')),
+      items.length ? h('div', { class: 'fg-info' }, ...items.map(item => h('section', { class: `fg-card grade-${item.grade}` },
+        h('strong', {}, FG.itemName(item)), attrLines(item, false)))) : '',
+    ];
+  }
+  function drawRefine(state, al) {
+    const item = itemById(bench[0]);
+    if (!item) return [h('div', { class: 'fg-slots' }, h('span', { class: 'fg-cell is-big is-empty', 'aria-hidden': 'true' })),
+      h('p', { class: 'fac-note' }, '오른쪽 가방에서 재련할 장비를 고르세요.')];
+    const on = isEquipped(item), plan = FG.rerollPlan(item), grade = FG.GRADES[item.grade];
+    const canReroll = plan.possible && state.silver >= plan.silver && al.spirit >= plan.spirit;
+    return [
+      h('div', { class: 'fg-slots' }, cell(item, { class: 'is-big', 'aria-label': `${FG.itemName(item)} 내리기` })),
+      h('div', { class: 'fg-buttons' },
+        h('button', { type: 'button', class: 'fac-buy fg-go', disabled: !canReroll, onclick: () => reroll(item.id),
+          title: plan.possible ? '' : '고정 안 한 옵션이 하나는 있어야 재련할 수 있습니다' },
+          `재련 · 銀 ${won(plan.silver)} · 영물 ${won(plan.spirit)}`)),
+      h('section', { class: `fg-card grade-${item.grade}` },
+        h('strong', {}, FG.itemName(item), on ? ' · 장착 중' : ''), attrLines(item, true),
+        h('p', { class: 'fac-note' }, `고정(固)하지 않은 옵션을 모두 다시 굴립니다. 고정 하나마다 비용 2배. 전설(傳) 옵션은 고정할 수 없고 늘 같이 돕니다.`),
+        h('div', { class: 'fg-buttons' },
+          h('button', { type: 'button', class: `fac-toggle fg-equip${on ? ' is-on' : ''}`, 'aria-pressed': String(on), onclick: () => toggleEquip(item.id) }, on ? '해제' : '장착'),
+          h('button', { type: 'button', class: 'fac-toggle', disabled: on, onclick: () => salvage(item.id) }, `분해 +銀 ${won(grade.salvage)}`))),
+    ];
+  }
   function drawForge(focusSelector) {
-    if (!forge().testSeeded) return testReset();
+    if (forge().testSeeded !== TEST_SEED) return testReset();
     const state = hub().state, fg = forge(), al = alchemy();
-    const slots = FG.SLOT_IDS.map(slot => {
-      const item = fg.items.find(i => i.id === fg.equipped[slot]), info = FG.SLOTS[slot];
-      return h('div', { class: `fac-slot${item ? '' : ' is-empty'}` },
-        h('span', { class: 'fac-glyph', 'aria-hidden': 'true' }, info.glyph),
-        h('span', { class: 'fac-name' }, h('strong', {}, item ? FG.itemName(item) : `${info.label} · 비어 있음`),
-          h('small', {}, item ? item.attrs.map(FG.describe).concat(FG.SPECIALS[item.special] ? [FG.SPECIALS[item.special].note] : []).join(' · ') : '장비를 끼면 능력치가 오릅니다')));
-    });
-    const groups = [];
-    for (const slot of FG.SLOT_IDS) for (const grade of FG.GRADES) {
-      if (!grade.combine) continue;
-      const plan = FG.combineCandidates(fg.items, slot, grade.index, Object.values(fg.equipped));
-      if (!plan.have) continue;
-      groups.push(h('li', { class: 'fac-row fac-combine' },
-        h('span', { class: 'fac-glyph', 'aria-hidden': 'true' }, FG.SLOTS[slot].glyph),
-        h('span', { class: 'fac-name' }, h('strong', {}, `${grade.name} ${FG.SLOTS[slot].noun} ${plan.have} / ${plan.need}`),
-          h('small', {}, `${plan.need}개 → ${FG.GRADES[grade.index + 1].name} 1개(장착 중인 장비는 빼고 셈)`)),
-        h('button', { type: 'button', class: 'fac-buy', disabled: !plan.possible || state.silver < plan.silver,
-          onclick: () => combine(slot, grade.index) }, `합성 · 銀 ${won(plan.silver)}`)));
-    }
-    const bag = fg.items.slice().sort((a, b) => FG.SLOT_IDS.indexOf(a.slot) - FG.SLOT_IDS.indexOf(b.slot) || b.grade - a.grade || a.id - b.id).map(item => {
-      const on = fg.equipped[item.slot] === item.id, grade = FG.GRADES[item.grade];
-      const plan = FG.rerollPlan(item), canReroll = plan.possible && state.silver >= plan.silver && al.spirit >= plan.spirit;
-      return h('li', { class: `fac-item grade-${item.grade}${on ? ' is-on' : ''}`, 'data-item': item.id },
-        h('span', { class: 'fac-glyph', 'aria-hidden': 'true' }, FG.SLOTS[item.slot].glyph),
-        h('span', { class: 'fac-name' }, h('strong', {}, FG.itemName(item), on ? ' · 장착 중' : ''),
-          h('span', { class: 'fac-attrs' }, ...item.attrs.map((attr, index) => {
-            const locked = item.locked.includes(index), fixed = FG.ATTRS[attr.key].fixed;
-            return h('span', { class: `fac-attr${locked ? ' is-locked' : ''}` },
-              h('button', { type: 'button', class: `fac-mini fac-lock${locked ? ' is-on' : ''}`, 'data-attr': index, 'aria-pressed': String(locked),
-                'aria-label': `${FG.describe(attr)} ${locked ? '고정 풀기' : '고정'}`, onclick: () => toggleLock(item.id, index) }, locked ? '固' : '·'),
-              FG.describe(attr), fixed ? '' : h('small', { class: `fac-tier tier-${attr.tier}`, title: `${attr.tier} / 7단계` }, `${attr.tier}단`));
-          }),
-            FG.SPECIALS[item.special] ? h('span', { class: 'fac-attr fac-special-opt' }, `傳 ${FG.SPECIALS[item.special].name} — ${FG.SPECIALS[item.special].note}`) : '')),
-        h('span', { class: 'fac-actions' },
-          h('button', { type: 'button', class: 'fac-toggle fac-reroll', disabled: !canReroll, onclick: () => reroll(item.id),
-            title: plan.possible ? '' : '고정 안 한 옵션이 하나는 있어야 돌릴 수 있습니다' },
-            `옵션 변경 · 銀 ${won(plan.silver)} · 영물 ${plan.spirit}`),
-          h('button', { type: 'button', class: `fac-toggle fac-equip${on ? ' is-on' : ''}`, 'aria-pressed': String(on), onclick: () => toggleEquip(item.id) }, on ? '해제' : '장착'),
-          h('button', { type: 'button', class: 'fac-toggle', disabled: on, onclick: () => salvage(item.id) }, `분해 +銀 ${won(grade.salvage)}`)));
-    });
-    show(frame('鍛冶場 · 대장간', '장비를 다듬는 곳',
-      h('div', { class: 'fac-slots' }, ...slots),
-      h('h3', {}, '합성'),
-      groups.length ? h('ul', { class: 'fac-list' }, ...groups) : h('p', { class: 'fac-note' }, '같은 슬롯 · 같은 등급 장비를 모으면 한 등급 위로 합칠 수 있습니다(범품 3 · 양품 4 · 상품 5 · 극품 6 · 신품 7개).'),
-      h('h3', {}, `가방 · ${fg.items.length}개 · 영물 ${won(al.spirit)}`),
-      bag.length ? h('ul', { class: 'fac-bag' }, ...bag) : h('p', { class: 'fac-note' }, '수문장을 쓰러뜨리면 범품 장비가 하나씩 들어옵니다.'),
-      h('p', { class: 'fac-note' }, `옵션 변경은 고정(固)하지 않은 옵션을 모두 다시 굴립니다(등급별 은자 + 영물 1, 고정한 줄 하나마다 2배). 전설(傳) 옵션은 고정할 수 없고 늘 같이 돕니다. 값은 1~7단(높을수록 드묾). 장비는 다음 출전부터 적용됩니다. 수치는 임시값입니다.`),
-      h('h3', {}, '테스트'),
-      h('div', { class: 'fac-row' },
-        h('span', { class: 'fac-name' }, h('strong', {}, '장비 초기화'),
-          h('small', {}, `가방을 비우고 모든 부위 × 모든 등급을 다시 넣습니다(범품 3 · 양품 4 · 상품 5 · 극품 6 · 신품 7개, 신병이기는 특수 옵션마다 1개). 은자 ${won(TEST_SILVER)} · 영물 ${TEST_SPIRIT}까지 채움`)),
-        h('button', { type: 'button', class: 'fac-buy fac-test', onclick: testReset }, '초기화'))), focusSelector);
+    bench = bench.filter(id => itemById(id));
+    const tabs = h('div', { class: 'fg-tabs', role: 'tablist' }, ...[['combine', '합성'], ['refine', '재련']].map(([mode, label]) =>
+      h('button', { type: 'button', role: 'tab', class: `fg-tab${forgeMode === mode ? ' is-on' : ''}`, 'data-mode': mode,
+        'aria-selected': String(forgeMode === mode), onclick: () => setMode(mode) }, label)));
+    const left = h('section', { class: 'fg-bench', 'aria-label': '대장간' }, tabs,
+      ...(forgeMode === 'combine' ? drawCombine(state) : drawRefine(state, al)));
+    const worn = h('div', { class: 'fg-worn' }, ...FG.SLOT_IDS.map(slot => {
+      const item = itemById(fg.equipped[slot]);
+      return item ? cell(item, { class: bench.includes(item.id) ? 'is-picked' : '', 'data-inv': item.id })
+        : h('span', { class: 'fg-cell is-empty', title: `${FG.SLOTS[slot].label} · 비어 있음` }, FG.SLOTS[slot].glyph);
+    }));
+    const bag = fg.items.filter(item => !bench.includes(item.id))
+      .sort((a, b) => b.grade - a.grade || FG.SLOT_IDS.indexOf(a.slot) - FG.SLOT_IDS.indexOf(b.slot) || a.id - b.id)
+      .map(item => cell(item, { 'data-inv': item.id, disabled: forgeMode === 'combine' && isEquipped(item) }));
+    const legend = h('p', { class: 'fg-legend' }, ...FG.GRADES.map(g => h('span', { class: `grade-${g.index}` }, g.name)));
+    const right = h('section', { class: 'fg-inv', 'aria-label': '내 장비' },
+      h('h3', {}, '장착'), worn,
+      h('h3', {}, `가방 · ${fg.items.length}개 · 영물 ${won(al.spirit)}`), legend,
+      bag.length ? h('div', { class: 'fg-grid' }, ...bag) : h('p', { class: 'fac-note' }, '수문장을 쓰러뜨리면 범품 장비가 하나씩 들어옵니다.'),
+      h('p', { class: 'fac-note' }, '장비는 다음 출전부터 적용됩니다. 수치는 임시값입니다.'),
+      h('div', { class: 'fac-row fg-test' },
+        h('span', { class: 'fac-name' }, h('strong', {}, '테스트 · 장비 초기화'),
+          h('small', {}, `모든 부위 × 모든 등급을 다시 넣고 은자 · 비급 · 영물을 ${won(TEST_FILL)}까지 채움`)),
+        h('button', { type: 'button', class: 'fac-buy fac-test', onclick: testReset }, '초기화')));
+    show(frame('鍛冶場 · 대장간', '장비를 다듬는 곳', h('div', { class: 'fg-layout' }, left, right)), focusSelector);
   }
 
   // ---- 판이 끝나면 전리품을 넣는다: 재료는 연단방, 장비는 대장간 가방 ----

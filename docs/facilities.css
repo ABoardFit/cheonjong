@@ -74,35 +74,57 @@ body.fac-open { overflow: hidden; }
 .fac-stock { margin: 0; display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--ink); }
 .fac-stock > span { padding: 4px 10px; border: 1px solid var(--line); background: var(--paper-light); }
 .fac-elixir .fac-value small { white-space: nowrap; }
-/* 대장간: 장착 칸, 합성, 가방 */
-.fac-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
-.fac-slot { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--accent); background: var(--paper-light); }
-.fac-slot.is-empty { border-color: var(--line); color: var(--muted); }
-.fac-combine { grid-template-columns: 32px minmax(0, 1fr) auto; }
-.fac-bag { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.fac-item { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); background: var(--paper-light); }
-.fac-item.is-on { border-color: var(--accent); }
-.fac-item.grade-1 .fac-name strong { color: #4f7a5a; }
-.fac-item.grade-2 .fac-name strong { color: #3f6c96; }
-.fac-item.grade-3 .fac-name strong { color: #7a4f96; }
-.fac-item.grade-4 .fac-name strong { color: var(--accent); }
-.fac-item.grade-5 .fac-name strong, .fac-special-opt { color: #b07a16; }
-.fac-attrs { display: flex; flex-wrap: wrap; gap: 4px 12px; }
-.fac-attr { display: inline-flex; align-items: center; gap: 6px; color: #62695f; }
+/* 대장간: 패널을 화면 너비로 펴고 왼쪽 작업대(합성 · 재련) · 오른쪽 내 장비(네모 칸). 칸 틀 색 = 등급. */
+.fac-screen[data-kind="forge"] .fac-panel { left: 0; width: auto; background: none; border-left: 0; padding: 18px 20px 28px; }
+.fac-screen[data-kind="forge"] .fac-shade { background: #14120f8c; }
+.fg-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.fg-bench, .fg-inv { display: grid; gap: 12px; align-content: start; padding: 16px; border: 1px solid var(--line); background: #f8f5edeb; }
+.fg-bench { position: sticky; top: 0; }
+.fg-inv h3 { margin: 0; font-size: 16px; letter-spacing: .2em; color: var(--muted); font-weight: 400; }
+.fg-tabs { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--ink); }
+.fg-tab { margin: 0; min-width: 0; padding: 8px; border: 0; background: none; color: var(--ink); font-size: 16px; letter-spacing: .2em; }
+.fg-tab + .fg-tab { border-left: 1px solid var(--ink); }
+.fg-tab.is-on { background: var(--ink); color: var(--paper-light); }
+.fg-slots { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: 14px 8px; border: 1px dashed var(--line); background: #ece6d8; }
+.fg-arrow { color: var(--muted); font-size: 20px; }
+.fg-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.fg-buttons > * { flex: 1 1 auto; }
+.fg-info { display: grid; gap: 6px; }
+.fg-card { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-left-width: 4px; background: var(--paper-light); }
+.fg-attrs { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.fg-attrs li { display: flex; align-items: center; gap: 8px; color: #62695f; }
+.fg-attrs li.is-locked { color: var(--ink); }
+.fg-worn { display: flex; flex-wrap: wrap; gap: 6px; }
+.fg-grid { display: grid; grid-template-columns: repeat(auto-fill, 44px); gap: 6px; }
+.fg-legend { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; }
+.fg-legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; margin-right: 4px; border: 2px solid var(--grade); vertical-align: -1px; }
+/* 칸: 등급 색은 --grade 하나로 틀 · 이름 · 범례에 같이 쓴다. */
+.grade-0 { --grade: #8f8b80; } .grade-1 { --grade: #4f7a5a; } .grade-2 { --grade: #3f6c96; }
+.grade-3 { --grade: #7a4f96; } .grade-4 { --grade: var(--accent); } .grade-5 { --grade: #b07a16; }
+.fg-cell { position: relative; margin: 0; min-width: 0; width: 44px; height: 44px; padding: 0; display: grid; place-items: center;
+  border: 3px solid var(--grade, var(--line)); background: var(--paper-light); color: var(--ink); font-size: 18px; line-height: 1; }
+.fg-cell.grade-5 { box-shadow: inset 0 0 0 1px #f3d98f; }
+.fg-cell:hover:not(:disabled) { background: #fffdf6; transform: translateY(-1px); }
+.fg-cell:disabled { opacity: .4; cursor: default; }
+.fg-cell.is-on::after { content: ''; position: absolute; top: 2px; right: 2px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.fg-cell.is-picked { opacity: .35; }
+.fg-cell.is-big { width: 64px; height: 64px; font-size: 26px; }
+.fg-cell.is-empty { border: 2px dashed var(--line); background: none; color: var(--muted); }
+.fg-cell.is-result:not(.is-empty) { border-style: double; border-width: 5px; }
+.fg-card strong, .fg-legend span { color: var(--grade); }
+.fac-special-opt { color: #b07a16; }
 .fac-mini { margin: 0; min-width: 0; padding: 0 6px; border: 1px solid var(--line); background: none; color: var(--ink); }
-.fac-mini:disabled { color: var(--muted); cursor: default; }
 .fac-lock { width: 22px; padding: 0; text-align: center; }
 .fac-lock.is-on { background: var(--ink); border-color: var(--ink); color: var(--paper-light); }
-.fac-attr.is-locked { color: var(--ink); }
 .fac-tier { font-size: 0.8em; color: var(--muted); }
 .fac-tier.tier-5, .fac-tier.tier-6 { color: #3f6c96; }
 .fac-tier.tier-7 { color: #b07a16; font-weight: 700; }
-.fac-actions { display: grid; gap: 4px; justify-items: stretch; }
 .fac-toggle:disabled { color: var(--muted); cursor: default; }
-@container fac (max-width: 520px) {
-  .fac-combine { grid-template-columns: 32px minmax(0, 1fr); grid-template-areas: 'g n' 'b b'; }
-  .fac-combine > .fac-buy { grid-area: b; }
-  .fac-item { grid-template-columns: 32px minmax(0, 1fr); }
-  .fac-item > .fac-actions { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
-  .fac-item > .fac-actions > .fac-reroll { grid-column: 1 / -1; }
+.fg-test { grid-template-columns: minmax(0, 1fr) auto; }
+.fg-test .fac-name small { white-space: normal; }
+@media (max-width: 760px) {
+  .fac-screen[data-kind="forge"] .fac-panel { top: 34vh; padding: 10px 10px 24px; }
+  .fg-layout { grid-template-columns: minmax(0, 1fr); }
+  .fg-bench { position: static; }
+  .fg-cell.is-big { width: 52px; height: 52px; font-size: 22px; }
 }
