@@ -75,11 +75,12 @@ body.fac-open { overflow: hidden; }
 .fac-stock > span { padding: 4px 10px; border: 1px solid var(--line); background: var(--paper-light); }
 .fac-elixir .fac-value small { white-space: nowrap; }
 /* 대장간: 패널을 화면 너비로 펴고 왼쪽 작업대(합성 · 재련) · 오른쪽 내 장비(네모 칸). 칸 틀 색 = 등급. */
-.fac-screen[data-kind="forge"] .fac-panel { left: 0; width: auto; background: none; border-left: 0; padding: 18px 20px 28px; }
-.fac-screen[data-kind="forge"] .fac-shade { background: #14120f8c; }
+.fac-screen:is([data-kind="forge"], [data-kind="bag"]) .fac-panel { left: 0; width: auto; background: none; border-left: 0; padding: 18px 20px 28px; }
+.fac-screen:is([data-kind="forge"], [data-kind="bag"]) .fac-shade { background: #14120f8c; }
 .fg-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 .fg-bench, .fg-inv { display: grid; gap: 12px; align-content: start; padding: 16px; border: 1px solid var(--line); background: #f8f5edeb; }
-.fg-bench { position: sticky; top: 0; }
+/* 작업대는 가방을 내려도 제자리, 길어지면 안에서 스크롤(아래 합성 · 재련 버튼이 잘리지 않게). */
+.fg-bench { position: sticky; top: 0; max-height: calc(100dvh - 130px); overflow-y: auto; }
 .fg-inv h3 { margin: 0; font-size: 16px; letter-spacing: .2em; color: var(--muted); font-weight: 400; }
 .fg-tabs { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--ink); }
 .fg-tab { margin: 0; min-width: 0; padding: 8px; border: 0; background: none; color: var(--ink); font-size: 16px; letter-spacing: .2em; }
@@ -87,13 +88,17 @@ body.fac-open { overflow: hidden; }
 .fg-tab.is-on { background: var(--ink); color: var(--paper-light); }
 .fg-slots { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: 14px 8px; border: 1px dashed var(--line); background: #ece6d8; }
 .fg-arrow { color: var(--muted); font-size: 20px; }
-.fg-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
-.fg-buttons > * { flex: 1 1 auto; }
 .fg-info { display: grid; gap: 6px; }
 .fg-card { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-left-width: 4px; background: var(--paper-light); }
 .fg-attrs { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.fg-attrs li { display: flex; align-items: center; gap: 8px; color: #62695f; }
-.fg-attrs li.is-locked { color: var(--ink); }
+/* 옵션 한 줄 = 칸 하나. 고정한 줄은 진한 테두리, 전설 옵션은 문파 색(--school). */
+.fg-attrs li { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 8px; border: 1px solid var(--line); background: #fffdf8; color: #62695f; }
+.fg-attrs li.is-locked { border-color: var(--ink); color: var(--ink); }
+.fg-attrs li.fg-legend-opt { flex-wrap: wrap; row-gap: 2px; border: 2px solid var(--school, #b07a16); background: color-mix(in srgb, var(--school, #b07a16) 12%, #fffdf8); }
+.fg-legend-opt > span { color: var(--school-ink, #b07a16); font-weight: 700; }
+.fg-legend-opt > small { flex-basis: 100%; color: var(--school-ink, #62695f); }
+.fg-fill { justify-self: center; }
+.fg-go { width: 100%; padding: 10px; }
 .fg-worn { display: flex; flex-wrap: wrap; gap: 6px; }
 .fg-grid { display: grid; grid-template-columns: repeat(auto-fill, 44px); gap: 6px; }
 .fg-legend { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; }
@@ -124,7 +129,15 @@ body.fac-open { overflow: hidden; }
 .fg-test .fac-name small { white-space: normal; }
 @media (max-width: 760px) {
   .fac-screen[data-kind="forge"] .fac-panel { top: 34vh; padding: 10px 10px 24px; }
+  .fac-screen[data-kind="bag"] .fac-panel { top: 104px; padding: 10px 10px 24px; }
   .fg-layout { grid-template-columns: minmax(0, 1fr); }
-  .fg-bench { position: static; }
+  .fg-bench { position: static; max-height: none; overflow: visible; }
   .fg-cell.is-big { width: 52px; height: 52px; font-size: 22px; }
 }
+/* 행낭: 왼쪽 장착 칸(부위 이름 아래), 오른쪽 부위 거르기 + 가방 칸. 고른 칸은 굵은 먹 테두리. */
+.bag-h { margin: 0; font-size: 16px; letter-spacing: .2em; color: var(--muted); font-weight: 400; }
+.bag-worn { display: flex; flex-wrap: wrap; gap: 10px; }
+.bag-worn-slot { display: grid; justify-items: center; gap: 4px; }
+.bag-worn-slot small { color: var(--muted); }
+.bag-filters { display: flex; flex-wrap: wrap; gap: 4px; }
+.fg-cell.is-chosen { outline: 3px solid var(--ink); outline-offset: 2px; }

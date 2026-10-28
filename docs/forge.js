@@ -57,18 +57,18 @@
   // 값 단계 1~7의 무게(높을수록 드묾)와 같은 옵션 두 번째 줄의 무게 배율.
   const TIER_WEIGHTS = [30, 24, 18, 12, 8, 5, 3];
   const DUPLICATE_WEIGHT = 0.12, MAX_SAME = 2;
-  // 신병이기 전설 옵션(부위마다 둘 중 하나). 효과는 game-core.js 가 bonuses.specials 로 읽는다.
+  // 신병이기 전설 옵션(부위마다 둘 중 하나). 효과는 game-core.js 가 bonuses.specials 로 읽는다. school = 그 무공의 문파(색).
   const SPECIALS = {
-    sword_echo: { slot: 'weapon', name: '매화 잔영', note: '이십사수매화검법의 검격이 0.3초 뒤 같은 자리에서 한 번 더 터진다(피해 50%)' },
-    rain_extra: { slot: 'weapon', name: '만천화우', note: '매화검우가 3자루 더 떨어진다' },
-    petal_thorns: { slot: 'robe', name: '매화 가시', note: '꽃잎 갑옷이 피해를 막을 때 주변 적에게 피해 30' },
-    zixia_heal: { slot: 'robe', name: '자하 호신', note: '꽃잎을 주울 때마다 체력 3 회복(단신 맹약이면 없음)' },
-    petal_cap: { slot: 'belt', name: '육합 보옥', note: '꽃잎 최대 보유 +2' },
-    liuhe_quake: { slot: 'belt', name: '육합 진동', note: '꽃잎 갑옷이 막을 때 적을 밀쳐낸다(육합공 5단계 효과를 미리)' },
-    dash_cd: { slot: 'boots', name: '암향 질풍', note: '암향표 재사용 대기 −40%' },
-    landing_wave: { slot: 'boots', name: '낙화 착지', note: '경공 착지 때 늘 피해 파동(암향표 3단계 효과를 미리)' },
-    rain_free: { slot: 'charm', name: '무념 검우', note: '매화검우에 내력이 들지 않는다' },
-    field_long: { slot: 'charm', name: '잔향', note: '모든 장판 지속 +50%' },
+    sword_echo: { school: 'hwasan', slot: 'weapon', name: '매화 잔영', note: '이십사수매화검법의 검격이 0.3초 뒤 같은 자리에서 한 번 더 터진다(피해 50%)' },
+    rain_extra: { school: 'hwasan', slot: 'weapon', name: '만천화우', note: '매화검우가 3자루 더 떨어진다' },
+    petal_thorns: { school: 'hwasan', slot: 'robe', name: '매화 가시', note: '꽃잎 갑옷이 피해를 막을 때 주변 적에게 피해 30' },
+    zixia_heal: { school: 'hwasan', slot: 'robe', name: '자하 호신', note: '꽃잎을 주울 때마다 체력 3 회복(단신 맹약이면 없음)' },
+    petal_cap: { school: 'hwasan', slot: 'belt', name: '육합 보옥', note: '꽃잎 최대 보유 +2' },
+    liuhe_quake: { school: 'hwasan', slot: 'belt', name: '육합 진동', note: '꽃잎 갑옷이 막을 때 적을 밀쳐낸다(육합공 5단계 효과를 미리)' },
+    dash_cd: { school: 'hwasan', slot: 'boots', name: '암향 질풍', note: '암향표 재사용 대기 −40%' },
+    landing_wave: { school: 'hwasan', slot: 'boots', name: '낙화 착지', note: '경공 착지 때 늘 피해 파동(암향표 3단계 효과를 미리)' },
+    rain_free: { school: 'hwasan', slot: 'charm', name: '무념 검우', note: '매화검우에 내력이 들지 않는다' },
+    field_long: { school: 'hwasan', slot: 'charm', name: '잔향', note: '모든 장판 지속 +50%' },
   };
   const specialsFor = slot => Object.keys(SPECIALS).filter(key => SPECIALS[key].slot === slot);
   const SPECIAL_GRADE = 5;

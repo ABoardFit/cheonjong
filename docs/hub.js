@@ -190,8 +190,11 @@
         cell('업적', `${unlockedTitles().length - 1} / ${TITLES.length - 1}`, '별호 해금 기준')),
       h('div', { class: 'hub-equipment', 'aria-label': '장비' },
         h('span', {}, '장비'),
-        ...EQUIPMENT.map(([slot, glyph, label]) => h('div', { class: `hub-slot${state.equipment[slot] ? '' : ' is-empty'}`, title: `${label} · ${state.equipment[slot] || '비어 있음'}` },
-          h('i', { 'aria-hidden': 'true' }, glyph), h('small', {}, label)))));
+        // 장비 칸 · [행낭] 버튼은 행낭 화면(facilities.js openBag)을 연다. 칸을 누르면 그 부위만 보여 준다.
+        ...EQUIPMENT.map(([slot, glyph, label]) => h('button', { type: 'button', class: `hub-slot${state.equipment[slot] ? '' : ' is-empty'}`, title: `${label} · ${state.equipment[slot] || '비어 있음'}`,
+          'aria-label': `${label} · ${state.equipment[slot] || '비어 있음'} · 행낭 열기`, onclick: () => window.CheonFacilities?.openBag?.(slot) },
+          h('i', { 'aria-hidden': 'true' }, glyph), h('small', {}, label))),
+        h('button', { type: 'button', class: 'hub-bag', onclick: () => window.CheonFacilities?.openBag?.() }, h('i', { 'aria-hidden': 'true' }, '囊'), '행낭')));
   }
 
   // ---- dialogs ----
