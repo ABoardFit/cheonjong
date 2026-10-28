@@ -12,7 +12,11 @@
   };
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let renderer, run, active = false, paused = false, walking = false;
-  let school = 'hwasan', namgungFrame = null;
+  const embeddedSchools = {
+    namgung: { name: '남궁', caption: '南宮', source: 'namgungSrc', api: 'CHEON_NAMGUNG_PREVIEW', close: 'cheon-namgung-close', page: 'namgung.html' },
+    heavenly_demon: { name: '천마', caption: '天魔', source: 'heavenlyDemonSrc', api: 'CHEON_HEAVENLY_DEMON_PREVIEW', close: 'cheon-heavenly-demon-close', page: 'heavenly-demon.html' }
+  };
+  let school = 'hwasan', schoolFrame = null;
   let category = 'sword', rank = 1, frame = 0, lastFrame = 0, nextDash = .65;
   const partnerRanks = { sword: 0, rain: 0, dash: 0 };
   let detailSource = 'active';
@@ -162,49 +166,56 @@
     renderer = null;
   }
 
-  function removeNamgung() {
-    if (namgungFrame) {
-      namgungFrame.onload = null;
-      namgungFrame.onerror = null;
-      namgungFrame.remove();
-      namgungFrame = null;
+  function removeEmbeddedSchool() {
+    if (schoolFrame) {
+      schoolFrame.onload = null;
+      schoolFrame.onerror = null;
+      schoolFrame.remove();
+      schoolFrame = null;
     }
     $('dojo-namgung-host').hidden = true;
     $('dojo-namgung-error').hidden = true;
   }
 
   function setSchool(next) {
-    if (!['hwasan', 'namgung'].includes(next)) return;
+    if (next !== 'hwasan' && !Object.hasOwn(embeddedSchools, next)) return;
     if (!active) { open(); if (next === 'hwasan') return; }
-    if (next === school && (school === 'namgung' ? namgungFrame : renderer)) {
-      if (school === 'namgung') namgungFrame.contentWindow?.focus?.();
+    if (next === school && (school !== 'hwasan' ? schoolFrame : renderer)) {
+      if (school !== 'hwasan') schoolFrame.contentWindow?.focus?.();
       return;
     }
     stopHwasan();
-    removeNamgung();
+    removeEmbeddedSchool();
     school = next;
     screen.dataset.school = school;
-    $('dojo-school-caption').textContent = school === 'namgung' ? '演武場 · 南宮' : '演武場 · 華山';
-    $('dojo-pause').hidden = school === 'namgung';
+    const embedded = embeddedSchools[school];
+    $('dojo-school-caption').textContent = `演武場 · ${embedded?.caption || '華山'}`;
+    $('dojo-pause').hidden = Boolean(embedded);
     screen.querySelectorAll('[data-dojo-school]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.dojoSchool === school)));
-    if (school === 'namgung') {
+    if (embedded) {
       const host = $('dojo-namgung-host');
       host.hidden = false;
+      const error = $('dojo-namgung-error');
+      error.replaceChildren(`${embedded.name} 연무를 불러오지 못했습니다. `);
+      const fallback = document.createElement('a');
+      fallback.href = embedded.page;
+      fallback.textContent = `${embedded.name} 연무 직접 열기 ↗`;
+      error.append(fallback);
       const child = document.createElement('iframe');
       child.className = 'dojo-namgung-frame';
-      child.title = '남궁세가 동작 비교 · 초식과 심법 단계 선택';
+      child.title = `${embedded.name} 동작 비교 · 초식과 심법 단계 선택`;
       child.setAttribute('allow', 'fullscreen');
       child.onload = () => {
-        if (child !== namgungFrame) return;
+        if (child !== schoolFrame) return;
         try {
-          $('dojo-namgung-error').hidden = Boolean(child.contentWindow?.CHEON_NAMGUNG_PREVIEW);
+          $('dojo-namgung-error').hidden = Boolean(child.contentWindow?.[embedded.api]);
           if ($('dojo-namgung-error').hidden) child.contentWindow?.focus?.();
         }
         catch { $('dojo-namgung-error').hidden = false; }
       };
-      child.onerror = () => { if (child === namgungFrame) $('dojo-namgung-error').hidden = false; };
-      child.src = screen.dataset.namgungSrc;
-      namgungFrame = child;
+      child.onerror = () => { if (child === schoolFrame) $('dojo-namgung-error').hidden = false; };
+      child.src = screen.dataset[embedded.source];
+      schoolFrame = child;
       host.append(child);
     } else {
       renderer = new window.CheonGameRenderer(canvas, { motionPreview: true, appearanceProvider: () => window.CheonHub?.getCurrentAppearance?.() || window.CheonHub?.appearance || window.CheonAppearance?.resolve({}) });
@@ -234,7 +245,7 @@
   function close() {
     active = false;
     stopHwasan();
-    removeNamgung();
+    removeEmbeddedSchool();
     run = null;
     screen.hidden = true;
     document.body.classList.remove('in-dojo');
@@ -276,10 +287,10 @@
   }, true);
   document.addEventListener('visibilitychange', () => { if (active && school === 'hwasan' && document.hidden) { paused = true; updateControls(); } });
   window.addEventListener('message', event => {
-    if (!active || school !== 'namgung' || !namgungFrame || event.origin !== window.location.origin || event.source !== namgungFrame.contentWindow) return;
-    if (event.data?.type === 'cheon-namgung-close') close();
+    if (!active || !embeddedSchools[school] || !schoolFrame || event.origin !== window.location.origin || event.source !== schoolFrame.contentWindow) return;
+    if (event.data?.type === embeddedSchools[school].close) close();
   });
   window.CheonDojo = Object.freeze({ open, close, setSchool,
-    getState: () => ({ active, school, paused, walking, category, rank, partnerRanks: { ...partnerRanks }, time: run?.time ?? null, hwasanAnimating: Boolean(frame), namgungMounted: Boolean(namgungFrame) })
+    getState: () => ({ active, school, paused, walking, category, rank, partnerRanks: { ...partnerRanks }, time: run?.time ?? null, hwasanAnimating: Boolean(frame), namgungMounted: school === 'namgung' && Boolean(schoolFrame), heavenlyDemonMounted: school === 'heavenly_demon' && Boolean(schoolFrame) })
   });
 })();

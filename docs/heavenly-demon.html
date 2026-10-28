@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#17211f">
+  <title>천종지자 · 천마 동작 비교</title>
+  <link rel="stylesheet" href="styles.css?v=0f241c62cc">
+  <link rel="stylesheet" href="dojo.css?v=42f64333b9">
+  <link rel="stylesheet" href="heavenly-demon.css?v=3e503af9be">
+</head>
+<body class="in-dojo">
+<main id="dojo-screen" aria-labelledby="heavenly-demon-title">
+  <canvas id="heavenly-demon-canvas" width="1100" height="680" aria-label="선택한 단계의 천마신교 무공과 심법 효과를 반복 재생하는 연무장"></canvas>
+  <header class="dojo-header demon-header">
+    <a class="demon-back" href="index.html">← 메인으로</a>
+    <div><p>演武場 · 天魔</p><h1 id="heavenly-demon-title">동작 비교</h1><small>연출 비교 · 실제 전투와 별도</small></div>
+    <button id="pause" type="button" aria-pressed="false">일시정지</button>
+  </header>
+  <aside class="dojo-note" aria-live="polite">
+    <span id="detail-type">初式 · 1단계</span>
+    <h2 id="form-name">흑월일섬</h2>
+    <p id="form-description"></p>
+  </aside>
+  <footer class="dojo-controls">
+    <div class="dojo-categories" id="path-tabs" role="group" aria-label="무공 갈래">
+      <button type="button" data-path="sword" aria-pressed="true">검법 <small>천마멸천검</small></button>
+      <button type="button" data-path="ring" aria-pressed="false">흑염 <small>천마멸혼륜</small></button>
+      <button type="button" data-path="dash" aria-pressed="false">경공 <small>마영신법</small></button>
+    </div>
+    <div class="dojo-rank-row"><span>강화 단계</span><div class="dojo-ranks" id="rank-buttons" role="group" aria-label="강화 단계 선택"></div></div>
+    <div class="dojo-partner-row"><button id="mind-focus" type="button" aria-pressed="false" aria-label="짝 심법·보법 설명 보기"><span id="mind-name">천마신공</span></button><div class="dojo-partner-levels" id="mind-buttons" role="group" aria-label="짝 심법·보법 단계 선택"></div></div>
+    <div class="dojo-directions" role="group" aria-label="공격 방향 선택"><span>공격 방향</span><div id="direction-pad" class="demon-direction-buttons"></div></div>
+    <div class="dojo-secondary">
+      <button id="walking" type="button" aria-pressed="false">걷기 켜기</button>
+      <button id="replay" type="button">처음부터 재생 ↺</button>
+      <button id="step" type="button">한 프레임 진행</button>
+      <output id="time-readout" aria-label="재생 시간">0.00초</output>
+      <p><kbd>1–7</kbd> 단계 변경 <span>·</span> <kbd>Space</kbd> 재생/정지 <span>·</span> <kbd>Esc</kbd> 메인</p>
+    </div>
+    <details class="demon-options">
+      <summary>심법 시연 · 연무 설정</summary>
+      <div class="demon-options-row">
+        <label><input id="targets" type="checkbox" checked> 연무 표적</label>
+        <label><input id="range" type="checkbox"> 범위 표시</label>
+        <label class="demon-timeline">재생 위치 <input id="timeline" type="range" min="0" max="7" step="0.01" value="0" aria-label="이펙트 재생 위치"></label>
+      </div>
+      <p id="fusion-note">초식 6단계 + 짝 심법 6성에서 절세무공 완성</p>
+      <p id="mechanic-note"></p>
+      <div id="qi-demo" hidden>
+        <div class="demon-options-row"><label for="qi-capacity">마기 한도 시연 <select id="qi-capacity"><option value="0">현재 심법 기준</option><option value="2">2개 · 시연용</option><option value="3">3개 · 시연용</option></select></label></div>
+        <p>한도 변경은 연출 확인용입니다. 실제 게임의 보유 한도 수치는 미확정입니다.</p>
+        <div class="demon-options-row"><span>마기 <output id="qi-count">0 / 1</output></span><button id="qi-pickup" type="button">마기 획득</button><button id="qi-hit" type="button">피격</button><button id="qi-clear" type="button">마기 비우기</button></div>
+        <div class="demon-options-row"><button id="qi-kill" type="button">처치 시연</button><button id="qi-mark" type="button">검기 직접 명중</button><button id="qi-mark-kill" type="button">마인 처치 시연</button><label><input id="qi-lock" type="checkbox">마기 획득 금지 시연</label></div>
+        <p id="qi-note"></p>
+      </div>
+    </details>
+  </footer>
+  <div hidden><span id="stage-title"></span><span id="stage-rank"></span><span id="stage-mind"></span><span id="rank-caption"></span><span id="direction-caption"></span></div>
+</main>
+<script src="assets/hero-atlas.js?v=293c37f90f" defer></script>
+<script src="combat-animation.js?v=9eef6b59c1" defer></script>
+<script src="game-renderer.js?v=7e6e93f2f6" defer></script>
+<script src="data.js?v=2232a15948" defer></script>
+<script src="heavenly-demon-data.js?v=8de874324e" defer></script>
+<script src="heavenly-demon-effects.js?v=df2db18607" defer></script>
+<script src="heavenly-demon-preview.js?v=4792fa8760" defer></script>
+</body>
+</html>

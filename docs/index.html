@@ -7,7 +7,7 @@
   <title>천종지자 · 화산의 시련</title>
   <link rel="stylesheet" href="styles.css?v=960fd53ba2">
   <link rel="stylesheet" href="game.css?v=c0c3f9e2b5">
-  <link rel="stylesheet" href="dojo.css?v=cca98761d8">
+  <link rel="stylesheet" href="dojo.css?v=42f64333b9">
   <link rel="stylesheet" href="hub.css?v=4aad0e5554">
   <link rel="stylesheet" href="tree.css?v=a2805e3ad5">
   <link rel="stylesheet" href="facilities.css?v=2e126e9f5b">
@@ -23,7 +23,7 @@
   <script src="effect-preview.js?v=feeeb0fca9" defer></script>
   <script src="app.js?v=096f918b7b" defer></script>
   <script src="game-controller.js?v=1055efd904" defer></script>
-  <script src="dojo.js?v=6dd6932f9a" defer></script>
+  <script src="dojo.js?v=01064f1087" defer></script>
   <script src="hub.js?v=f838973993" defer></script>
   <script src="tree-factions.js?v=fd3d0e0586" defer></script>
   <script src="tree.js?v=f14ad822f4" defer></script>
@@ -133,15 +133,15 @@
       <div id="battle-modal" class="battle-modal" hidden><section id="battle-dialog" class="battle-dialog" role="dialog" aria-modal="true" aria-labelledby="battle-dialog-title"></section></div>
       <div id="battle-announcer" class="battle-sr-only" role="status" aria-live="polite"></div>
     </section>
-    <section id="dojo-screen" aria-labelledby="dojo-title" data-school="hwasan" data-namgung-src="namgung.html?embedded=1&v=0db5fc62d0" hidden>
+    <section id="dojo-screen" aria-labelledby="dojo-title" data-school="hwasan" data-namgung-src="namgung.html?embedded=1&v=60ce781a3d" data-heavenly-demon-src="heavenly-demon.html?embedded=1&v=79cefe6ce7" hidden>
       <canvas id="dojo-canvas" aria-label="선택한 단계의 캐릭터 동작과 화산 무공을 반복 재생하는 연무장"></canvas>
       <header class="dojo-header">
         <button id="dojo-back" type="button">← 메인으로</button>
         <div><p id="dojo-school-caption">演武場 · 華山</p><h1 id="dojo-title">동작 비교</h1><small>연출 비교 · 실제 전투와 별도</small></div>
         <button id="dojo-pause" type="button" aria-pressed="false">일시정지</button>
       </header>
-      <nav class="dojo-school-tabs" aria-label="연무 문파 선택"><button type="button" data-dojo-school="hwasan" aria-pressed="true">화산</button><button type="button" data-dojo-school="namgung" aria-pressed="false">남궁</button></nav>
-      <div id="dojo-namgung-host" class="dojo-namgung-host" hidden><p id="dojo-namgung-error" class="dojo-namgung-error" role="status" hidden>남궁 연무를 불러오지 못했습니다. <a href="namgung.html">남궁 연무 직접 열기 ↗</a></p></div>
+      <nav class="dojo-school-tabs" aria-label="연무 문파 선택"><button type="button" data-dojo-school="hwasan" aria-pressed="true">화산</button><button type="button" data-dojo-school="namgung" aria-pressed="false">남궁</button><button type="button" data-dojo-school="heavenly_demon" aria-pressed="false">천마</button></nav>
+      <div id="dojo-namgung-host" class="dojo-namgung-host" hidden><p id="dojo-namgung-error" class="dojo-namgung-error" role="status" hidden>남궁 연무를 불러오지 못했습니다. <a href="namgung.html?v=60ce781a3d">남궁 연무 직접 열기 ↗</a></p></div>
       <aside class="dojo-note"><span id="dojo-rank-tag">初 · 1단계</span><h2 id="dojo-form-name">매화노방</h2><p id="dojo-description"></p><span id="dojo-live" class="battle-sr-only" role="status" aria-live="polite"></span></aside>
       <footer class="dojo-controls">
         <div class="dojo-categories" role="group" aria-label="무공 갈래">

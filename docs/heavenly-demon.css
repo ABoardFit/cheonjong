@@ -1,0 +1,34 @@
+/* The same rehearsal surface as Hwasan and Namgung, with restrained ink-purple accents. */
+html,body{width:100%;height:100%;overflow:hidden}
+#heavenly-demon-canvas{display:block;width:100%;height:100%;image-rendering:pixelated;touch-action:none}
+.demon-header{z-index:2}
+.demon-back{background:#17251fe8;color:#e9ddd2;border:1px solid #b7ab9670;border-radius:3px;min-height:44px;padding:10px 16px;font:16px var(--sans);text-decoration:none;white-space:nowrap}
+.demon-back:hover{border-color:#bea0c7;background:#304137}
+.demon-back:focus-visible,.demon-options summary:focus-visible{outline:2px solid #c9a3d6;outline-offset:3px}
+.dojo-note,.dojo-controls{z-index:1}
+.dojo-header p,.dojo-note>span:first-child{color:#bea0c7}
+.dojo-note h2{color:#e2c9e7}
+#dojo-screen button[aria-pressed=true]{color:#e3c1ed;background:#54345d66;border-color:#b08cb9}
+.demon-direction-buttons{display:flex;flex:1;gap:5px;min-width:0}
+#dojo-screen #mind-focus{background:none;border:0;padding:0;min-height:44px;color:#b7b9aa;min-width:70px;max-width:70px;line-height:1.4;text-align:left}
+#mind-focus[aria-pressed=true]{color:#e3c1ed!important}
+.demon-options{margin-top:7px;border-top:1px solid #9b9d8333;padding-top:7px;color:#b7b9aa;font:16px var(--sans)}
+.demon-options summary{cursor:pointer;min-height:30px;line-height:30px}
+.demon-options-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:7px}
+.demon-options-row label{display:flex;gap:5px;align-items:center}
+.demon-options input{accent-color:#b08cb9}
+.demon-options select{min-height:40px;max-width:100%;padding:6px 8px;background:#17251f;color:#e9ddd2;border:1px solid #b7ab9670;border-radius:3px;font:16px var(--sans)}
+.demon-options select:focus-visible{outline:2px solid #c9a3d6;outline-offset:3px}
+.demon-options label[for=qi-capacity]{flex-wrap:wrap}
+.demon-options input[type=checkbox]{margin:0}
+.demon-timeline{flex:1;min-width:170px}
+.demon-timeline input{flex:1;min-width:80px}
+.demon-options p{margin:7px 0 0;line-height:1.7}
+#dojo-screen .demon-options button{min-height:40px;padding:7px 10px}
+#dojo-screen .demon-options button:disabled{opacity:.38;cursor:default}
+.demon-options output{color:#e2c9e7}
+.embedded-dojo .demon-header{inset:0 0 auto;padding:24px 30px;justify-content:flex-end;background:none;pointer-events:none}
+.embedded-dojo .demon-header>.demon-back,.embedded-dojo .demon-header>div{display:none}
+.embedded-dojo .demon-header>#pause{pointer-events:auto}
+@media(max-width:700px){.embedded-dojo .demon-header{padding:15px}.demon-back{padding:8px 10px}.demon-direction-buttons{gap:4px}.dojo-categories small{letter-spacing:0}.dojo-controls{max-height:52dvh}.dojo-note{max-height:calc(48dvh - 150px);overflow-y:auto;pointer-events:auto}.dojo-note p{line-height:1.65}.demon-options-row{gap:8px}}
+@media(max-height:560px){.embedded-dojo .demon-header{padding:10px 18px}.demon-options{margin-top:4px;padding-top:3px}.dojo-controls{max-height:55dvh}.dojo-note{max-height:calc(45dvh - 122px);overflow-y:auto;pointer-events:auto}}

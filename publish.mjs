@@ -58,9 +58,9 @@ const pages = readdirSync(docs).filter(file => file.endsWith('.html'))
 for (const page of pages) {
   const filename = join(docs, page);
   const content = readFileSync(filename, 'utf8').replace(
-    /(href|src|data-namgung-src)="([^":?#]+\.(?:css|js|html))(\?[^"#]*)?"/g,
+    /(href|src|data-(?:namgung|heavenly-demon)-src)="([^":?#]+\.(?:css|js|html))(\?[^"#]*)?"/g,
     (match, attr, file, query = '') => {
-      if (file.endsWith('.html') && attr !== 'data-namgung-src') return match;
+      if (file.endsWith('.html') && !['data-namgung-src', 'data-heavenly-demon-src'].includes(attr)) return match;
       const version = createHash('sha256').update(readFileSync(join(docs, file))).digest('hex').slice(0, 10);
       const params = new URLSearchParams(query.slice(1)); params.set('v', version);
       return `${attr}="${file}?${params}"`;
