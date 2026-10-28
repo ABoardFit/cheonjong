@@ -113,11 +113,11 @@
   document.querySelectorAll('[data-description]').forEach(button=>button.addEventListener('click',()=>{descriptionGender=button.dataset.description;choose(entries.find(entry=>entry.id===selectedId),false);}));
   async function load() {
     try {
-      const response=await fetch('assets/outfits-v5/manifest.json?v=20261027-stage-fit4', {cache:'no-store'}); if(!response.ok)throw new Error('manifest');
+      const response=await fetch('assets/outfits-v5/manifest.json?v=20261028-six-refinements', {cache:'no-store'}); if(!response.ok)throw new Error('manifest');
       const male=await response.json();
       const valid=e=>e&&typeof e.id==='string'&&typeof e.name==='string'&&typeof e.file==='string'&&/^[a-z0-9_-]+\.png$/i.test(e.file);
       entries=(male.entries||[]).filter(valid); if(!entries.length)throw new Error('empty');
-      let female={entries:[]}; try {const result=await fetch('assets/outfits-female-v1/manifest.json?v=20261027-stage-fit4', {cache:'no-store'});if(result.ok)female=await result.json();}catch {}
+      let female={entries:[]}; try {const result=await fetch('assets/outfits-female-v1/manifest.json?v=20261028-six-refinements', {cache:'no-store'});if(result.ok)female=await result.json();}catch {}
       const pending=(female.entries||[]).filter(valid);
       femaleEntries=new Map(pending.map(entry=>[entry.id,{...entry,ready:entry.status!=='pending'}]));
       $('completion').textContent='백의 + '+(entries.length-1)+'세력 · 남녀 의상';
