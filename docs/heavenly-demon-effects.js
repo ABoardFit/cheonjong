@@ -6,7 +6,40 @@
   const clamp = (n, a = 0, b = 1) => Math.max(a, Math.min(b, Number(n) || 0));
   const hash = (x, y, seed = 0) => { const n = Math.sin(x * 127.1 + y * 311.7 + seed * 74.7) * 43758.5453; return n - Math.floor(n); };
   const point = (x, y, a, r) => ({ x: x + Math.cos(a) * r, y: y + Math.sin(a) * r });
-  const angleDistance = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+  const SWORD_INTERVAL = 2.8, CROSS_DELAY = .3, RETURN_REACH = 250, SWORD_SPEED = 370, RETURN_SPEED = 312.5;
+  // game-core rank 7 radius: (58 + 5 * 15) * 1.5 * 2; renderer flower silhouette uses .93.
+  const FUSED_RING_RADIUS = (58 + 5 * 15) * 1.5 * 2 * .93, RING_BURST = 2.2;
+  function swordRays(rank, angle) {
+    if (rank === 1 || rank === 4) return [];
+    if (rank === 2) return [{ angle, delay: 0 }];
+    if (rank === 3) return [-.32, 0, .32].map(offset => ({ angle: angle + offset, delay: 0 }));
+    return Array.from({ length: rank >= 6 ? 8 : 4 }, (_, i) => ({ angle: (i % 4) * TAU / 4 + (i >= 4 ? Math.PI / 4 : 0), delay: i >= 4 ? CROSS_DELAY : 0, wave: i >= 4 ? 'diagonal' : 'cross' }));
+  }
+  function swordHits({ rank = 1, time = 0, angle = 0, origin = { x: 0, y: 0 }, targets = [], range = 880 }) {
+    const result = [], center = { x: origin.x, y: origin.y - 36 };
+    for (let n = 0; CAST + n * SWORD_INTERVAL <= time; n++) {
+      const at = CAST + n * SWORD_INTERVAL;
+      for (const target of targets) {
+        const dx = target.x - center.x, dy = target.y - center.y;
+        if (rank === 1 || rank === 4) {
+          const distance = Math.hypot(dx, dy / .68), bearing = Math.atan2(dy / .68, dx);
+          const radius = rank === 1 ? 100 : 145, span = rank === 1 ? 2.6 : TAU;
+          const offset = ((bearing - (angle - (rank === 1 ? 1.3 : Math.PI))) % TAU + TAU) % TAU;
+          if (distance <= radius && offset <= span) result.push({ type: 'direct-hit', source: 'sword', targetId: target.id, at: at + offset / span * .5 });
+          continue;
+        }
+        for (const ray of swordRays(rank, angle)) {
+          const along = dx * Math.cos(ray.angle) + dy * Math.sin(ray.angle), across = Math.abs(dx * Math.sin(ray.angle) - dy * Math.cos(ray.angle));
+          const reach = rank === 7 ? RETURN_REACH : range, size = rank >= 5 ? 32 + 40 * clamp(along / 320) : 32;
+          if (along < 0 || along > reach) continue;
+          const speed = rank === 7 ? RETURN_SPEED : SWORD_SPEED;
+          if (across <= size * .85) result.push({ type: 'direct-hit', source: 'sword', targetId: target.id, at: at + ray.delay + along / speed, phase: 'outbound' });
+          if (rank === 7 && across <= (32 + 40 * RETURN_REACH / 320) * .85) result.push({ type: 'direct-hit', source: 'sword', targetId: target.id, at: at + ray.delay + .8 + (RETURN_REACH - along) / speed, phase: 'returning' });
+        }
+      }
+    }
+    return result.filter(hit => hit.at <= time);
+  }
   function capacity(path, mind) { return 1 + Number(path === 'sword' && mind >= 2 || path === 'ring' && mind >= 1); }
   function resources({ path, rank = 1, mind, initialQi = 0, qiCapacity = 0, events = [], time = 0 }) {
     // Optional capacity belongs to the isolated demonstration, never to skill balance.
@@ -21,7 +54,7 @@
       if (e.type === 'block' && state.held > 0) {
         const consumed = Math.min(state.held, path === 'sword' && mind >= 3 ? 2 : 1);
         state.held -= consumed;
-        if (path === 'ring' && mind >= 5) state.blockBursts.push({ ...e, consumed, outward: true });
+        if (path === 'ring' && mind >= 5) state.blockBursts.push({ ...e, consumed });
       }
       if (e.type === 'direct-hit' && path === 'sword' && mind >= 5 && e.source !== 'dot' && e.source !== 'death-burst') state.marks.add(e.targetId);
       if (e.type === 'stomp-hit' && path === 'dash' && mind >= 6 && e.source !== 'dot') state.drops.push({ ...e, source: 'stomp' });
@@ -53,53 +86,56 @@
     hero.faceX = Math.cos(angle); hero.faceY = Math.sin(angle); hero.dashRemaining = path === 'dash' && time >= CAST && time < CAST + DASH ? CAST + DASH - time : 0;
     const landing = point(origin.x, origin.y, angle, distance), landAt = CAST + DASH;
     const events = [...(options.events || [])];
+    const directHits = path === 'sword' ? swordHits({ rank, time, angle, origin, targets: enemies, range: options.range }) : [];
+    if (mind >= 5) events.push(...directHits);
     if (path === 'dash' && rank === 7) events.push({ type: 'ultimate-dash', at: landAt, ...landing });
     if (path === 'dash' && mind >= 6) for (const enemy of enemies.filter(e => Math.hypot(e.x - landing.x, e.y + 30 - landing.y) <= 90)) events.push({ type: 'stomp-hit', at: landAt, x: enemy.x, y: enemy.y + 30, source: 'direct', targetId: enemy.id });
     const qi = resources({ path, rank, mind, initialQi: options.heldQi || 0, qiCapacity: options.qiCapacity, events, time });
-    const f = { path, rank, mind, time, angle, origin, hero, landing, landAt, qi, projectiles: [], rings: [], fields: [], cracks: [], silhouettes: [], bursts: [], marks: [], drops: [], hitAccents: [], targetOffsets: [], apparition: null,
+    const f = { path, rank, mind, time, angle, origin, hero, landing, landAt, qi, directHits, projectiles: [], sweeps: [], rings: [], waves: [], fields: [], cracks: [], silhouettes: [], bursts: [], marks: [], drops: [], hitAccents: [], targetOffsets: [], apparition: null,
       semantics: { invulnerable: false, crowdControl: false, pullsEnemies: false, coefficients: null } };
     const addField = (x, y, radius, born, source) => { if (time >= born && time < born + 3) f.fields.push({ x, y, radius, born, expires: born + 3, source, damages: true }); };
     if (path === 'sword') {
-      for (let n = 0; n < 7; n++) {
-        const at = CAST + n, age = time - at;
-        if (age < 0 || age > 4.5) continue;
+      for (let n = 0; CAST + n * SWORD_INTERVAL <= time; n++) {
+        const at = CAST + n * SWORD_INTERVAL, age = time - at;
+        if (age > 5.5) continue;
         const center = { x: origin.x, y: origin.y - 36 };
-        let aim = angle;
-        if (rank <= 2 && enemies.length) { const nearest = enemies.slice().sort((a, b) => Math.hypot(a.x - center.x, a.y - center.y) - Math.hypot(b.x - center.x, b.y - center.y))[0]; aim = Math.atan2(nearest.y - center.y, nearest.x - center.x); }
-        if (rank === 6 && enemies.length) {
-          const candidates = enemies.map(e => Math.atan2(e.y - center.y, e.x - center.x));
-          aim = candidates.sort((a, b) => enemies.filter(e => angleDistance(Math.atan2(e.y - center.y, e.x - center.x), b) < .3).length - enemies.filter(e => angleDistance(Math.atan2(e.y - center.y, e.x - center.x), a) < .3).length)[0];
+        if (rank === 1 || rank === 4) {
+          if (age < .7) f.sweeps.push({ ...center, radius: rank === 1 ? 100 : 145, angle, age, progress: clamp(age / .5), fullCircle: rank === 4, alpha: clamp((.7 - age) / .2) });
+          if (rank === 4) addField(origin.x, origin.y, 145, at + .5, 'sword');
+          continue;
         }
-        const angles = rank === 5 || rank === 7 ? Array.from({ length: 8 }, (_, i) => aim + i * TAU / 8) : rank === 3 || rank === 4 ? [aim - .27, aim, aim + .27] : [aim];
-        const speed = rank >= 6 ? 520 : 370, range = options.range || 880;
-        const firstRange = rank === 1 && enemies.length ? Math.min(...enemies.map(e => Math.hypot(e.x - center.x, e.y - center.y))) : range;
-        for (const a of angles) {
-          const reach = Math.min(age * speed, firstRange);
-          const p = point(center.x, rank === 7 ? origin.y : center.y, a, reach);
-          if (age * speed < firstRange) f.projectiles.push({ ...p, angle: a, size: rank >= 6 ? rank === 7 ? 85 : 125 : rank >= 4 ? 53 : 32, at, age, seed: n, ground: rank === 7, pierce: rank >= 2, hitsPerEnemy: 1, tint: mind >= 4 && qi.held > 0 });
-          if (rank >= 4 && rank <= 6) for (let r = 25; r < reach; r += 24) { const loc = point(center.x, origin.y, a, r); addField(loc.x, loc.y, rank === 6 ? 27 : 18, at + r / speed, 'sword'); }
-          if (rank === 7 && age < 1.45) f.cracks.push({ x: center.x, y: origin.y, angle: a, length: reach, alpha: (1 - age / 1.45) * .65, damages: false, seed: n });
+        for (const ray of swordRays(rank, angle)) {
+          const flightAge = age - ray.delay; if (flightAge < 0) continue;
+          const returning = rank === 7 && flightAge >= .8, speed = rank === 7 ? RETURN_SPEED : SWORD_SPEED;
+          const limit = rank === 7 ? RETURN_REACH : options.range || 880;
+          const reach = rank === 7 ? RETURN_REACH * (returning ? 1 - clamp((flightAge - .8) / .8) : clamp(flightAge / .8)) : Math.min(flightAge * speed, limit);
+          const active = rank === 7 ? flightAge < 1.6 : flightAge * speed < limit;
+          const p = point(center.x, center.y, ray.angle, reach);
+          const growthReach = rank === 7 ? Math.min(flightAge * speed, limit) : reach;
+          if (active) f.projectiles.push({ ...p, angle: ray.angle + (returning ? Math.PI : 0), launchAngle: ray.angle, size: rank >= 5 ? Math.round((32 + 40 * clamp(growthReach / 320)) / 2) * 2 : 32, at: at + ray.delay, age: flightAge, seed: n, wave: ray.wave, phase: returning ? 'returning' : 'outbound', distance: reach, pierce: true, hitsPerEnemy: rank === 7 ? 2 : 1, tint: mind >= 4 && qi.held > 0 });
+          if (rank === 5 || rank === 6) for (let r = 25; r < reach; r += 32) { const loc = point(center.x, origin.y, ray.angle, r); addField(loc.x, loc.y, 18, at + ray.delay + r / speed, 'sword'); }
         }
       }
     }
     if (path === 'ring') {
-      const cycle = time % 5, burstAt = 1.45;
+      const cycle = time % (rank === 7 ? 7 : 5), burstAt = RING_BURST;
       if (rank === 7) {
         if (cycle < burstAt) {
-          const progress = clamp((cycle - .4) / .8), orbit = 92 * (1 - progress);
-          for (let i = 0; i < 5; i++) { const a = i * TAU / 5 + time * 2; f.rings.push({ x: hero.x + Math.cos(a) * orbit, y: hero.y - 38 - progress * 72 + Math.sin(a) * orbit * .45, radius: 19 * (1 - progress), alpha: .85, seed: i }); }
-          if (progress > .45) f.sun = { x: hero.x, y: hero.y - 110, radius: 32 * progress, alpha: .9 };
+          const gather = clamp(cycle / .75), growth = clamp((cycle - .55) / 1.1), descent = clamp((cycle - 1.5) / .7);
+          if (gather < 1) for (let i = 0; i < 5; i++) { const a = i * TAU / 5 + time * 2, orbit = 105 * (1 - gather); f.rings.push({ x: hero.x + Math.cos(a) * orbit, y: hero.y - 38 - gather * 72 + Math.sin(a) * orbit * .65, radius: 20, alpha: 1 - gather * .5, seed: i }); }
+          if (cycle >= .55) f.fusedRing = { x: hero.x, y: hero.y - 110 * (1 - descent), radius: 20 + (FUSED_RING_RADIUS - 20) * growth, alpha: .95, seed: 3, growth, descent };
         }
-        if (cycle >= burstAt) { const age = cycle - burstAt; if (age < .65) {
-          f.bursts.push({ x: hero.x, y: hero.y - 30, age, radius: 245, outward: true, kind: 'sun' });
-          for (const e of enemies.filter(e => Math.hypot(e.x - hero.x, e.y + 30 - hero.y) <= 245)) { const a = Math.atan2(e.y + 30 - hero.y, e.x - hero.x), push = 38 * Math.sin(age / .65 * Math.PI); f.targetOffsets.push({ id: e.id, x: Math.cos(a) * push, y: Math.sin(a) * push }); }
-        } addField(hero.x, hero.y, 195, time - cycle + burstAt, 'ring'); }
+        if (cycle >= burstAt) {
+          const age = cycle - burstAt;
+          if (age < .65) f.bursts.push({ x: hero.x, y: hero.y, age, radius: FUSED_RING_RADIUS, kind: 'ring' });
+          if (age < 1.1) { const edge = Math.max(FUSED_RING_RADIUS + 80, options.waveRadius || 620), progress = clamp(age / 1.1); f.waves.push({ x: hero.x, y: hero.y, radius: FUSED_RING_RADIUS + (edge - FUSED_RING_RADIUS) * progress, edgeRadius: edge, progress, alpha: 1 - progress * .65 }); }
+          addField(hero.x, hero.y, 195, time - cycle + burstAt, 'ring');
+        }
       } else {
         const base = rank === 1 ? 1 : rank <= 3 ? 3 : 5, pulse = rank >= 5 ? Math.sin(clamp((cycle - .5) / 2.6) * Math.PI) : 0;
         const radius = (rank >= 3 ? 105 : 70) + Math.max(0, pulse) * 145;
         for (let i = 0; i < base + qi.extraRings; i++) { const a = time * (mind >= 4 ? 3.5 : 2.1) + i * TAU / (base + qi.extraRings); f.rings.push({ x: hero.x + Math.cos(a) * radius, y: hero.y - 30 + Math.sin(a) * radius * .65, radius: mind >= 2 ? 23 : 20, seed: i, alpha: .95, extra: i >= base }); }
         if (rank >= 6) for (let t = Math.max(0, time - 3); t < time; t += .16) { const c = t % 5, pulseAt = Math.sin(clamp((c - .5) / 2.6) * Math.PI); if (pulseAt <= .1) continue; for (let i = 0; i < 5; i++) { const a = t * (mind >= 4 ? 3.5 : 2.1) + i * TAU / 5, r = 105 + pulseAt * 145; addField(hero.x + Math.cos(a) * r, hero.y + Math.sin(a) * r * .65, 18, t, 'ring'); } }
-        if (rank >= 4 && cycle > 1 && cycle < 1.45) for (const e of enemies) { const a = Math.atan2(e.y - hero.y, e.x - hero.x); f.targetOffsets.push({ id: e.id, x: Math.cos(a) * Math.sin((cycle - 1) / .45 * Math.PI) * 18, y: Math.sin(a) * Math.sin((cycle - 1) / .45 * Math.PI) * 18 }); }
       }
       if (rank === 7 && qi.extraRings) { const a = time * 3.5; f.rings.push({ x: hero.x + Math.cos(a) * 95, y: hero.y - 30 + Math.sin(a) * 60, radius: 22, seed: 9, extra: true, alpha: .9 }); }
     }
@@ -122,11 +158,7 @@
     }
     for (const e of qi.blockBursts) if (time - e.at < .65) {
       const x = e.x ?? hero.x, y = e.y ?? hero.y, age = time - e.at;
-      f.bursts.push({ x, y, age, radius: 110, outward: true, kind: 'block' });
-      for (const enemy of enemies.filter(target => Math.hypot(target.x - x, target.y + 30 - y) <= 110)) {
-        const a = Math.atan2(enemy.y + 30 - y, enemy.x - x), push = Math.sin(age / .65 * Math.PI) * 24;
-        f.targetOffsets.push({ id: enemy.id, x: Math.cos(a) * push, y: Math.sin(a) * push });
-      }
+      f.bursts.push({ x, y, age, radius: 110, kind: 'block' });
     }
     for (const e of qi.deathBursts) if (time - e.at < .65) f.bursts.push({ x: e.x ?? hero.x + 90, y: e.y ?? hero.y, age: time - e.at, radius: 85, kind: 'mark' });
     f.marks = qi.marks.map(id => enemies.find(e => e.id === id)).filter(Boolean);
@@ -143,7 +175,38 @@
   function ring(c, p) {
     c.save(); c.globalAlpha *= p.alpha ?? 1;
     const r = p.radius; if (r < 2) { c.restore(); return; }
+    if (r > 48) {
+      // Scanline bands keep the enlarged original hollow ring inexpensive at two-pixel resolution.
+      const inner = r * .65;
+      for (let y = -Math.ceil(r / 2) * 2; y <= r; y += 2) {
+        const outerX = Math.sqrt(Math.max(0, r * r - y * y)), innerX = Math.abs(y) < inner ? Math.sqrt(inner * inner - y * y) : 0;
+        c.fillStyle = palette.dark;
+        c.fillRect(Math.round((p.x - outerX) / 2) * 2, Math.round((p.y + y) / 2) * 2, Math.max(2, Math.round((outerX - innerX) / 2) * 2), 2);
+        c.fillRect(Math.round((p.x + innerX) / 2) * 2, Math.round((p.y + y) / 2) * 2, Math.max(2, Math.round((outerX - innerX) / 2) * 2), 2);
+      }
+      const steps = Math.ceil(r * Math.PI);
+      for (let i = 0; i < steps; i++) {
+        const a = i / steps * TAU, rough = Math.sin(a * 17 + p.seed) * 4 + Math.sin(a * 43) * 2;
+        const outer = point(p.x, p.y, a, r + rough), inside = point(p.x, p.y, a, inner + rough);
+        square(c, outer.x, outer.y, 4, i % 7 === 0 ? palette.flame : palette.body);
+        if (i % 3 === 0) square(c, inside.x, inside.y, 4, palette.ink);
+        if (i % 13 === 0) { const grain = point(p.x, p.y, a, r * (.72 + hash(i, p.seed) * .2)); square(c, grain.x, grain.y, 6, palette.ink); }
+      }
+      c.restore(); return;
+    }
     for (let y = -r - 5; y <= r + 5; y += 2) for (let x = -r - 5; x <= r + 5; x += 2) { const d = Math.hypot(x, y), a = Math.atan2(y, x), edge = r + Math.sin(a * 7 + p.seed) * 3; if (d < edge && d > r * .65) square(c, p.x + x, p.y + y, 2, d > edge - 3 ? palette.light : hash(x, y, p.seed) > .7 ? palette.flame : palette.ink); }
+    c.restore();
+  }
+  function sweep(c, s) {
+    c.save(); c.globalAlpha *= s.alpha;
+    const span = s.fullCircle ? TAU : 2.6, start = s.angle - (s.fullCircle ? Math.PI : 1.3), end = span * s.progress;
+    for (let y = -s.radius; y <= s.radius; y += 2) for (let x = -s.radius; x <= s.radius; x += 2) {
+      const distance = Math.hypot(x, y), theta = Math.atan2(y, x), offset = ((theta - start) % TAU + TAU) % TAU;
+      if (offset > end) continue;
+      const edge = s.radius + Math.sin(theta * 11) * 2, taper = s.fullCircle ? 1 : Math.max(.12, Math.sin(offset / span * Math.PI));
+      const width = (s.fullCircle ? 19 : 28) * taper;
+      if (distance <= edge && distance >= edge - width) square(c, s.x + x, s.y + y * .68, 2, distance > edge - 3 ? palette.light : distance < edge - width * .7 ? palette.body : palette.dark);
+    }
     c.restore();
   }
   const crescentCache = new Map();
@@ -183,9 +246,20 @@
       for (const s of f.silhouettes) drawSilhouette?.(s);
       if (f.apparition) drawSilhouette?.(f.apparition);
     } else {
+      for (const s of f.sweeps) sweep(c, s);
       for (const p of f.projectiles) crescent(c, p);
       for (const p of f.rings) ring(c, p);
-      if (f.sun) { const s = f.sun; c.globalAlpha = s.alpha; for (let y = -s.radius; y < s.radius; y += 2) for (let x = -s.radius; x < s.radius; x += 2) if (x * x + y * y < s.radius ** 2) square(c, s.x + x, s.y + y, 2, hash(x, y, 7) > .91 ? palette.flame : palette.dark); ring(c, { ...s, seed: 3 }); c.globalAlpha = 1; }
+      if (f.fusedRing) ring(c, f.fusedRing);
+      for (const wave of f.waves) {
+        c.globalAlpha = wave.alpha;
+        const steps = Math.ceil(TAU * wave.radius / 4);
+        for (let i = 0; i < steps; i++) {
+          if (i % 11 === 0) continue;
+          const a = i / steps * TAU, p = point(wave.x, wave.y, a, wave.radius + Math.sin(a * 37) * 3);
+          square(c, p.x, p.y, i % 4 === 0 ? 6 : 4, i % 9 === 0 ? palette.light : palette.body);
+        }
+        c.globalAlpha = 1;
+      }
       for (const b of f.bursts) {
         const progress = clamp(b.age / .65), r = b.radius * Math.sin(progress * Math.PI / 2), count = b.kind === 'step' ? 12 : 26;
         c.globalAlpha = (1 - progress) * (b.decorative ? .45 : .9);
@@ -201,5 +275,5 @@
     c.restore();
   }
   function drawQi(c, hero, time, held, layer) { for (let i = 0; i < held; i++) { const a = time * 2 + i * TAU / Math.max(1, held), front = Math.sin(a) >= 0; if ((layer === 'front') !== front) continue; flame(c, hero.x + Math.cos(a) * 33, hero.y - 34 + Math.sin(a) * 17, 12, i, .9); } }
-  window.CheonHeavenlyDemonEffects = Object.freeze({ frame, resources, capacity, draw, drawQi, palette, clamp, hash, timing: { cast: CAST, dash: DASH } });
+  window.CheonHeavenlyDemonEffects = Object.freeze({ frame, resources, capacity, swordHits, draw, drawQi, palette, clamp, hash, timing: { cast: CAST, dash: DASH, swordInterval: SWORD_INTERVAL, crossDelay: CROSS_DELAY, ringBurst: RING_BURST }, fusedRingRadius: FUSED_RING_RADIUS });
 })();

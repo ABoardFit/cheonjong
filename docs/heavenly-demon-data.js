@@ -22,11 +22,11 @@
       // 육합공 stays with the orthodox schools.
       usesSharedLiuhe: false,
       resource: { id: 'demonic_qi', name: '마기', baseCapacity: 1, baseConsumptionPerHit: 1, reductionOrder: ['flat', 'percent'], attacksConsumeResource: false, sharedMechanicsId: 'hwasan_petal', sources: ['black_flame_art_3_ring_kill', 'heavenly_demon_art_1_kill', 'sovereign_step_6_stomp_hit'], initialAmount: null },
-      // No crowd control: nothing in this school stuns, roots, slows or pulls enemies. Contact damages the player, so effects only push out, linger or burst.
+      // No stun, root, slow or pull. Only sovereign_step's landing stomp pushes enemies; rings and defensive bursts deal damage without displacement.
       crowdControl: false, pullsEnemies: false,
       evasion: { formula: 'rating / (rating + 100)', capChance: EVASION_CAP, sumRatingsBeforeConversion: true, directHitsOnly: true, onEvade: { damage: 0, consumesResource: false } },
       cooldown: { formula: 'base / (1 + reduction / 100)', minSeconds: MIN_COOLDOWN_SECONDS },
-      procs: { damageOverTimeCountsAsDirectHit: false, markExplosionAppliesMark: false, pickupBurstRequiresActualIncrease: true, blockKnockbackOncePerHit: true },
+      procs: { damageOverTimeCountsAsDirectHit: false, markExplosionAppliesMark: false, pickupBurstRequiresActualIncrease: true, blockBurstOncePerHit: true },
       heavenlyDashInvulnerable: false,
       coefficients: null
     },
@@ -35,13 +35,13 @@
       sword: {
         id: 'heavenly_sword', name: '천마멸천검', hanja: '天魔滅天劍', type: '초식', partnerId: 'heavenly_demon_art', evolutionName: '천마강림',
         levels: [
-          level(1, '흑월일섬', '가장 가까운 적을 향해 검은 초승달 검기 하나를 날린다.', { attack: 'crescent_projectile', projectiles: 1, target: 'nearest', pierce: false }, '黑月一閃'),
-          level(2, '흑월관혼', '검기가 적을 관통하며 화면 끝까지 날아간다. 한 검기는 같은 적에게 한 번만 명중한다.', { attack: 'crescent_projectile', projectiles: 1, pierce: true, range: 'screen_edge', hitsPerEnemy: 1 }, '黑月貫魂'),
+          level(1, '흑월일섬', '몸 앞을 가로로 베어 가까운 적에게 피해를 준다. 검기를 발사하지 않는다.', { attack: 'horizontal_slash', projectiles: 0, range: 'melee', hitsPerEnemy: 1 }, '黑月一閃'),
+          level(2, '흑월관혼', '초승달 검기 하나가 적을 관통하며 화면 끝까지 날아간다. 한 검기는 같은 적에게 한 번만 명중한다.', { attack: 'crescent_projectile', projectiles: 1, pierce: true, range: 'screen_edge', hitsPerEnemy: 1 }, '黑月貫魂'),
           level(3, '삼월분천', '세 갈래 부채꼴로 관통 검기 세 줄기를 날린다.', { attack: 'crescent_projectile', projectiles: 3, spread: 'fan', pierce: true, range: 'screen_edge' }, '三月分天'),
-          level(4, '마염잔월', '검기가 커지고, 지나간 길에 3초간 지속 피해를 주는 흑염 장판을 남긴다.', { attack: 'crescent_projectile', projectiles: 3, spread: 'fan', pierce: true, large: true, trailGroundSeconds: 3 }, '魔焰殘月'),
-          level(5, '팔방흑월', '몸을 중심으로 여덟 방향에 큰 관통 검기를 동시에 날린다. 흑염 장판을 유지한다.', { attack: 'crescent_projectile', projectiles: 8, spread: 'radial', pierce: true, large: true, trailGroundSeconds: 3 }, '八方黑月'),
-          level(6, '멸천흑강', '여덟 검기를 대체하여 화면을 가로지르는 거대한 검은 검강 하나를 가장 적이 많은 방향으로 날린다. 흑염 장판을 유지한다.', { attack: 'giant_crescent', projectiles: 1, target: 'densest_direction', pierce: true, range: 'offscreen', trailGroundSeconds: 3 }, '滅天黑罡'),
-          level(7, '천마강림', '천마신공 6성과 조합. 땅을 가르는 거대한 검은 검기 여덟 줄기가 8방향으로 지면을 따라 화면 밖까지 뻗어 나간다. 각 검기는 관통하며 같은 적에게 한 번만 명중한다. 지나간 땅의 갈라진 흔적은 연출일 뿐 피해가 없다. 부가 효과 없이 순수한 강한 피해이며 천마신공 1~6성은 유지한다.', { attack: 'ground_splitting_crescents', projectiles: 8, spread: 'radial', pierce: true, range: 'offscreen', hitsPerEnemy: 1, crackTrailDamages: false, extraEffects: false }, '天魔降臨')
+          level(4, '마염잔월', '몸을 중심으로 보름달 같은 원을 그리며 360도 전방향을 벤다. 검기를 발사하지 않으며 베어 낸 자리에 3초간 지속 피해를 주는 흑염 장판을 남긴다.', { attack: 'full_moon_slash', projectiles: 0, sweepDegrees: 360, range: 'melee', trailGroundSeconds: 3 }, '魔焰殘月'),
+          level(5, '사방흑월', '몸을 중심으로 사방에 관통 초승달 검기 네 줄기를 동시에 날린다. 검기는 날아가며 점점 커지고 지나간 자리에 3초간 흑염 장판을 남긴다.', { attack: 'growing_crescents', projectiles: 4, spread: 'cross', pierce: true, growsWithDistance: true, trailGroundSeconds: 3 }, '四方黑月'),
+          level(6, '멸천흑강', '십자 방향으로 초승달 검기 네 줄기를 먼저 날린 뒤, X자 방향으로 네 줄기를 이어 날린다. 검기는 관통하며 점점 커지고 지나간 자리에 3초간 흑염 장판을 남긴다.', { attack: 'sequential_crescents', projectiles: 8, spread: 'cross_then_diagonal', volleys: [4, 4], pierce: true, growsWithDistance: true, trailGroundSeconds: 3 }, '滅天黑罡'),
+          level(7, '천마강림', '천마신공 6성과 조합. 십자 방향 네 줄기와 X자 방향 네 줄기의 초승달 검기를 차례로 날린다. 점점 커지며 관통한 검기는 몸으로 돌아온다. 지속 피해 장판은 남기지 않으며 천마신공 1~6성은 유지한다.', { attack: 'returning_crescents', projectiles: 8, spread: 'cross_then_diagonal', volleys: [4, 4], pierce: true, growsWithDistance: true, returnsToCaster: true, groundDamage: false }, '天魔降臨')
         ]
       },
       ring: {
@@ -50,10 +50,10 @@
           level(1, '일륜흑염', '흑염 고리 하나가 몸 주위를 돌며 닿는 적에게 피해를 준다.', { attack: 'orbit_rings', rings: 1 }, '一輪黑焰'),
           level(2, '삼륜회천', '몸 주위를 도는 흑염 고리가 세 개가 된다.', { attack: 'orbit_rings', rings: 3 }, '三輪回天'),
           level(3, '마륜확염', '고리의 회전 반경과 피해가 증가한다.', { attack: 'orbit_rings', rings: 3, radiusUp: true, increasedDamage: true }, '魔輪擴焰'),
-          level(4, '오륜척마', '고리가 다섯 개가 되고, 닿은 적을 바깥으로 밀쳐 낸다.', { attack: 'orbit_rings', rings: 5, radiusUp: true, increasedDamage: true, knockback: 'outward' }, '五輪斥魔'),
-          level(5, '혼륜파동', '고리가 주기적으로 반경 끝까지 퍼졌다가 몸 주위로 돌아온다. 밀쳐 내기를 유지한다.', { attack: 'pulsing_rings', rings: 5, increasedDamage: true, knockback: 'outward' }, '魂輪波動'),
-          level(6, '멸혼잔염', '퍼진 고리가 지나간 자리에 3초간 지속 피해를 주는 흑염 장판을 남긴다.', { attack: 'pulsing_rings', rings: 5, increasedDamage: true, knockback: 'outward', groundSeconds: 3 }, '滅魂殘焰'),
-          level(7, '흑일멸겁', '흑염마공 6성과 조합. 고리들이 머리 위에서 검은 태양 하나로 뭉쳤다가 바깥으로 터지며 주변 적을 밀어내는 큰 폭발을 일으키고, 폭발 자리에 넓은 흑염 장판을 남긴다. 적을 끌어당기지 않는다. 흑염마공 1~6성은 유지한다.', { attack: 'black_sun_burst', knockback: 'outward', pull: false, wideGround: true, groundSeconds: 3 }, '黑日滅劫')
+          level(4, '오륜척마', '고리가 다섯 개가 되어 닿는 적에게 피해를 준다.', { attack: 'orbit_rings', rings: 5, radiusUp: true, increasedDamage: true }, '五輪斥魔'),
+          level(5, '혼륜파동', '고리가 주기적으로 반경 끝까지 퍼졌다가 몸 주위로 돌아온다.', { attack: 'pulsing_rings', rings: 5, increasedDamage: true }, '魂輪波動'),
+          level(6, '멸혼잔염', '퍼진 고리가 지나간 자리에 3초간 지속 피해를 주는 흑염 장판을 남긴다.', { attack: 'pulsing_rings', rings: 5, increasedDamage: true, groundSeconds: 3 }, '滅魂殘焰'),
+          level(7, '흑일멸겁', '흑염마공 6성과 조합. 작은 멸륜들이 하나로 모여 화산의 큰 꽃만큼 커지고 몸의 발밑까지 내려와 폭발한다. 폭발 파문은 거의 화면 끝까지 퍼지고 넓은 흑염 장판이 3초간 남는다. 적을 밀거나 끌어당기지 않으며 흑염마공 1~6성은 유지한다.', { attack: 'descending_ring_burst', rings: 5, gathersIntoOne: true, growsBeforeBurst: true, impactAnchor: 'feet', shockwaveRange: 'near_screen_edge', pull: false, wideGround: true, groundSeconds: 3 }, '黑日滅劫')
         ]
       },
       dash: {
@@ -88,7 +88,7 @@
           level(2, '2성', '흑염 고리의 피해가 증가한다.', { ringDamageUp: true }),
           level(3, '3성', '흑염 고리에 맞아 죽은 적이 마기를 드랍한다.', { ringKillDropsQi: true }),
           level(4, '4성', '흑염 고리가 도는 속도가 빨라진다.', { ringSpinUp: true }),
-          level(5, '5성', '피격 방어로 마기를 실제 소모하면 주변에 흑염 폭발이 일어나 적을 밀어낸다. 한 피격당 한 번만 발동한다.', { blockBurstKnockback: true, oncePerHit: true }),
+          level(5, '5성', '피격 방어로 마기를 실제 소모하면 주변에 흑염 폭발이 일어나 피해를 준다. 적을 밀어내지 않으며 한 피격당 한 번만 발동한다.', { blockBurstDamage: true, oncePerHit: true }),
           level(6, '6성', '마기를 실제로 획득하면 2초간 흑염 고리 하나가 더 돈다. 보유 한계 또는 획득 금지 중에는 발동하지 않는다.', { pickupExtraRingSeconds: 2, requiresActualIncrease: true })
         ]
       },
@@ -104,6 +104,6 @@
         ]
       }
     },
-    pending: ['공격 계수와 강화 증가량', '검기 속도와 크기', '고리 회전 반경과 파동 주기', '마인 지속시간과 폭발 반경', '흡정 회복량(체력 회복 시스템 신규)', '회피 수치·재사용 대기시간 감소를 주는 다른 출처', '마기 시작 보유량과 드랍 잔존시간', '흑일멸겁 밀쳐 내기 거리']
+    pending: ['공격 계수와 강화 증가량', '검기 속도와 크기', '고리 회전 반경과 파동 주기', '마인 지속시간과 폭발 반경', '흡정 회복량(체력 회복 시스템 신규)', '회피 수치·재사용 대기시간 감소를 주는 다른 출처', '마기 시작 보유량과 드랍 잔존시간']
   };
 })(typeof window !== 'undefined' ? window : globalThis);

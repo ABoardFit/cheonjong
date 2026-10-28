@@ -34,16 +34,9 @@
   }
   function scene() {
     const enemies = $('targets').checked ? targets() : [], currentEvents = [...events];
-    // Direct-hit marks are shown on the actual near-facing targets; no field or death burst applies them.
-    if (path === 'sword' && minds[path] >= 5) {
-      for (let n = 0; n < 7; n++) for (const target of enemies) {
-        const origin = originAt(.75 + n), a = Math.atan2(target.y - (origin.y - 36), target.x - origin.x);
-        const delta = Math.abs(Math.atan2(Math.sin(a - angle()), Math.cos(a - angle())));
-        const eligible = ranks[path] === 5 || ranks[path] === 7 || delta < (ranks[path] >= 3 && ranks[path] <= 4 ? .4 : .2);
-        if (eligible) currentEvents.push({ type: 'direct-hit', source: 'sword', targetId: target.id, at: .75 + n + Math.hypot(target.x - origin.x, target.y - origin.y + 36) / (ranks[path] >= 6 ? 520 : 370) });
-      }
-    }
-    return FX.frame({ path, rank: ranks[path], mind: minds[path], time, angle: angle(), origin: originAt(time), targets: enemies, heldQi: initialQi, qiCapacity, events: currentEvents, range: Math.hypot(W, H) * .8 });
+    const origin = originAt(time), range = Math.hypot(W, H) * .8;
+    const waveRadius = Math.max(origin.x, W - origin.x, origin.y, H - origin.y) * .94;
+    return FX.frame({ path, rank: ranks[path], mind: minds[path], time, angle: angle(), origin, targets: enemies, heldQi: initialQi, qiCapacity, events: currentEvents, range, waveRadius });
   }
   function reset() { time = 0; events = []; serial = 0; manual = { x: 0, y: 0 }; initialQi = minds[path] > 0 || path === 'dash' && ranks[path] === 7 ? 1 : 0; update(); render(); }
   for (let rank = 1; rank <= 7; rank++) { const b = document.createElement('button'); b.type = 'button'; b.textContent = rank; b.dataset.rank = rank; b.setAttribute('aria-label', rank === 7 ? '절세무공 7단계' : `${rank}단계`); if (rank === 7) { const s = document.createElement('small'); s.textContent = '절세'; b.append(s); } b.onclick = () => { ranks[path] = rank; detail = 'active'; reset(); }; $('rank-buttons').append(b); }
@@ -85,7 +78,8 @@
     $('form-description').textContent = selected.description;
     $('mind-focus').setAttribute('aria-pressed', String(detail === 'mind'));
     $('fusion-note').textContent = rank === 7 && m < 6 ? '연출 비교용 7단계 · 실제 조합 조건: 초식 6단계 + 짝 무공 6성' : `초식 6단계 + ${mind.name} 6성에서 ${p.evolutionName} 완성`;
-    $('mechanic-note').textContent = path === 'sword' && rank === 7 ? '8방향 지면 검기 · 한 대상당 한 번 · 균열은 무피해 연출' : path === 'dash' && rank === 7 ? `마기 전량 소모 · 1초 회피 수치 +30 · 무적·경직 없음${f.qi.evasionRating ? ' · 회피 강화 중' : ''}` : path === 'ring' && rank === 7 ? '머리 위 집결 → 바깥 폭발 → 3초 흑염 · 끌어당김 없음' : '전투 수치가 없는 연출 비교 · 공격 계수와 강화 증가량 미확정';
+    const swordNotes = ['', '근접 횡베기', '초승달 검기 한 발', '부채꼴 세 방향 초승달', '보름달처럼 한 바퀴 베기 · 3초 흑염', '사방으로 자라는 초승달 네 개 · 이동 경로 흑염', '십자 네 발 → 대각선 네 발 · 이동 경로 흑염', '십자 → 대각선 초승달 발사 → 몸 쪽으로 회수'];
+    $('mechanic-note').textContent = path === 'sword' ? swordNotes[rank] : path === 'dash' && rank === 7 ? `마기 전량 소모 · 1초 회피 수치 +30 · 무적·경직 없음${f.qi.evasionRating ? ' · 회피 강화 중' : ''}` : path === 'ring' && rank === 7 ? '작은 멸륜 합체·확대 → 발밑 폭발 → 화면 가장자리 파문 · 3초 흑염' : '전투 수치가 없는 연출 비교 · 공격 계수와 강화 증가량 미확정';
     $('qi-demo').hidden = m === 0 && rank !== 7;
     $('qi-count').textContent = `${f.qi.held} / ${f.qi.capacity}`;
     if ($('qi-capacity')) $('qi-capacity').value = qiCapacity;
@@ -101,8 +95,8 @@
     $('pause').textContent = paused ? '계속 재생' : '일시정지'; $('pause').setAttribute('aria-pressed', String(paused));
   }
   function pose(hero, t, attack = true) {
-    const age = t >= .75 ? (t - .75) % 1 : -1, isAttack = attack && path === 'sword' && age >= 0 && age < .58;
-    const state = { player: hero, time: t, skills: { plum_sword: path === 'sword' ? 2 : 0 }, effects: [], attackTimer: path === 'sword' ? t < .75 ? .75 - t : 1 - (t - .75) % 1 : 1 };
+    const interval = FX.timing.swordInterval, age = t >= .75 ? (t - .75) % interval : -1, isAttack = attack && path === 'sword' && age >= 0 && age < .58;
+    const state = { player: hero, time: t, skills: { plum_sword: path === 'sword' ? 2 : 0 }, effects: [], attackTimer: path === 'sword' ? t < .75 ? .75 - t : interval - (t - .75) % interval : 1 };
     return { state, pose: window.CheonCombatAnimation.poseFor(state, t, { attack: isAttack ? { type: 'slash', action: 'sweep', rank: 2, id: Math.floor(t), angle: angle(), age, duration: .58 } : null, action: 'sweep', moving: walking || keys.size > 0 || hero.dashRemaining > 0, walkDistance: t * 88, locomotionX: hero.faceX, locomotionY: hero.faceY }) };
   }
   function drawHero(f) {
@@ -133,7 +127,7 @@
       const offset = f.targetOffsets.find(o => o.id === enemy.id) || { x: 0, y: 0 };
       const killed = events.filter(e => e.type === 'kill' && e.targetId === enemy.id && e.at <= time).at(-1);
       if (killed && time - killed.at < .7) continue;
-      const flash = f.hitAccents.some(h => h.id === enemy.id) || f.projectiles.some(p => Math.hypot(p.x - enemy.x, p.y - enemy.y) < p.size);
+      const flash = f.hitAccents.some(h => h.id === enemy.id) || f.directHits.some(hit => hit.targetId === enemy.id && time - hit.at < .12);
       renderer.drawEnemy({ ...enemy, x: enemy.x + offset.x, y: enemy.y + 32 + offset.y, type: enemy.ranged ? 'ranged' : 'melee', hp: 100, maxHp: 100, radius: 12, flashUntil: flash ? time + .02 : 0 });
     }
     FX.draw(ctx, f, { layer: 'front' });
